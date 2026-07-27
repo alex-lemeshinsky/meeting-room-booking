@@ -29,12 +29,14 @@ Status: historical
 ### Task 1: Create and verify the universal root harness
 
 **Files:**
+
 - Create: `AGENTS.md`
 - Modify: `docs/superpowers/specs/2026-07-27-agent-harness-design.md:4`
 - Reference: `docs/features.md`
 - Reference: `docs/architecture.md`
 
 **Interfaces:**
+
 - Consumes: approved product requirements from `docs/features.md`, architecture invariants from `docs/architecture.md`, and the validated harness design.
 - Produces: root-scoped repository instructions for any compatible coding agent; no runtime or application interface changes.
 

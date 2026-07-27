@@ -640,32 +640,35 @@ docker compose up --build
 ## 17. Команди якості
 
 ```text
-npm test
-pnpm test:integration
-pnpm test:e2e
-pnpm lint
-pnpm typecheck
-pnpm build
+pnpm verify:fast
+pnpm verify:all
 ```
+
+`pnpm verify:fast` виконує детерміновані repository policy, formatting, lint,
+typecheck, unit, contract freshness і build checks без Docker або браузера.
+`pnpm verify:all` додає integration-тести з PostgreSQL та Playwright E2E.
+Focused-команди залишаються доступними для розробки й діагностики. Перевірка
+актуальності контрактів спочатку перегенеровує OpenAPI та public TypeScript
+contracts, тому локально може змінити generated files у working tree.
 
 README пояснює prerequisites, env, міграції, seed, тестові облікові дані,
 запуск кожного test layer і повний Docker-сценарій.
 
 ## 18. CI
 
-GitHub Actions запускається на push і pull request:
+GitHub Actions запускається на push, pull request і вручну через
+`workflow_dispatch`:
 
 1. `pnpm install --frozen-lockfile`;
-2. lint;
-3. typecheck;
-4. unit-тести;
-5. integration-тести з PostgreSQL;
-6. production build;
-7. Playwright smoke-тести в Chromium.
+2. `pnpm verify:fast` до встановлення браузера;
+3. Chromium із системними залежностями;
+4. integration-тести з PostgreSQL;
+5. Playwright E2E-тести;
+6. Playwright report і test results як diagnostics у разі невдачі.
 
-Короткий Playwright smoke-набір запускається на кожен push. Повний E2E-набір
-запускається на pull request і через ручний `workflow_dispatch`; на pull
-request smoke-тести входять у повний набір і окремо не дублюються.
+Workflow має read-only `contents` permission, скасовує попередній запуск для
+того самого workflow і ref, кешує pnpm за `pnpm-lock.yaml` та зберігає один
+30-хвилинний job.
 
 ## 19. Поетапна реалізація
 

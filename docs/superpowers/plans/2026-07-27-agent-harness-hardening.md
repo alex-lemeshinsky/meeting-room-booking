@@ -269,12 +269,9 @@ test("rejects database coupling and CORS enablement", async () => {
   await writeText(
     join(root, "apps/web/src/data.ts"),
     'import { PrismaClient } from "@prisma/client";\n' +
-      'export const url = process.env.DATABASE_URL;\n'
+      "export const url = process.env.DATABASE_URL;\n"
   );
-  await writeText(
-    join(root, "apps/api/src/main.ts"),
-    "app.enableCors();\n"
-  );
+  await writeText(join(root, "apps/api/src/main.ts"), "app.enableCors();\n");
 
   await assert.rejects(
     verifyRepository(root, { trackedFiles: validTrackedFiles }),
@@ -333,8 +330,7 @@ test("rejects missing and untracked repository Markdown links", async () => {
   const root = await createValidRepository();
   await writeText(
     join(root, "docs/guide.md"),
-    "[missing](missing.md)\n" +
-      "[local spec](superpowers/specs/local.md)\n"
+    "[missing](missing.md)\n" + "[local spec](superpowers/specs/local.md)\n"
   );
   await writeText(
     join(root, "docs/superpowers/specs/local.md"),
@@ -342,17 +338,14 @@ test("rejects missing and untracked repository Markdown links", async () => {
   );
   const trackedFiles = [...validTrackedFiles, "docs/guide.md"];
 
-  await assert.rejects(
-    verifyRepository(root, { trackedFiles }),
-    (error) => {
-      assert.deepEqual(error.violations, [
-        "docs/guide.md links to missing file docs/missing.md",
-        "docs/guide.md links to untracked Superpowers file " +
-          "docs/superpowers/specs/local.md"
-      ]);
-      return true;
-    }
-  );
+  await assert.rejects(verifyRepository(root, { trackedFiles }), (error) => {
+    assert.deepEqual(error.violations, [
+      "docs/guide.md links to missing file docs/missing.md",
+      "docs/guide.md links to untracked Superpowers file " +
+        "docs/superpowers/specs/local.md"
+    ]);
+    return true;
+  });
 });
 
 test("rejects an untracked plan in the task-state index", async () => {
@@ -526,6 +519,9 @@ git commit -m "chore: canonicalize verification commands"
 - Modify: `README.md`
 - Modify: `docs/architecture.md`
 - Modify: `.github/workflows/ci.yml`
+- Modify (formatting only): `docs/superpowers/plans/2026-07-27-agent-harness.md`
+- Modify (formatting only):
+  `docs/superpowers/plans/2026-07-27-agent-harness-hardening.md`
 
 **Interfaces:**
 
@@ -600,6 +596,11 @@ jobs:
 `pnpm/action-setup` reads the exact version from root `packageManager`.
 
 - [ ] **Step 3: Verify documentation, workflow, and policy**
+
+Run Prettier in write mode on the two restored plan files that became visible
+to the repository formatter when `docs/superpowers` returned to version
+control. Preserve every word, lifecycle marker, and checkbox; only
+Prettier-generated whitespace and line wrapping may change.
 
 Run:
 
@@ -708,7 +709,7 @@ git commit -m "docs: complete agent harness hardening"
 - [x] Every new executable policy is introduced through a failing test.
 - [x] Public function names and error shapes are consistent across tasks.
 - [x] CI uses current supported action majors: checkout v7, setup-node v7,
-  pnpm/action-setup v6, and upload-artifact v7.
+      pnpm/action-setup v6, and upload-artifact v7.
 - [x] No implementation step contains a placeholder or delegates unspecified
-  error handling.
+      error handling.
 - [x] Each task ends with focused evidence and a coherent commit.

@@ -35,27 +35,23 @@ pnpm dev
 ## Перевірки
 
 ```bash
-npm test
-pnpm test:integration
-pnpm test:e2e
-pnpm lint
-pnpm typecheck
-pnpm contracts:check
-pnpm build
-pnpm format:check
-pnpm verify:workspace
+pnpm verify:fast
+pnpm verify:all
 ```
 
-- `npm test` запускає unit/component tests у workspace.
-- `pnpm test:integration` піднімає PostgreSQL 18.4 через Testcontainers,
-  застосовує Prisma migration і перевіряє readiness повного NestJS app.
-- `pnpm test:e2e` перевіряє desktop/mobile shell і same-origin API у Chromium.
-- `pnpm lint` перевіряє ESLint-правила.
-- `pnpm typecheck` перевіряє строгі TypeScript-контракти.
-- `pnpm contracts:check` гарантує актуальність OpenAPI й generated types.
-- `pnpm build` збирає всі workspace-пакети, що мають build script.
-- `pnpm format:check` перевіряє форматування.
-- `pnpm verify:workspace` перевіряє структуру та ідентичності пакетів.
+- `pnpm verify:fast` запускає repository policy, форматування, lint, typecheck,
+  unit/component tests, перевірку актуальності контрактів і production build.
+  Для цієї перевірки не потрібні Docker або браузер.
+- `pnpm verify:all` спочатку запускає fast gate, а потім додає integration-тести
+  з PostgreSQL через Testcontainers і Playwright E2E у Chromium.
+
+Focused-команди з root `package.json` залишаються доступними для розробки та
+діагностики окремого етапу. `pnpm contracts:check` перед порівнянням
+перегенеровує OpenAPI та public TypeScript contracts, тому локальна перевірка
+може змінити generated files у working tree.
+
+Поточний active plan, approved queue та historical records наведені в
+[`docs/superpowers/README.md`](docs/superpowers/README.md).
 
 ## Межі foundation-слайсу
 

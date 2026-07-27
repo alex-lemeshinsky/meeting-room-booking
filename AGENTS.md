@@ -15,9 +15,10 @@ Keep this file as a map and stable harness, not a copy of project docs.
 4. Read the relevant sections of `docs/architecture.md` for technical rules.
 5. Read the relevant sections of `docs/design-system.md` before UI, UX,
    responsive, accessibility, component, or styling work.
-6. Read the approved Superpowers specification and implementation plan when
+6. Use `docs/superpowers/README.md` to discover durable task state.
+7. Read the approved Superpowers specification and implementation plan when
    the task has them.
-7. Check for deeper `AGENTS.md` files before touching a subtree.
+8. Check for deeper `AGENTS.md` files before touching a subtree.
 
 Local precedence:
 
@@ -100,13 +101,16 @@ Before adding a dependency, verify need, maintenance, official documentation, an
 ## 5. Verification gates
 
 ```text
-npm test
-pnpm test:integration
-pnpm test:e2e
-pnpm lint
-pnpm typecheck
-pnpm build
+pnpm verify:fast
+pnpm verify:all
 ```
+
+`pnpm verify:fast` runs the deterministic repository, formatting, lint,
+typecheck, unit, contract-freshness, and build checks without Docker or a
+browser. `pnpm verify:all` adds PostgreSQL integration tests and Playwright.
+Focused commands remain available for development and failure diagnosis.
+Contract freshness regenerates public contracts before comparing them, so a
+local verification can modify generated files in the working tree.
 
 If a command does not exist in an early phase, report the missing harness; add it only
 in the appropriate foundation slice. Never claim an unrun check.
