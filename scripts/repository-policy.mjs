@@ -73,13 +73,23 @@ function verifyRootManifest(manifest, violations) {
 function verifyWorkspacePackages(workspace, violations) {
   if (!workspace) return;
 
-  if (!workspace.includes("apps/*")) {
+  if (!hasWorkspacePackage(workspace, "apps/*")) {
     violations.push("pnpm-workspace.yaml must include apps/*");
   }
 
-  if (!workspace.includes("packages/*")) {
+  if (!hasWorkspacePackage(workspace, "packages/*")) {
     violations.push("pnpm-workspace.yaml must include packages/*");
   }
+}
+
+function hasWorkspacePackage(workspace, packageGlob) {
+  const escapedPackageGlob = packageGlob.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const packageEntry = new RegExp(
+    `^\\s*-\\s*(?:${escapedPackageGlob}|["']${escapedPackageGlob}["'])\\s*(?:#.*)?$`,
+    "m"
+  );
+
+  return packageEntry.test(workspace);
 }
 
 function verifyPackageManifest(path, name, manifest, violations) {
@@ -99,9 +109,11 @@ function verifyPackageManifest(path, name, manifest, violations) {
 }
 
 async function loadTrackedFiles(root) {
-  const { stdout } = await executeFile("git", ["ls-files"], { cwd: root });
+  const { stdout } = await executeFile("git", ["ls-files", "-z"], {
+    cwd: root
+  });
 
-  return stdout.split("\n").filter(Boolean);
+  return stdout.split("\0").filter(Boolean);
 }
 
 export async function verifyRepository(root, { trackedFiles } = {}) {

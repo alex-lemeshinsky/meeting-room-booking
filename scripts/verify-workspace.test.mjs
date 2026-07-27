@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 
 import {
   RepositoryPolicyError,
@@ -25,6 +27,8 @@ const validTrackedFiles = [
   "docs/superpowers/README.md",
   "docs/guide.md"
 ];
+
+const executeFile = promisify(execFile);
 
 async function writeJson(path, value) {
   await mkdir(join(path, ".."), { recursive: true });
@@ -80,11 +84,26 @@ async function withValidRepository(run) {
   }
 }
 
+async function stageFixtureFiles(root) {
+  await executeFile("git", ["init", "--quiet"], { cwd: root });
+  await executeFile("git", ["add", "--all"], { cwd: root });
+}
+
 test("accepts a repository satisfying the workspace contract", async () => {
   await withValidRepository(async (root) => {
     const result = await verifyRepository(root, {
       trackedFiles: validTrackedFiles
     });
+
+    assert.deepEqual(result, { packageCount: 5 });
+  });
+});
+
+test("loads tracked files from Git when none are injected", async () => {
+  await withValidRepository(async (root) => {
+    await stageFixtureFiles(root);
+
+    const result = await verifyRepository(root);
 
     assert.deepEqual(result, { packageCount: 5 });
   });
@@ -159,6 +178,28 @@ test("reports missing workspace package discovery globs", async () => {
       root,
       "pnpm-workspace.yaml",
       "packages:\n  - tooling/*\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert(error instanceof RepositoryPolicyError);
+        assert.deepEqual(error.violations, [
+          "pnpm-workspace.yaml must include apps/*",
+          "pnpm-workspace.yaml must include packages/*"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("rejects workspace globs that appear only in comments", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "pnpm-workspace.yaml",
+      "packages:\n  - tooling/*\n# apps/* and packages/* are required\n"
     );
 
     await assert.rejects(
