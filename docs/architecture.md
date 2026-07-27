@@ -641,6 +641,15 @@ pnpm verify:fast
 pnpm verify:all
 ```
 
+Перевірки утворюють піраміду: під час редагування запускається найменша
+focused-команда, що доводить змінену поведінку; після цілісного code slice один
+раз запускається `pnpm verify:fast`. `pnpm verify:all` обов'язковий, коли slice
+змінює database integration або migrations, concurrency, критичний desktop чи
+mobile journey, release/CI-конфігурацію або відповідний integration/E2E harness;
+він також є фінальною перевіркою release-sized зміни. Для documentation-only
+зміни достатні formatting і repository-policy checks, якщо вона не змінює
+команду або вимогу, що потребує сильнішої перевірки.
+
 `pnpm verify:fast` виконує детерміновані repository policy, formatting, lint,
 typecheck, unit, contract freshness і build checks без Docker або браузера.
 `pnpm verify:all` додає integration-тести з PostgreSQL та Playwright E2E.

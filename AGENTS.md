@@ -49,21 +49,28 @@ orient → specify → plan → execute → verify → self-review → commit �
 Before changes, state the goal, non-goals, observable acceptance criteria, verification
 commands, and risks to data, time, security, or compatibility.
 
-Use spec-driven development for feature work, cross-module changes, migrations,
-security-sensitive flows, and material contract changes:
+Select the lightest delivery tier that preserves confidence:
 
-1. Explore the requirement and record an approved design specification locally.
-2. Turn the approved specification into a task-by-task implementation plan locally.
-   The plan must state its goal, architecture, constraints, exact file changes,
+1. **Local change** — a small, contained edit with no schema, public contract,
+   security, time-rule, or cross-module impact. Record a short in-session
+   acceptance contract and run focused checks.
+2. **Bounded feature** — a coherent change confined to one module boundary,
+   with no migration, public-contract, security-policy, or concurrency impact.
+   Record a compact acceptance brief: scope, non-goals, affected files,
+   observable criteria, and focused checks. Use one focused self- or peer-review
+   for the completed slice.
+3. **Material change** — a cross-module change, migration, security-sensitive
+   flow, time rule, public contract, concurrency guarantee, or architectural
+   decision. Record an approved design specification and a task-by-task plan
+   locally. The plan states goal, architecture, constraints, exact file changes,
    interfaces, focused tests, verification commands, and coherent commits.
-3. Execute the saved plan task-by-task with
-   `superpowers:subagent-driven-development` or `superpowers:executing-plans`.
-   Keep checkbox progress and verification evidence in that plan.
 
-For a small, single-file local change, a short in-session acceptance contract is
-enough; do not create a speculative plan. Do not use `docs/plans` or create
-duplicate progress files. Do not implement against an unapproved specification
-when the work requires one.
+For a material plan, use `superpowers:subagent-driven-development` only when
+tasks are independently reviewable and high-risk. Otherwise execute the plan
+inline with `superpowers:executing-plans`; bounded work does not require a
+per-task subagent/reviewer loop. Keep progress and verification evidence in the
+brief or plan. Do not use `docs/plans` or create duplicate progress files. Do
+not implement against an unapproved specification when the work requires one.
 
 Do not one-shot the project, skip an unfinished slice, expand scope without approval,
 guess external state, or overwrite unrelated work.
@@ -103,6 +110,15 @@ Before adding a dependency, verify need, maintenance, official documentation, an
 pnpm verify:fast
 pnpm verify:all
 ```
+
+Use a verification pyramid. During edits, run the smallest focused command that
+proves the changed behaviour. Run `pnpm verify:fast` once after each coherent
+code slice, before handoff or commit. Run `pnpm verify:all` when the slice
+changes database integration or migrations, concurrency, critical desktop or
+mobile journeys, release/CI configuration, or the relevant integration/E2E
+harness; it remains the final gate for a release-sized change. Documentation-
+only changes need formatting and repository-policy checks unless they alter a
+command or requirement covered by a stronger gate.
 
 `pnpm verify:fast` runs the deterministic repository, formatting, lint,
 typecheck, unit, contract-freshness, and build checks without Docker or a
