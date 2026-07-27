@@ -1,5 +1,15 @@
 packages:
   - apps/*
   - packages/*
+engineStrict: true
+saveExact: true
+strictPeerDependencies: true
 allowBuilds:
+  "@prisma/engines": true
+  "@scarf/scarf": false
+  cpu-features: false
   esbuild: true
+  prisma: true
+  protobufjs: false
+  sharp: true
+  ssh2: false

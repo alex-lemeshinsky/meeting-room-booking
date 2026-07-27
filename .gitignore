@@ -4,6 +4,8 @@ docs/superpowers/
 .env
 .next/
 .pnpm-store/
+apps/api/dist/
+apps/api/src/generated/prisma/
 coverage/
 dist/
 node_modules/

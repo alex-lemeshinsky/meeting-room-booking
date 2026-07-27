@@ -1,5 +1,16 @@
 {
   "name": "@mrb/contracts",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript ../../apps/api/openapi.json -o src/generated/api.ts",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit --module ESNext --moduleResolution Bundler --target ES2023 src/index.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
+  }
 }

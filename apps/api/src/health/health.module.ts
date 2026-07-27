@@ -5,9 +5,6 @@ import { HealthService } from "./health.service.js";
 
 @Module({
   controllers: [HealthController],
-  providers: [
-    HealthService,
-    { provide: CLOCK, useClass: SystemClock }
-  ]
+  providers: [HealthService, { provide: CLOCK, useClass: SystemClock }]
 })
 export class HealthModule {}

@@ -1,0 +1,30 @@
+@import "../styles/tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-bg-app);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font: var(--type-body);
+}
+
+a {
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

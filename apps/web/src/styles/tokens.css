@@ -1,0 +1,63 @@
+:root {
+  --color-bg-app: #f7f9fc;
+  --color-bg-surface: #ffffff;
+  --color-bg-subtle: #eef1f6;
+  --color-text-primary: #172033;
+  --color-text-secondary: #5d6878;
+  --color-text-disabled: #7b8595;
+  --color-border-default: #dce2ed;
+  --color-border-strong: #bfc8d6;
+  --color-action-primary: #3157d5;
+  --color-action-hover: #2444b8;
+  --color-action-soft: #eef2ff;
+  --color-focus-ring: #7892ea;
+  --color-on-action: #ffffff;
+  --color-booking-own: #1f6f63;
+  --color-booking-own-bg: #e1f3ef;
+  --color-booking-other: #435066;
+  --color-booking-other-bg: #eef1f6;
+  --color-booking-other-edge: #8994aa;
+  --color-danger: #b9323e;
+  --color-danger-bg: #fdecee;
+  --color-now-indicator: #d94853;
+  --color-warning: #8a6208;
+  --color-warning-bg: #fff4d6;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --radius-booking: 0.375rem;
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+  --radius-overlay: 1rem;
+  --radius-pill: 999rem;
+  --shadow-overlay: 0 1rem 2.5rem rgb(23 32 51 / 16%);
+  --shadow-raised: 0 0.5rem 1.5rem rgb(23 32 51 / 10%);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-overlay: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --z-sticky: 10;
+  --z-popover: 30;
+  --z-overlay: 40;
+  --z-dialog: 50;
+  --z-toast: 60;
+  --type-display: 750 2rem/2.25rem var(--font-display);
+  --type-title: 700 1.5rem/2rem var(--font-display);
+  --type-heading: 700 1.25rem/1.75rem var(--font-display);
+  --type-subheading: 650 1rem/1.5rem var(--font-body);
+  --type-body: 400 0.875rem/1.25rem var(--font-body);
+  --type-label: 650 0.75rem/1rem var(--font-body);
+  --type-calendar: 500 0.75rem/1rem var(--font-body);
+  --type-time: 500 0.6875rem/1rem var(--font-body);
+  --type-caption: 400 0.6875rem/1rem var(--font-body);
+}
+
+@media (max-width: 30rem) {
+  :root {
+    --type-display: 750 1.75rem/2rem var(--font-display);
+  }
+}

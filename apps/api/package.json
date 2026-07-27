@@ -6,6 +6,7 @@
     "build": "nest build",
     "dev": "tsx watch src/main.ts",
     "lint": "eslint src test",
+    "openapi:generate": "tsx scripts/generate-openapi.ts",
     "start": "node dist/main.js",
     "test:unit": "vitest run --exclude '**/*.integration-spec.ts'",
     "test:integration": "vitest run test/health.integration-spec.ts",
@@ -17,13 +18,19 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "11.1.28",
     "@nestjs/platform-express": "11.1.28",
+    "@nestjs/swagger": "^11.4.6",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
+    "pg": "^8.22.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@nestjs/cli": "11.0.10",
     "@nestjs/testing": "11.1.28",
+    "@testcontainers/postgresql": "12.0.4",
     "@types/node": "^24.13.3",
+    "@types/pg": "^8.20.0",
     "@types/supertest": "^6.0.3",
     "supertest": "^7.2.2",
     "tsx": "^4.23.1"
