@@ -1,6 +1,5 @@
 .superpowers/
 .worktrees/
-docs/superpowers/
 .env
 .next/
 .pnpm-store/

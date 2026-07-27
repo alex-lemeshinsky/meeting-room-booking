@@ -24,6 +24,23 @@ export default tseslint.config(
     }
   },
   {
+    files: ["apps/web/**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@prisma/*", "**/generated/prisma/**", "**/database/**"],
+              message:
+                "apps/web must access domain data through the NestJS API."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
     rules: {
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-explicit-any": "error"

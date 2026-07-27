@@ -1,17 +1,13 @@
 # Meeting Room Booking — технічний дизайн
 
 Дата: 2026-07-27
-Статус: затверджено
-
-Повний каталог функцій: [`docs/features.md`](features.md). Історична
-design-spec, на основі якої створено цей документ:
-[`docs/superpowers/specs/2026-07-27-meeting-room-booking-design.md`](superpowers/specs/2026-07-27-meeting-room-booking-design.md).
+Status: historical
 
 ## 1. Мета і межі документа
 
 Цей документ фіксує технічну архітектуру застосунку для бронювання
 переговорних кімнат. Повний продуктовий обсяг описано в
-[`docs/features.md`](features.md).
+[`docs/features.md`](../../features.md).
 
 Проєкт реалізує обов'язкові та бонусні функції поетапно. Архітектура одразу
 передбачає весь погоджений обсяг, але кожен етап має залишати застосунок у
@@ -640,42 +636,37 @@ docker compose up --build
 ## 17. Команди якості
 
 ```text
-pnpm verify:fast
-pnpm verify:all
+npm test
+pnpm test:integration
+pnpm test:e2e
+pnpm lint
+pnpm typecheck
+pnpm build
 ```
-
-`pnpm verify:fast` виконує детерміновані repository policy, formatting, lint,
-typecheck, unit, contract freshness і build checks без Docker або браузера.
-`pnpm verify:all` додає integration-тести з PostgreSQL та Playwright E2E.
-Focused-команди залишаються доступними для розробки й діагностики. Перевірка
-актуальності контрактів спочатку перегенеровує OpenAPI та public TypeScript
-contracts, тому локально може змінити generated files у working tree.
 
 README пояснює prerequisites, env, міграції, seed, тестові облікові дані,
 запуск кожного test layer і повний Docker-сценарій.
 
 ## 18. CI
 
-GitHub Actions запускається на push, pull request і вручну через
-`workflow_dispatch`:
+GitHub Actions запускається на push і pull request:
 
-1. налаштування закріплених версій Node.js і pnpm;
-2. `npm run doctor` до встановлення залежностей;
-3. `pnpm install --frozen-lockfile`;
-4. `pnpm verify:fast` до встановлення браузера;
-5. Chromium із системними залежностями;
-6. integration-тести з PostgreSQL;
-7. Playwright E2E-тести;
-8. Playwright report і test results як diagnostics у разі невдачі.
+1. `pnpm install --frozen-lockfile`;
+2. lint;
+3. typecheck;
+4. unit-тести;
+5. integration-тести з PostgreSQL;
+6. production build;
+7. Playwright smoke-тести в Chromium.
 
-Workflow має read-only `contents` permission, скасовує попередній запуск для
-того самого workflow і ref, кешує pnpm за `pnpm-lock.yaml` та зберігає один
-30-хвилинний job.
+Короткий Playwright smoke-набір запускається на кожен push. Повний E2E-набір
+запускається на pull request і через ручний `workflow_dispatch`; на pull
+request smoke-тести входять у повний набір і окремо не дублюються.
 
 ## 19. Поетапна реалізація
 
 Архітектура впроваджується за етапами з
-[`docs/features.md`](features.md):
+[`docs/features.md`](../../features.md):
 
 1. каркас monorepo, база, env, тести;
 2. auth, rooms і sessions;

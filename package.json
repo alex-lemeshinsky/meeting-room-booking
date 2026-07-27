@@ -7,6 +7,7 @@
   },
   "packageManager": "pnpm@11.17.0",
   "scripts": {
+    "doctor": "node scripts/doctor.mjs",
     "dev": "pnpm --parallel --filter @mrb/api --filter @mrb/web dev",
     "dev:infra": "docker compose -f compose.dev.yaml up -d postgres",
     "build": "pnpm -r --if-present build",
@@ -15,12 +16,16 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm test:unit",
-    "test:unit": "pnpm -r --if-present test:unit",
+    "test:harness": "node --test scripts/*.test.mjs",
+    "test:unit": "pnpm test:harness && pnpm test:unit:workspace",
+    "test:unit:workspace": "pnpm -r --if-present test:unit",
     "test:integration": "pnpm --filter @mrb/api test:integration",
     "test:e2e": "playwright test",
     "contracts:generate": "pnpm --filter @mrb/api openapi:generate && pnpm --filter @mrb/contracts generate",
     "contracts:check": "node scripts/check-contracts.mjs",
-    "verify:workspace": "node scripts/verify-workspace.mjs"
+    "verify:workspace": "node scripts/verify-workspace.mjs",
+    "verify:fast": "pnpm test:harness && pnpm verify:workspace && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit:workspace && pnpm contracts:check && pnpm build",
+    "verify:all": "pnpm verify:fast && pnpm test:integration && pnpm test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
