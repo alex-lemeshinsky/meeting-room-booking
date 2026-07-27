@@ -133,6 +133,13 @@ dead code, and accidental generated artifacts.
 - setup or operations → `README.md`;
 - approved designs and implementation plans → local task state (not versioned).
 
+Keep the full design, plan, and working notes in local task state. Preserve the
+reviewable operational context in the pull request's `Handoff` template instead:
+scope, acceptance criteria, exact verification evidence, unverified items, known
+risks, and the next smallest slice. For a direct commit with no pull request, put
+the same concise handoff in the commit body or the task handoff message. Never
+copy private plans, credentials, tokens, cookies, or secrets into either artifact.
+
 Never rewrite a source-of-truth document after the fact merely to justify divergent
 code. Get approval before changing agreed product or architecture.
 
@@ -146,8 +153,8 @@ Preserve user changes and inspect targets before destructive actions. Never comm
 secrets or log passwords, cookies, session, CSRF, or verification tokens. Validate
 untrusted data at system boundaries.
 
-Handoff must state what changed, satisfied criteria, exact checks and results, anything
-unverified, known risks, and the next smallest slice.
+Handoff must use the durable format above and state what changed, satisfied criteria,
+exact checks and results, anything unverified, known risks, and the next smallest slice.
 
 Do not declare completion while criteria are unmet, relevant gates fail, documentation
 is stale, or Git state is unclear.
