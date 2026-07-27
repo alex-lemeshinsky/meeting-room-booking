@@ -266,6 +266,56 @@ test("rejects database coupling and CORS enablement", async () => {
   });
 });
 
+test("enforces web boundaries outside the source directory", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "apps/web/next.config.ts",
+      'import { db } from "./database/client";\n' +
+        "export const url = process.env.DATABASE_URL;\n"
+    );
+    await writeFixtureFile(
+      root,
+      "apps/web/public/theme.css",
+      ".theme { color: #abcdef; }\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "apps/web/next.config.ts must not reference Prisma or database access",
+          "apps/web/next.config.ts must not reference DATABASE_URL",
+          "apps/web/public/theme.css contains raw color #abcdef; " +
+            "define colors in apps/web/src/styles/tokens.css"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("ignores generated web output when enforcing boundaries", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "apps/web/.next/server/generated.ts",
+      "const client = new PrismaClient(process.env.DATABASE_URL);\n"
+    );
+    await writeFixtureFile(
+      root,
+      "apps/web/.next/static/generated.css",
+      ".generated { color: #abcdef; }\n"
+    );
+
+    const result = await verifyRepository(root, {
+      trackedFiles: validTrackedFiles
+    });
+
+    assert.deepEqual(result, { packageCount: 5 });
+  });
+});
+
 test("rejects raw web colors outside the token file", async () => {
   await withValidRepository(async (root) => {
     await writeFixtureFile(
@@ -309,6 +359,62 @@ test("rejects missing and untracked repository Markdown links", async () => {
       ]);
       return true;
     });
+  });
+});
+
+test("rejects missing and untracked reference-style Markdown links", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "docs/guide.md",
+      "[missing][missing-ref]\n" +
+        "[local spec][spec]\n\n" +
+        "[missing-ref]: missing.md\n" +
+        '[spec]: superpowers/specs/local.md "Local spec"\n'
+    );
+    await writeFixtureFile(
+      root,
+      "docs/superpowers/specs/local.md",
+      "# Local only\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "docs/guide.md links to missing file docs/missing.md",
+          "docs/guide.md links to untracked Superpowers file " +
+            "docs/superpowers/specs/local.md"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("rejects shortcut reference links in the task-state index", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "docs/superpowers/plans/local.md",
+      "# Local plan\n"
+    );
+    await writeFixtureFile(
+      root,
+      "docs/superpowers/README.md",
+      "[Local plan]\n\n[Local plan]: plans/local.md\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "docs/superpowers/README.md links to untracked task-state file " +
+            "docs/superpowers/plans/local.md"
+        ]);
+        return true;
+      }
+    );
   });
 });
 
@@ -359,7 +465,8 @@ test("ignores links inside a four-backtick fenced example", async () => {
     await writeFixtureFile(
       root,
       "docs/guide.md",
-      "````md\n```md\n[link](missing.md)\n```\n````\n"
+      "````md\n```md\n[link](missing.md)\n[ref][missing]\n" +
+        "[missing]: missing.md\n```\n````\n"
     );
 
     const result = await verifyRepository(root, {

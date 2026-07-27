@@ -144,7 +144,11 @@ function verifyPackageManifest(path, name, manifest, violations) {
   }
 }
 
-async function listFiles(root, directory) {
+async function listFiles(
+  root,
+  directory,
+  { excludedDirectories = new Set() } = {}
+) {
   let entries;
 
   try {
@@ -159,8 +163,8 @@ async function listFiles(root, directory) {
   for (const entry of entries) {
     const path = `${directory}/${entry.name}`;
 
-    if (entry.isDirectory()) {
-      files.push(...(await listFiles(root, path)));
+    if (entry.isDirectory() && !excludedDirectories.has(entry.name)) {
+      files.push(...(await listFiles(root, path, { excludedDirectories })));
     } else if (entry.isFile()) {
       files.push(path);
     }
@@ -170,7 +174,17 @@ async function listFiles(root, directory) {
 }
 
 async function verifySourceBoundaries(root, violations) {
-  const webFiles = await listFiles(root, "apps/web/src");
+  const webFiles = await listFiles(root, "apps/web", {
+    excludedDirectories: new Set([
+      ".next",
+      ".turbo",
+      "build",
+      "coverage",
+      "dist",
+      "node_modules",
+      "out"
+    ])
+  });
 
   for (const path of webFiles.filter((file) =>
     /\.(?:[cm]?[jt]sx?)$/.test(file)
@@ -219,8 +233,8 @@ async function verifySourceBoundaries(root, violations) {
   }
 }
 
-function repositoryLinkTargets(markdown) {
-  const targets = [];
+function markdownContentLines(markdown) {
+  const lines = [];
   let fence;
 
   for (const line of markdown.split(/\r?\n/)) {
@@ -242,25 +256,66 @@ function repositoryLinkTargets(markdown) {
     }
 
     if (fence) continue;
+    lines.push(line);
+  }
 
-    const links = line.matchAll(/!?\[[^\]]*]\(([^)\s]+)(?:\s+[^)]*)?\)/g);
+  return lines;
+}
 
-    for (const link of links) {
-      const target = link[1];
+function normalizeReferenceLabel(label) {
+  return label.trim().replace(/\s+/g, " ").toLowerCase();
+}
 
-      if (
-        target.startsWith("#") ||
-        target.startsWith("/") ||
-        /^[a-z][a-z\d+.-]*:/i.test(target)
-      ) {
-        continue;
-      }
+function isRepositoryLinkTarget(target) {
+  return (
+    !target.startsWith("#") &&
+    !target.startsWith("/") &&
+    !/^[a-z][a-z\d+.-]*:/i.test(target)
+  );
+}
 
-      targets.push(target);
+function repositoryLinkTargets(markdown) {
+  const lines = markdownContentLines(markdown);
+  const definitions = new Map();
+  const definitionLines = new Set();
+  const definitionPattern =
+    /^\s{0,3}\[([^\]]+)\]:\s*(?:<([^>\n]+)>|(\S+))(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*$/;
+
+  for (const [index, line] of lines.entries()) {
+    const definition = definitionPattern.exec(line);
+    if (!definition) continue;
+
+    definitions.set(
+      normalizeReferenceLabel(definition[1]),
+      definition[2] ?? definition[3]
+    );
+    definitionLines.add(index);
+  }
+
+  const targets = new Set();
+
+  for (const [index, line] of lines.entries()) {
+    if (definitionLines.has(index)) continue;
+
+    for (const link of line.matchAll(
+      /!?\[[^\]]*]\(([^)\s]+)(?:\s+[^)]*)?\)/g
+    )) {
+      targets.add(link[1]);
+    }
+
+    for (const link of line.matchAll(/!?\[([^\]]+)]\[([^\]]*)]/g)) {
+      const label = normalizeReferenceLabel(link[2] || link[1]);
+      const target = definitions.get(label);
+      if (target) targets.add(target);
+    }
+
+    for (const link of line.matchAll(/!?\[([^\]]+)](?!\(|\[)/g)) {
+      const target = definitions.get(normalizeReferenceLabel(link[1]));
+      if (target) targets.add(target);
     }
   }
 
-  return targets;
+  return [...targets].filter(isRepositoryLinkTarget);
 }
 
 function decodeLinkTarget(target) {

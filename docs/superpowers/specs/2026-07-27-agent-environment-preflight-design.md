@@ -1,7 +1,7 @@
 # Meeting Room Booking — Agent Environment Preflight Design
 
 Date: 2026-07-27
-Status: completed
+Status: complete
 
 ## 1. Goal
 
@@ -198,7 +198,7 @@ platform command shell.
 Verification on 2026-07-27 with Node.js `v24.18.0`:
 
 - `node --test scripts/doctor.test.mjs`: 12 tests passed;
-- `pnpm test:harness`: 29 tests passed;
+- `pnpm test:harness`: 33 tests passed;
 - `npm run doctor`: Node.js, pnpm, Docker CLI, and Docker Compose passed;
 - `pnpm verify:fast`: passed;
 - `pnpm verify:all`: passed, including the 1-test PostgreSQL integration gate

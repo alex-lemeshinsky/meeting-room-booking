@@ -24,7 +24,7 @@ None.
 
 [Agent Environment Preflight implementation evidence](specs/2026-07-27-agent-environment-preflight-design.md#11-implementation-evidence)
 was recorded on 2026-07-27 with Node.js `v24.18.0`: the live four-prerequisite
-doctor, 29-test harness, `pnpm verify:fast`, 1-test PostgreSQL integration gate,
+doctor, 33-test harness, `pnpm verify:fast`, 1-test PostgreSQL integration gate,
 and both Playwright foundation tests passed.
 
 ## Next smallest product slice
