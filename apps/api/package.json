@@ -10,7 +10,7 @@
     "start": "node dist/main.js",
     "test:unit": "vitest run --exclude '**/*.integration-spec.ts'",
     "test:integration": "vitest run integration-spec.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "prisma generate --schema ../../prisma/schema.prisma && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@mrb/time": "workspace:*",
