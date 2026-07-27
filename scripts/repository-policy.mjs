@@ -83,13 +83,49 @@ function verifyWorkspacePackages(workspace, violations) {
 }
 
 function hasWorkspacePackage(workspace, packageGlob) {
-  const escapedPackageGlob = packageGlob.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const packageEntry = new RegExp(
-    `^\\s*-\\s*(?:${escapedPackageGlob}|["']${escapedPackageGlob}["'])\\s*(?:#.*)?$`,
-    "m"
+  return workspacePackageEntries(workspace).some(
+    (entry) => unquoteWorkspaceEntry(entry) === packageGlob
+  );
+}
+
+function workspacePackageEntries(workspace) {
+  const lines = workspace.split(/\r?\n/);
+  const packagesLine = lines.findIndex((line) =>
+    /^packages:\s*(?:#.*)?$/.test(line)
   );
 
-  return packageEntry.test(workspace);
+  if (packagesLine === -1) return [];
+
+  const entries = [];
+  let entryIndentation;
+
+  for (const line of lines.slice(packagesLine + 1)) {
+    if (/^\s*(?:#.*)?$/.test(line)) continue;
+    if (!/^[\t ]/.test(line)) break;
+
+    const entry = /^([\t ]+)-\s*(.*?)\s*(?:#.*)?$/.exec(line);
+
+    if (!entry) {
+      if (entryIndentation === undefined) return [];
+      continue;
+    }
+
+    if (entryIndentation === undefined) {
+      entryIndentation = entry[1];
+    }
+
+    if (entry[1] === entryIndentation) {
+      entries.push(entry[2]);
+    }
+  }
+
+  return entries;
+}
+
+function unquoteWorkspaceEntry(entry) {
+  const quotedEntry = /^(["'])(.*)\1$/.exec(entry);
+
+  return quotedEntry ? quotedEntry[2] : entry;
 }
 
 function verifyPackageManifest(path, name, manifest, violations) {

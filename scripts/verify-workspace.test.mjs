@@ -215,3 +215,25 @@ test("rejects workspace globs that appear only in comments", async () => {
     );
   });
 });
+
+test("rejects workspace globs that appear only beneath another YAML key", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "pnpm-workspace.yaml",
+      "ignored:\n  - apps/*\n  - packages/*\npackages:\n  - tooling/*\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert(error instanceof RepositoryPolicyError);
+        assert.deepEqual(error.violations, [
+          "pnpm-workspace.yaml must include apps/*",
+          "pnpm-workspace.yaml must include packages/*"
+        ]);
+        return true;
+      }
+    );
+  });
+});
