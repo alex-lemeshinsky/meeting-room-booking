@@ -12,9 +12,11 @@ if (generation.status !== 0) {
   process.exit(generation.status ?? 1);
 }
 
-const diff = spawnSync("git", ["diff", "--exit-code", "--", ...generated], {
-  stdio: "inherit"
-});
+const diff = spawnSync(
+  "git",
+  ["diff", "--exit-code", "HEAD", "--", ...generated],
+  { stdio: "inherit" }
+);
 
 if (diff.status !== 0) {
   console.error("generated contracts are stale");
