@@ -737,3 +737,23 @@ Final verification ran on 2026-07-27 with Node.js `v24.18.0` and pnpm
   limited to the planned policy, test-discovery, canonical-gate, CI, and
   documentation scope. Runtime activation and preflight are unchanged, and no
   unrelated or generated artifact remains.
+- `node scripts/verify-workspace.mjs`: exit `0`;
+  `workspace verified: 5 packages`.
+- Handoff `git diff --check`: exit `0`, with no output.
+- `git diff -- docs/superpowers`: exit `0`; the scoped lifecycle diff was
+  reviewed and contained only `docs/superpowers/README.md` and this plan.
+- `pnpm exec prettier --check docs/superpowers/README.md docs/superpowers/plans/2026-07-27-agent-harness-hardening.md`:
+  exit `0`; both lifecycle files matched Prettier.
+- Completion commit `74e982a` (`docs: complete agent harness hardening`):
+  exit `0`; exactly the two lifecycle files were committed, with 63 insertions
+  and 33 deletions.
+- Post-commit `git show --check --oneline --stat 74e982a`: exit `0`, with no
+  whitespace error. `git diff-tree --no-commit-id --name-only -r 74e982a`
+  listed exactly `docs/superpowers/README.md` and this plan.
+- Post-commit `pnpm verify:all`: exit `0` with Docker, local-port, and Chromium
+  permission; the complete fast gate passed with 17 harness tests and 6
+  workspace unit/component tests, followed by 1 PostgreSQL integration test
+  and 2 Playwright foundation tests.
+- Final post-commit `git status --short --untracked-files=all`: no output after
+  restoring the `apps/web/next-env.d.ts` path changed by the Next.js
+  development server.
