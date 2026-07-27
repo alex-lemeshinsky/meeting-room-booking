@@ -1749,6 +1749,35 @@ git commit -m "docs: complete foundation slice"
 
 - Plan authored: 2026-07-27.
 - Design system approval commit: `c4758cc`.
-- Implementation has not started.
-- Next action: choose the execution mode and create a `codex/foundation`
-  branch or isolated worktree before Task 1.
+- User explicitly approved implementation directly on `main`.
+- Foundation commits:
+  - `93904c4` — pnpm workspace and pinned toolchain harness;
+  - `d662be1` — injectable `Clock` boundary;
+  - `60ea494` — NestJS liveness API;
+  - `ed550b3` — Prisma/PostgreSQL boundary, Next.js shell, OpenAPI contracts,
+    Playwright, CI, and README.
+- Verified with Node.js `24.18.0` and pnpm `11.17.0`:
+  - `pnpm install --frozen-lockfile` — passed;
+  - `pnpm verify:workspace` — passed, 5 architectural packages;
+  - `pnpm format:check` — passed;
+  - `pnpm lint` — passed;
+  - `pnpm typecheck` — passed;
+  - `npm test` — passed, 4 files and 6 tests;
+  - `pnpm contracts:check` — passed;
+  - `pnpm build` — passed for `@mrb/time`, `@mrb/web`, and `@mrb/api`;
+  - `pnpm test:e2e` — passed, 2 Playwright tests.
+- Unavailable environment gates:
+  - `pnpm test:integration` cannot start PostgreSQL because no Docker-compatible
+    runtime or `docker-credential-desktop` executable is installed; Testcontainers
+    fails with `spawn docker-credential-desktop ENOENT`;
+  - `docker compose -f compose.dev.yaml config` cannot run because the `docker`
+    command is unavailable.
+- Known risk: the committed migration and readiness endpoint compile and their
+  public contracts are generated, but the migrated PostgreSQL success path has
+  not been runtime-verified in this environment.
+- The plan remains active until Docker is available and both missing gates pass.
+- Next action: install or expose a Docker-compatible runtime, run
+  `docker compose -f compose.dev.yaml config` and `pnpm test:integration`, then
+  repeat all final gates and move this plan to `docs/plans/completed/`.
+- Next product slice after foundation completion: auth, stateful sessions, and
+  seeded rooms.
