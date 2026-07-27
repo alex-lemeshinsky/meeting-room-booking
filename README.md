@@ -13,8 +13,7 @@ PostgreSQL/Prisma межею та контрактами, згенеровани
 ## Перший запуск
 
 ```bash
-corepack enable
-corepack prepare pnpm@11.17.0 --activate
+npm install --global pnpm@11.17.0
 pnpm install --frozen-lockfile
 cp .env.example .env
 pnpm dev:infra
