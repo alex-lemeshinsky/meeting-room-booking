@@ -13,8 +13,10 @@ Keep this file as a map and stable harness, not a copy of project docs.
 2. Inspect `git status --short` and recent commits.
 3. Read the relevant sections of `docs/features.md` for product behavior.
 4. Read the relevant sections of `docs/architecture.md` for technical rules.
-5. Read the active execution plan when the task has one.
-6. Check for deeper `AGENTS.md` files before touching a subtree.
+5. Read the relevant sections of `docs/design-system.md` before UI, UX,
+   responsive, accessibility, component, or styling work.
+6. Read the active execution plan when the task has one.
+7. Check for deeper `AGENTS.md` files before touching a subtree.
 
 Local precedence:
 
@@ -23,6 +25,7 @@ direct user task
 → applicable AGENTS.md
 → docs/architecture.md
 → docs/features.md
+→ docs/design-system.md
 → established code patterns
 ```
 
