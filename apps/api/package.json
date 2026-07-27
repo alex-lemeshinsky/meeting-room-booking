@@ -9,7 +9,7 @@
     "openapi:generate": "tsx scripts/generate-openapi.ts",
     "start": "node dist/main.js",
     "test:unit": "vitest run --exclude '**/*.integration-spec.ts'",
-    "test:integration": "vitest run integration-spec.ts",
+    "test:integration": "vitest run --maxWorkers=1 integration-spec",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
