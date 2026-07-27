@@ -13,7 +13,10 @@ PostgreSQL/Prisma межею та контрактами, згенеровани
 ## Перший запуск
 
 ```bash
+nvm install
+nvm use
 npm install --global pnpm@11.17.0
+npm run doctor
 pnpm install --frozen-lockfile
 cp .env.example .env
 pnpm dev:infra
@@ -21,6 +24,12 @@ pnpm exec prisma migrate deploy
 pnpm exec prisma generate
 pnpm dev
 ```
+
+Можна використати інший менеджер Node.js замість `nvm`, але активна версія
+має відповідати `.nvmrc`. `npm run doctor` не потребує `node_modules`, не
+запускає Docker і не звертається до registry. Команда одразу перевіряє Node.js,
+pnpm, Docker CLI та Compose plugin і виводить інструкцію для кожної знайденої
+проблеми. Виправте всі позначені `✗` перед встановленням залежностей.
 
 Після запуску:
 

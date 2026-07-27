@@ -659,12 +659,14 @@ README пояснює prerequisites, env, міграції, seed, тестові
 GitHub Actions запускається на push, pull request і вручну через
 `workflow_dispatch`:
 
-1. `pnpm install --frozen-lockfile`;
-2. `pnpm verify:fast` до встановлення браузера;
-3. Chromium із системними залежностями;
-4. integration-тести з PostgreSQL;
-5. Playwright E2E-тести;
-6. Playwright report і test results як diagnostics у разі невдачі.
+1. налаштування закріплених версій Node.js і pnpm;
+2. `npm run doctor` до встановлення залежностей;
+3. `pnpm install --frozen-lockfile`;
+4. `pnpm verify:fast` до встановлення браузера;
+5. Chromium із системними залежностями;
+6. integration-тести з PostgreSQL;
+7. Playwright E2E-тести;
+8. Playwright report і test results як diagnostics у разі невдачі.
 
 Workflow має read-only `contents` permission, скасовує попередній запуск для
 того самого workflow і ref, кешує pnpm за `pnpm-lock.yaml` та зберігає один

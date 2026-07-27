@@ -1,7 +1,7 @@
 # Meeting Room Booking — Agent Environment Preflight Design
 
 Date: 2026-07-27
-Status: approved
+Status: completed
 
 ## 1. Goal
 
@@ -126,10 +126,12 @@ Modify:
 - `README.md` — activation/install order and troubleshooting;
 - `AGENTS.md` — run doctor before pnpm commands when orienting in a fresh
   environment;
+- `docs/architecture.md` — keep the canonical CI gate sequence current;
 - `.github/workflows/ci.yml` — run doctor after Node/pnpm setup and before
   dependency installation;
-- `docs/superpowers/README.md` — active/completed lifecycle;
-- the implementation plan and final evidence documents.
+- `docs/superpowers/README.md` — active/completed lifecycle and latest
+  verification evidence;
+- this specification — inline implementation evidence.
 
 ## 8. Testing strategy
 
@@ -180,3 +182,29 @@ The slice is complete when:
 9. no dependency, product behavior, runtime requirement, or canonical
    verification composition changes;
 10. fresh `pnpm verify:all` evidence is recorded after implementation.
+
+## 11. Implementation evidence
+
+Implemented inline in the existing agent-harness worktree at the user's
+direction; no separate implementation plan was created.
+
+The implementation derives both version contracts from `package.json`, probes
+tools through an injected command boundary, aggregates results in prerequisite
+order, and uses only Node.js built-ins. The wrapper exposes its exit status for
+regression tests while remaining directly executable through `npm run doctor`.
+On Windows, the production runner invokes npm's `.cmd` shims through the
+platform command shell.
+
+Verification on 2026-07-27 with Node.js `v24.18.0`:
+
+- `node --test scripts/doctor.test.mjs`: 12 tests passed;
+- `pnpm test:harness`: 29 tests passed;
+- `npm run doctor`: Node.js, pnpm, Docker CLI, and Docker Compose passed;
+- `pnpm verify:fast`: passed;
+- `pnpm verify:all`: passed, including the 1-test PostgreSQL integration gate
+  and both Playwright foundation tests;
+- `git diff --check`: passed.
+
+The first full verification attempt correctly stopped when Docker Desktop was
+not running. After starting the installed runtime and exposing its CLI on
+`PATH`, the fresh doctor and complete canonical gate passed.
