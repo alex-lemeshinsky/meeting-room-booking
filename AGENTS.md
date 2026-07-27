@@ -15,7 +15,8 @@ Keep this file as a map and stable harness, not a copy of project docs.
 4. Read the relevant sections of `docs/architecture.md` for technical rules.
 5. Read the relevant sections of `docs/design-system.md` before UI, UX,
    responsive, accessibility, component, or styling work.
-6. Read the active execution plan when the task has one.
+6. Read the approved Superpowers specification and implementation plan when
+   the task has them.
 7. Check for deeper `AGENTS.md` files before touching a subtree.
 
 Local precedence:
@@ -40,18 +41,29 @@ task or repository source of truth requires them.
 ## 3. Work protocol
 
 ```text
-orient → acceptance contract → change → verify → self-review → commit → handoff
+orient → specify → plan → execute → verify → self-review → commit → handoff
 ```
 
 Before changes, state the goal, non-goals, observable acceptance criteria, verification
 commands, and risks to data, time, security, or compatibility.
 
-Use a short session plan for a small local change. Create
-`docs/plans/active/<topic>.md` when work spans modules or sessions, has
-dependent stages, changes a contract or migration, or affects security.
-Record goal, non-goals, criteria, dependencies, risks, decisions, progress,
-evidence, and next step. Move a completed plan to `docs/plans/completed/`. Do not
-create duplicate progress files.
+Use Superpowers spec-driven development for feature work, cross-module changes,
+migrations, security-sensitive flows, and material contract changes:
+
+1. Use `superpowers:brainstorming` to explore the requirement and record the
+   approved design specification in `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
+2. Use `superpowers:writing-plans` to turn the approved specification into a
+   task-by-task implementation plan at `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
+   The plan must state its goal, architecture, constraints, exact file changes,
+   interfaces, focused tests, verification commands, and coherent commits.
+3. Execute the saved plan task-by-task with
+   `superpowers:subagent-driven-development` or `superpowers:executing-plans`.
+   Keep checkbox progress and verification evidence in that plan.
+
+For a small, single-file local change, a short in-session acceptance contract is
+enough; do not create a speculative plan. Do not use `docs/plans` or create
+duplicate progress files. Do not implement against an unapproved specification
+when the work requires one.
 
 Do not one-shot the project, skip an unfinished slice, expand scope without approval,
 guess external state, or overwrite unrelated work.
@@ -117,7 +129,8 @@ dead code, and accidental generated artifacts.
 - behavior or scope → `docs/features.md`;
 - boundaries or technology → `docs/architecture.md`;
 - setup or operations → `README.md`;
-- long-running decisions and progress → the active execution plan.
+- approved designs → `docs/superpowers/specs/`;
+- implementation plans and their execution evidence → `docs/superpowers/plans/`.
 
 Never rewrite a source-of-truth document after the fact merely to justify divergent
 code. Get approval before changing agreed product or architecture.
