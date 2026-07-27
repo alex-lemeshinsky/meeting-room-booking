@@ -31,11 +31,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: [
-                "@prisma/*",
-                "**/generated/prisma/**",
-                "**/database/**"
-              ],
+              group: ["@prisma/*", "**/generated/prisma/**", "**/database/**"],
               message:
                 "apps/web must access domain data through the NestJS API."
             }

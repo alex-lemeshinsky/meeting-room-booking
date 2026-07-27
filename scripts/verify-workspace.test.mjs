@@ -250,11 +250,7 @@ test("rejects database coupling and CORS enablement", async () => {
       'import { PrismaClient } from "@prisma/client";\n' +
         "export const url = process.env.DATABASE_URL;\n"
     );
-    await writeFixtureFile(
-      root,
-      "apps/api/src/main.ts",
-      "app.enableCors();\n"
-    );
+    await writeFixtureFile(root, "apps/api/src/main.ts", "app.enableCors();\n");
 
     await assert.rejects(
       verifyRepository(root, { trackedFiles: validTrackedFiles }),
@@ -296,8 +292,7 @@ test("rejects missing and untracked repository Markdown links", async () => {
     await writeFixtureFile(
       root,
       "docs/guide.md",
-      "[missing](missing.md)\n" +
-        "[local spec](superpowers/specs/local.md)\n"
+      "[missing](missing.md)\n" + "[local spec](superpowers/specs/local.md)\n"
     );
     await writeFixtureFile(
       root,
@@ -306,17 +301,14 @@ test("rejects missing and untracked repository Markdown links", async () => {
     );
     const trackedFiles = [...validTrackedFiles, "docs/guide.md"];
 
-    await assert.rejects(
-      verifyRepository(root, { trackedFiles }),
-      (error) => {
-        assert.deepEqual(error.violations, [
-          "docs/guide.md links to missing file docs/missing.md",
-          "docs/guide.md links to untracked Superpowers file " +
-            "docs/superpowers/specs/local.md"
-        ]);
-        return true;
-      }
-    );
+    await assert.rejects(verifyRepository(root, { trackedFiles }), (error) => {
+      assert.deepEqual(error.violations, [
+        "docs/guide.md links to missing file docs/missing.md",
+        "docs/guide.md links to untracked Superpowers file " +
+          "docs/superpowers/specs/local.md"
+      ]);
+      return true;
+    });
   });
 });
 
@@ -356,6 +348,87 @@ test("ignores external and same-document Markdown links", async () => {
     );
     const result = await verifyRepository(root, {
       trackedFiles: [...validTrackedFiles, "docs/guide.md"]
+    });
+
+    assert.deepEqual(result, { packageCount: 5 });
+  });
+});
+
+test("ignores links inside a four-backtick fenced example", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "docs/guide.md",
+      "````md\n```md\n[link](missing.md)\n```\n````\n"
+    );
+
+    const result = await verifyRepository(root, {
+      trackedFiles: validTrackedFiles
+    });
+
+    assert.deepEqual(result, { packageCount: 5 });
+  });
+});
+
+test("rejects direct PrismaClient references in web JSX source", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "apps/web/src/client.jsx",
+      'import { PrismaClient } from "custom-client";\n' +
+        "export const client = new PrismaClient();\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "apps/web/src/client.jsx must not reference Prisma or database access"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("rejects every untracked task-state index target", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(root, "docs/local.md", "# Local task\n");
+    await writeFixtureFile(
+      root,
+      "docs/superpowers/README.md",
+      "[Local task](../local.md)\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "docs/superpowers/README.md links to untracked task-state file " +
+            "docs/local.md"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("resolves encoded relative paths and file fragments", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(root, "docs/encoded guide.md", "# Encoded\n");
+    await writeFixtureFile(root, "docs/target.md", "# Section\n");
+    await writeFixtureFile(
+      root,
+      "docs/guide.md",
+      "[encoded](encoded%20guide.md)\n" + "[fragment](target.md#section)\n"
+    );
+
+    const result = await verifyRepository(root, {
+      trackedFiles: [
+        ...validTrackedFiles,
+        "docs/encoded guide.md",
+        "docs/target.md"
+      ]
     });
 
     assert.deepEqual(result, { packageCount: 5 });

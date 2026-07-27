@@ -178,13 +178,11 @@ async function verifySourceBoundaries(root, violations) {
     const contents = await readFile(join(root, path), "utf8");
 
     if (
-      /\bPrisma\b|@prisma\/|generated\/prisma\/|(?:^|[/.'"])\bdatabase\b(?:[/.'"]|$)/im.test(
+      /\bPrisma\w*\b|@prisma\/|generated\/prisma\/|(?:^|[/.'"])\bdatabase\b(?:[/.'"]|$)/im.test(
         contents
       )
     ) {
-      violations.push(
-        `${path} must not reference Prisma or database access`
-      );
+      violations.push(`${path} must not reference Prisma or database access`);
     }
 
     if (/\bDATABASE_URL\b/.test(contents)) {
@@ -205,8 +203,7 @@ async function verifySourceBoundaries(root, violations) {
   }
 
   for (const path of webFiles.filter(
-    (file) =>
-      file.endsWith(".css") && file !== "apps/web/src/styles/tokens.css"
+    (file) => file.endsWith(".css") && file !== "apps/web/src/styles/tokens.css"
   )) {
     const contents = await readFile(join(root, path), "utf8");
     const colors = contents.match(
@@ -231,8 +228,14 @@ function repositoryLinkTargets(markdown) {
 
     if (fenceMatch) {
       if (!fence) {
-        fence = fenceMatch[1][0];
-      } else if (fence === fenceMatch[1][0]) {
+        fence = {
+          character: fenceMatch[1][0],
+          length: fenceMatch[1].length
+        };
+      } else if (
+        fence.character === fenceMatch[1][0] &&
+        fenceMatch[1].length >= fence.length
+      ) {
         fence = undefined;
       }
       continue;
@@ -302,14 +305,12 @@ async function verifyMarkdownLinks(root, trackedFiles, violations) {
         continue;
       }
 
-      if (
-        targetPath.startsWith("docs/superpowers/") &&
-        !trackedFileSet.has(targetPath)
-      ) {
-        const kind =
-          sourcePath === "docs/superpowers/README.md"
-            ? "task-state"
-            : "Superpowers";
+      const isTaskStateIndex = sourcePath === "docs/superpowers/README.md";
+      const requiresTracking =
+        isTaskStateIndex || targetPath.startsWith("docs/superpowers/");
+
+      if (requiresTracking && !trackedFileSet.has(targetPath)) {
+        const kind = isTaskStateIndex ? "task-state" : "Superpowers";
         violations.push(
           `${sourcePath} links to untracked ${kind} file ${targetPath}`
         );
