@@ -261,11 +261,7 @@ describe("auth and rooms persistence", () => {
       ORDER BY table_name
     `;
 
-    expect(rows.map((row) => row.name)).toEqual([
-      "rooms",
-      "sessions",
-      "users"
-    ]);
+    expect(rows.map((row) => row.name)).toEqual(["rooms", "sessions", "users"]);
   });
 });
 ```
@@ -459,10 +455,12 @@ Write tests that require:
 
 ```ts
 expect(normalizeEmail("  Person@Example.COM ")).toBe("person@example.com");
-expect(await hasher.verify(await hasher.hash("correct horse"), "correct horse"))
-  .toBe(true);
-expect(await hasher.verify(await hasher.hash("correct horse"), "wrong horse"))
-  .toBe(false);
+expect(
+  await hasher.verify(await hasher.hash("correct horse"), "correct horse")
+).toBe(true);
+expect(
+  await hasher.verify(await hasher.hash("correct horse"), "wrong horse")
+).toBe(false);
 expect(await hasher.hash("correct horse")).toMatch(/^\$argon2id\$/);
 ```
 
@@ -520,9 +518,14 @@ export class UsersService {
 Map Prisma `P2002` on `emailNormalized` to:
 
 ```ts
-throw new AppError(409, "EMAIL_ALREADY_REGISTERED", "Email already registered", {
-  email: ["Обліковий запис із цим email уже існує"]
-});
+throw new AppError(
+  409,
+  "EMAIL_ALREADY_REGISTERED",
+  "Email already registered",
+  {
+    email: ["Обліковий запис із цим email уже існує"]
+  }
+);
 ```
 
 - [ ] **Step 5: Write the failing HTTP-boundary and registration tests**
@@ -533,7 +536,11 @@ Add tests for:
 await request(server)
   .post("/api/v1/auth/register")
   .set("Origin", "http://127.0.0.1:3000")
-  .send({ name: "  Олена  ", email: " OLENA@example.com ", password: "Rooms123!" })
+  .send({
+    name: "  Олена  ",
+    email: " OLENA@example.com ",
+    password: "Rooms123!"
+  })
   .expect(201);
 
 await request(server)
@@ -625,9 +632,7 @@ Use concrete DTO classes with Swagger and validation decorators:
 
 ```ts
 export class RegisterDto {
-  @Transform(({ value }) =>
-    typeof value === "string" ? value.trim() : value
-  )
+  @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
   @IsString()
   @IsNotEmpty({ message: "Введіть ім’я" })
   name!: string;
@@ -717,9 +722,7 @@ const now = new Date("2026-07-27T12:00:00.000Z");
 const window = calculateSessionWindow(now);
 
 expect(window.idleExpiresAt.toISOString()).toBe("2026-08-03T12:00:00.000Z");
-expect(window.absoluteExpiresAt.toISOString()).toBe(
-  "2026-08-26T12:00:00.000Z"
-);
+expect(window.absoluteExpiresAt.toISOString()).toBe("2026-08-26T12:00:00.000Z");
 
 const capped = calculateNextIdleExpiry(
   new Date("2026-08-25T12:00:00.000Z"),
@@ -906,11 +909,13 @@ git commit -m "feat: add secure session policy"
 Cover both paths:
 
 ```ts
-await expect(auth.login({ email: "missing@example.com", password: "wrong" }))
-  .rejects.toMatchObject({ code: "INVALID_CREDENTIALS", status: 401 });
+await expect(
+  auth.login({ email: "missing@example.com", password: "wrong" })
+).rejects.toMatchObject({ code: "INVALID_CREDENTIALS", status: 401 });
 
-await expect(auth.login({ email: "known@example.com", password: "wrong" }))
-  .rejects.toMatchObject({ code: "INVALID_CREDENTIALS", status: 401 });
+await expect(
+  auth.login({ email: "known@example.com", password: "wrong" })
+).rejects.toMatchObject({ code: "INVALID_CREDENTIALS", status: 401 });
 
 expect(passwordHasher.burnUnknownPasswordCheck).toHaveBeenCalledWith("wrong");
 ```
@@ -1073,9 +1078,7 @@ Start the test app with `{ seed: true }`. Assert:
 ```ts
 await request(server).get("/api/v1/rooms").expect(401);
 
-const response = await authenticatedAgent
-  .get("/api/v1/rooms")
-  .expect(200);
+const response = await authenticatedAgent.get("/api/v1/rooms").expect(200);
 
 expect(response.body.rooms).toHaveLength(6);
 expect(response.body.rooms).toEqual(
@@ -1704,8 +1707,9 @@ await page.getByLabel("Пароль").fill("Journey123!");
 await page.getByRole("button", { name: "Увійти" }).click();
 
 await expect(page).toHaveURL(/\/rooms/);
-await expect(page.getByRole("heading", { name: "Переговорні кімнати" }))
-  .toBeVisible();
+await expect(
+  page.getByRole("heading", { name: "Переговорні кімнати" })
+).toBeVisible();
 await expect(page.getByRole("heading", { name: "Дніпро" })).toBeVisible();
 
 await page.reload();
@@ -1775,9 +1779,11 @@ Set the API web server entry to:
 Set the web entry environment:
 
 ```ts
-env: {
-  API_INTERNAL_URL: "http://127.0.0.1:3001"
-}
+const webServer = {
+  env: {
+    API_INTERNAL_URL: "http://127.0.0.1:3001"
+  }
+};
 ```
 
 Keep Chromium, desktop, and mobile coverage. Ensure Playwright terminates both
@@ -1938,15 +1944,15 @@ Expected: clean worktree and a coherent sequence of verified slice commits.
 
 ## Execution Evidence
 
-| Task | Commit | Focused verification | Result |
-| --- | --- | --- | --- |
-| 1. Persistence | Not started | Not run | Pending |
-| 2. Registration | Not started | Not run | Pending |
-| 3. Session policy | Not started | Not run | Pending |
-| 4. Auth lifecycle | Not started | Not run | Pending |
-| 5. Rooms and seed | Not started | Not run | Pending |
-| 6. Contracts | Not started | Not run | Pending |
-| 7. Public auth UI | Not started | Not run | Pending |
-| 8. Protected rooms UI | Not started | Not run | Pending |
-| 9. Browser journeys | Not started | Not run | Pending |
-| 10. Final gates | Not started | Not run | Pending |
+| Task                  | Commit      | Focused verification | Result  |
+| --------------------- | ----------- | -------------------- | ------- |
+| 1. Persistence        | Not started | Not run              | Pending |
+| 2. Registration       | Not started | Not run              | Pending |
+| 3. Session policy     | Not started | Not run              | Pending |
+| 4. Auth lifecycle     | Not started | Not run              | Pending |
+| 5. Rooms and seed     | Not started | Not run              | Pending |
+| 6. Contracts          | Not started | Not run              | Pending |
+| 7. Public auth UI     | Not started | Not run              | Pending |
+| 8. Protected rooms UI | Not started | Not run              | Pending |
+| 9. Browser journeys   | Not started | Not run              | Pending |
+| 10. Final gates       | Not started | Not run              | Pending |
