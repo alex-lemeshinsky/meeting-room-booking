@@ -66,7 +66,11 @@ async function createValidRepository() {
     });
   }
 
-  await writeFixtureFile(root, "apps/web/src/styles/tokens.css");
+  await writeFixtureFile(
+    root,
+    "apps/web/src/styles/tokens.css",
+    ":root { --color-text: #172033; }\n"
+  );
   await writeFixtureFile(root, "apps/api/src/.gitkeep");
   await writeFixtureFile(root, "docs/superpowers/README.md", "# Task state\n");
   await writeFixtureFile(root, "docs/guide.md", "# Guide\n");
@@ -235,5 +239,125 @@ test("rejects workspace globs that appear only beneath another YAML key", async 
         return true;
       }
     );
+  });
+});
+
+test("rejects database coupling and CORS enablement", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "apps/web/src/data.ts",
+      'import { PrismaClient } from "@prisma/client";\n' +
+        "export const url = process.env.DATABASE_URL;\n"
+    );
+    await writeFixtureFile(
+      root,
+      "apps/api/src/main.ts",
+      "app.enableCors();\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "apps/web/src/data.ts must not reference Prisma or database access",
+          "apps/web/src/data.ts must not reference DATABASE_URL",
+          "apps/api/src/main.ts must not enable browser CORS"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("rejects raw web colors outside the token file", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "apps/web/src/app/page.module.css",
+      ".page { color: #abcdef; }\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "apps/web/src/app/page.module.css contains raw color #abcdef; " +
+            "define colors in apps/web/src/styles/tokens.css"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("rejects missing and untracked repository Markdown links", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "docs/guide.md",
+      "[missing](missing.md)\n" +
+        "[local spec](superpowers/specs/local.md)\n"
+    );
+    await writeFixtureFile(
+      root,
+      "docs/superpowers/specs/local.md",
+      "# Local only\n"
+    );
+    const trackedFiles = [...validTrackedFiles, "docs/guide.md"];
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "docs/guide.md links to missing file docs/missing.md",
+          "docs/guide.md links to untracked Superpowers file " +
+            "docs/superpowers/specs/local.md"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("rejects an untracked plan in the task-state index", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "docs/superpowers/plans/local.md",
+      "# Local plan\n"
+    );
+    await writeFixtureFile(
+      root,
+      "docs/superpowers/README.md",
+      "[Local plan](plans/local.md)\n"
+    );
+
+    await assert.rejects(
+      verifyRepository(root, { trackedFiles: validTrackedFiles }),
+      (error) => {
+        assert.deepEqual(error.violations, [
+          "docs/superpowers/README.md links to untracked task-state file " +
+            "docs/superpowers/plans/local.md"
+        ]);
+        return true;
+      }
+    );
+  });
+});
+
+test("ignores external and same-document Markdown links", async () => {
+  await withValidRepository(async (root) => {
+    await writeFixtureFile(
+      root,
+      "docs/guide.md",
+      "[web](https://example.com)\n[mail](mailto:test@example.com)\n" +
+        "[section](#section)\n"
+    );
+    const result = await verifyRepository(root, {
+      trackedFiles: [...validTrackedFiles, "docs/guide.md"]
+    });
+
+    assert.deepEqual(result, { packageCount: 5 });
   });
 });
