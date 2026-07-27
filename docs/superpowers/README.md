@@ -2,12 +2,16 @@
 
 ## Active plan
 
-- [Agent Harness Hardening](plans/2026-07-27-agent-harness-hardening.md)
-  ([approved design](specs/2026-07-27-agent-harness-hardening-design.md))
+None.
 
 ## Approved queue
 
 None.
+
+## Completed records
+
+- [Agent Harness Hardening plan](plans/2026-07-27-agent-harness-hardening.md)
+- [Agent Harness Hardening design](specs/2026-07-27-agent-harness-hardening-design.md)
 
 ## Historical records
 
@@ -17,8 +21,10 @@ None.
 
 ## Latest full verification
 
-Foundation verification completed in commit `acca389`; the active hardening
-plan will replace this entry with fresh evidence.
+[Agent Harness Hardening final verification evidence](plans/2026-07-27-agent-harness-hardening.md#verification-evidence)
+was recorded on 2026-07-27 with Node.js `v24.18.0`: the 17-test harness,
+`pnpm verify:fast`, the 1-test PostgreSQL integration gate, and both Playwright
+foundation tests passed.
 
 ## Next smallest product slice
 

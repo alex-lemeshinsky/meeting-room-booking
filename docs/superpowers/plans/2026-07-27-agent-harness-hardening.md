@@ -1,6 +1,6 @@
 # Agent Harness Hardening Implementation Plan
 
-Status: active
+Status: complete
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` (recommended) or
@@ -46,7 +46,7 @@ config, pnpm scripts, Vitest, GitHub Actions, Markdown.
 - Consumes: restored historical artifacts and the approved hardening design.
 - Produces: one tracked index and unambiguous `historical`/`active` states.
 
-- [ ] **Step 1: Mark restored documents as historical**
+- [x] **Step 1: Mark restored documents as historical**
 
 Replace each restored specification's localized
 `Статус: затверджено` header with `Status: historical`. Add
@@ -59,7 +59,7 @@ Replace each restored specification's localized
 
 Do not rewrite the remaining historical body or its original checkboxes.
 
-- [ ] **Step 2: Mark this implementation plan active**
+- [x] **Step 2: Mark this implementation plan active**
 
 Change:
 
@@ -73,7 +73,7 @@ to:
 Status: active
 ```
 
-- [ ] **Step 3: Create the task-state index**
+- [x] **Step 3: Create the task-state index**
 
 Create `docs/superpowers/README.md` with these sections:
 
@@ -106,7 +106,7 @@ Auth, opaque stateful sessions, email verification, and seeded rooms, subject
 to an approved specification and plan.
 ```
 
-- [ ] **Step 4: Verify and commit task state**
+- [x] **Step 4: Verify and commit task state**
 
 Run:
 
@@ -143,7 +143,7 @@ git commit -m "docs: index durable agent task state"
 - `scripts/verify-workspace.mjs` calls the function for `process.cwd()`, prints
   the package count on success, and prints every violation before exiting `1`.
 
-- [ ] **Step 1: Write failing fixture-based contract tests**
+- [x] **Step 1: Write failing fixture-based contract tests**
 
 Replace real-checkout assertions with a temporary repository fixture containing
 the five required manifests, root manifest, workspace file, empty web/API
@@ -186,7 +186,7 @@ test("reports every invalid package contract with its path", async () => {
 The production mutations these tests catch are accepting a missing/wrong
 package, dropping the private-package requirement, or accepting CommonJS.
 
-- [ ] **Step 2: Run the tests and observe RED**
+- [x] **Step 2: Run the tests and observe RED**
 
 Run:
 
@@ -196,7 +196,7 @@ node --test scripts/verify-workspace.test.mjs
 
 Expected: FAIL because `scripts/repository-policy.mjs` does not exist.
 
-- [ ] **Step 3: Implement the minimal policy core**
+- [x] **Step 3: Implement the minimal policy core**
 
 Create `RepositoryPolicyError`, helpers that collect violations without
 throwing early, manifest/workspace checks, and optional Git-backed tracked-file
@@ -223,7 +223,7 @@ try {
 }
 ```
 
-- [ ] **Step 4: Run GREEN and the real repository entry point**
+- [x] **Step 4: Run GREEN and the real repository entry point**
 
 Run:
 
@@ -234,7 +234,7 @@ node scripts/verify-workspace.mjs
 
 Expected: fixture tests pass and the real repository reports five packages.
 
-- [ ] **Step 5: Commit the policy core**
+- [x] **Step 5: Commit the policy core**
 
 ```bash
 git add scripts/repository-policy.mjs scripts/verify-workspace.mjs \
@@ -259,7 +259,7 @@ git commit -m "test: make repository policy executable"
 - ESLint rejects web imports from `@prisma/*`, generated Prisma paths, and
   database modules.
 
-- [ ] **Step 1: Write failing architecture-boundary tests**
+- [x] **Step 1: Write failing architecture-boundary tests**
 
 Add one fixture test per realistic break:
 
@@ -309,7 +309,7 @@ test("rejects raw web colors outside the token file", async () => {
 The production mutations caught are removing a forbidden-reference scanner,
 limiting it to one extension, or accidentally scanning the approved token file.
 
-- [ ] **Step 2: Run RED, implement source/CSS scanning, and run GREEN**
+- [x] **Step 2: Run RED, implement source/CSS scanning, and run GREEN**
 
 Run the focused test before and after implementation:
 
@@ -321,7 +321,7 @@ node --test --test-name-pattern="database coupling|raw web colors" \
 Expected before: FAIL because violations are not detected. Expected after:
 PASS with path-qualified messages.
 
-- [ ] **Step 3: Write failing Markdown and task-state tests**
+- [x] **Step 3: Write failing Markdown and task-state tests**
 
 Add these real-behavior cases:
 
@@ -385,7 +385,7 @@ test("ignores external and same-document Markdown links", async () => {
 });
 ```
 
-- [ ] **Step 4: Run RED, implement link/tracking validation, and run GREEN**
+- [x] **Step 4: Run RED, implement link/tracking validation, and run GREEN**
 
 Run:
 
@@ -397,7 +397,7 @@ node --test --test-name-pattern="Markdown|task-state|untracked" \
 Expected before: FAIL. Implement relative-link parsing with fragments removed
 and URL-decoding applied, then expect all focused tests to pass.
 
-- [ ] **Step 5: Add fast editor feedback through ESLint**
+- [x] **Step 5: Add fast editor feedback through ESLint**
 
 Add a flat-config block for `apps/web/**/*.{js,jsx,ts,tsx}` using
 `no-restricted-imports`:
@@ -421,7 +421,7 @@ Add a flat-config block for `apps/web/**/*.{js,jsx,ts,tsx}` using
 }
 ```
 
-- [ ] **Step 6: Verify all policies and commit**
+- [x] **Step 6: Verify all policies and commit**
 
 Run:
 
@@ -459,7 +459,7 @@ git commit -m "chore: enforce repository architecture policies"
 - API integration discovery filters all files containing
   `integration-spec.ts`.
 
-- [ ] **Step 1: Update integration discovery**
+- [x] **Step 1: Update integration discovery**
 
 Change:
 
@@ -476,7 +476,7 @@ to:
 Vitest treats positional filters as path substrings, so every current and
 future `*.integration-spec.ts` file is selected.
 
-- [ ] **Step 2: Add canonical root scripts**
+- [x] **Step 2: Add canonical root scripts**
 
 Use these script contracts:
 
@@ -489,7 +489,7 @@ Use these script contracts:
 "verify:all": "pnpm verify:fast && pnpm test:integration && pnpm test:e2e"
 ```
 
-- [ ] **Step 3: Verify discovery and command composition**
+- [x] **Step 3: Verify discovery and command composition**
 
 Run:
 
@@ -502,7 +502,7 @@ pnpm --filter @mrb/api exec vitest list integration-spec.ts
 Expected: harness tests and workspace unit tests pass; Vitest lists
 `test/health.integration-spec.ts`.
 
-- [ ] **Step 4: Commit canonical commands**
+- [x] **Step 4: Commit canonical commands**
 
 ```bash
 git add package.json apps/api/package.json
@@ -528,7 +528,7 @@ git commit -m "chore: canonicalize verification commands"
 - Human and agent instructions use `pnpm verify:fast` and `pnpm verify:all`.
 - CI runs fast checks before browser installation and preserves E2E failures.
 
-- [ ] **Step 1: Update repository instructions**
+- [x] **Step 1: Update repository instructions**
 
 Replace duplicated gate lists with:
 
@@ -544,7 +544,7 @@ files locally.
 
 Point task-state discovery to `docs/superpowers/README.md`.
 
-- [ ] **Step 2: Harden and reorder CI**
+- [x] **Step 2: Harden and reorder CI**
 
 Use this workflow structure:
 
@@ -595,7 +595,7 @@ jobs:
 
 `pnpm/action-setup` reads the exact version from root `packageManager`.
 
-- [ ] **Step 3: Verify documentation, workflow, and policy**
+- [x] **Step 3: Verify documentation, workflow, and policy**
 
 Run Prettier in write mode on the two restored plan files that became visible
 to the repository formatter when `docs/superpowers` returned to version
@@ -615,7 +615,7 @@ git diff -- AGENTS.md README.md docs/architecture.md .github/workflows/ci.yml
 Expected: policy and formatting pass; the diff contains no runtime activation
 or product behavior changes.
 
-- [ ] **Step 4: Commit the routed workflow**
+- [x] **Step 4: Commit the routed workflow**
 
 ```bash
 git add AGENTS.md README.md docs/architecture.md .github/workflows/ci.yml
@@ -636,7 +636,7 @@ git commit -m "ci: route checks through canonical verification"
 - Completes the task lifecycle with exact verification evidence and the next
   product slice.
 
-- [ ] **Step 1: Run the complete harness and fast gate**
+- [x] **Step 1: Run the complete harness and fast gate**
 
 Run:
 
@@ -647,7 +647,7 @@ pnpm verify:fast
 
 Record test counts, exit status, and any unavailable environmental check.
 
-- [ ] **Step 2: Run environment-dependent gates**
+- [x] **Step 2: Run environment-dependent gates**
 
 Run:
 
@@ -660,7 +660,7 @@ Expected: the PostgreSQL Testcontainer test and both Playwright foundation
 tests pass. If infrastructure is unavailable, record the exact failure and do
 not claim `verify:all` passed.
 
-- [ ] **Step 3: Review repository state**
+- [x] **Step 3: Review repository state**
 
 Run:
 
@@ -674,7 +674,7 @@ git diff HEAD~5 -- . ':!pnpm-lock.yaml'
 Confirm no runtime/preflight change, no unrelated file, no generated artifact,
 and no unresolved acceptance criterion.
 
-- [ ] **Step 4: Complete plan and task-state index**
+- [x] **Step 4: Complete plan and task-state index**
 
 Change this plan to `Status: complete`, check every completed step, and add a
 `## Verification evidence` section containing exact command results. Update
@@ -685,7 +685,7 @@ Change this plan to `Status: complete`, check every completed step, and add a
 - latest full verification points to the final evidence;
 - next smallest product slice remains auth/sessions/seeded rooms.
 
-- [ ] **Step 5: Verify and commit the handoff**
+- [x] **Step 5: Verify and commit the handoff**
 
 Run:
 
@@ -713,3 +713,27 @@ git commit -m "docs: complete agent harness hardening"
 - [x] No implementation step contains a placeholder or delegates unspecified
       error handling.
 - [x] Each task ends with focused evidence and a coherent commit.
+
+## Verification evidence
+
+Final verification ran on 2026-07-27 with Node.js `v24.18.0` and pnpm
+`11.17.0`.
+
+- `node --test scripts/verify-workspace.test.mjs`: exit `0`; 17 tests passed,
+  0 failed, 0 cancelled, 0 skipped, and 0 todo.
+- `pnpm verify:fast`: exit `0` after local-port permission was granted for the
+  NestJS/Supertest smoke test; 17 harness tests, 6 workspace unit/component
+  tests, repository policy, formatting, lint, type checking, contract
+  freshness, and both production builds passed.
+- `pnpm test:integration`: exit `0` with Docker/Testcontainers access; 1 test
+  file and 1 PostgreSQL integration test passed.
+- `pnpm test:e2e`: exit `0` with local-port and Chromium access; both
+  Playwright foundation tests passed.
+- `git diff --check`: exit `0`.
+- `git status --short`: no output after restoring the
+  `apps/web/next-env.d.ts` path changed by the Next.js development server.
+- `git diff HEAD~5 --stat` and
+  `git diff HEAD~5 -- . ':!pnpm-lock.yaml'`: reviewed in full; changes are
+  limited to the planned policy, test-discovery, canonical-gate, CI, and
+  documentation scope. Runtime activation and preflight are unchanged, and no
+  unrelated or generated artifact remains.
