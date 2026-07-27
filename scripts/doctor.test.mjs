@@ -251,7 +251,7 @@ test("main writes diagnostic output and returns an executable exit status", asyn
   assert.equal(failureLines[0], "environment not ready");
 });
 
-test("blocks pnpm work until DATABASE_URL is configured", async () => {
+test("does not require database configuration before pnpm work", async () => {
   const lines = [];
   const exitStatus = await main({
     nodeVersion: "v24.18.0",
@@ -262,28 +262,9 @@ test("blocks pnpm work until DATABASE_URL is configured", async () => {
     writeLine: (line) => lines.push(line)
   });
 
-  assert.equal(exitStatus, 1);
-  assert.deepEqual(lines.slice(-2), [
-    "✗ DATABASE_URL is not configured",
-    "  Run: cp .env.example .env"
-  ]);
-});
-
-test("accepts DATABASE_URL loaded from the local env file", async () => {
-  const lines = [];
-  const exitStatus = await main({
-    nodeVersion: "v24.18.0",
-    packageJson: validPackage,
-    runCommand: passingRunner(),
-    databaseUrl: undefined,
-    readEnvFile: async () =>
-      "DATABASE_URL=postgresql://meeting_room:meeting_room@localhost:5432/meeting_room?schema=public\n",
-    writeLine: (line) => lines.push(line)
-  });
-
   assert.equal(exitStatus, 0);
   assert.equal(lines[0], "environment ready");
-  assert.ok(lines.includes("✓ DATABASE_URL is configured"));
+  assert.ok(!lines.some((line) => line.includes("DATABASE_URL")));
 });
 
 test("the production runner uses the Windows command shell for npm shims", async () => {
@@ -333,8 +314,6 @@ test("the executable propagates success and failure through its process status",
     const success = await executeFile(process.execPath, [executable], {
       env: {
         ...process.env,
-        DATABASE_URL:
-          "postgresql://meeting_room:meeting_room@localhost:5432/meeting_room",
         PATH: path
       }
     });
@@ -347,8 +326,6 @@ test("the executable propagates success and failure through its process status",
       executeFile(process.execPath, [executable], {
         env: {
           ...process.env,
-          DATABASE_URL:
-            "postgresql://meeting_room:meeting_room@localhost:5432/meeting_room",
           PATH: path
         }
       }),
