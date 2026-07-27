@@ -192,7 +192,7 @@ freshness because they are public build inputs.
   `@mrb/contracts`, and `@mrb/config`; root quality scripts used by every later
   task.
 
-- [ ] **Step 1: Write the failing workspace regression test**
+- [x] **Step 1: Write the failing workspace regression test**
 
 ```js
 // scripts/verify-workspace.test.mjs
@@ -216,7 +216,7 @@ test("workspace declares every architectural package", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and confirm the missing harness fails**
+- [x] **Step 2: Run the test and confirm the missing harness fails**
 
 Run:
 
@@ -226,7 +226,7 @@ node --test scripts/verify-workspace.test.mjs
 
 Expected: FAIL because `package.json` and `pnpm-workspace.yaml` do not exist.
 
-- [ ] **Step 3: Create the root package contract**
+- [x] **Step 3: Create the root package contract**
 
 ```json
 {
@@ -278,7 +278,7 @@ save-exact=true
 strict-peer-dependencies=true
 ```
 
-- [ ] **Step 4: Create shared strict TypeScript configuration**
+- [x] **Step 4: Create shared strict TypeScript configuration**
 
 ```json
 // packages/config/tsconfig.base.json
@@ -392,7 +392,7 @@ test-results/
 *.tsbuildinfo
 ```
 
-- [ ] **Step 5: Add package identities and verification implementation**
+- [x] **Step 5: Add package identities and verification implementation**
 
 Each workspace `package.json` must be private, ESM, and expose only scripts
 that already work in that task. Implement `scripts/verify-workspace.mjs` so it:
@@ -419,7 +419,7 @@ for (const [path, name] of expected) {
 console.log(`workspace verified: ${expected.size} packages`);
 ```
 
-- [ ] **Step 6: Install the approved toolchain dependencies**
+- [x] **Step 6: Install the approved toolchain dependencies**
 
 Run:
 
@@ -437,7 +437,7 @@ Add framework packages in later tasks, where their need is proven. Do not
 install Tailwind, a component kit, a calendar library, or a monorepo
 orchestrator.
 
-- [ ] **Step 7: Run the workspace checks**
+- [x] **Step 7: Run the workspace checks**
 
 Run:
 
@@ -455,7 +455,7 @@ workspace declares every architectural package ... ok
 workspace verified: 5 packages
 ```
 
-- [ ] **Step 8: Commit the workspace foundation**
+- [x] **Step 8: Commit the workspace foundation**
 
 ```bash
 git add .editorconfig .gitignore .npmrc .nvmrc package.json \
@@ -487,7 +487,7 @@ git commit -m "chore: initialize pnpm workspace"
   `CLOCK`, `Clock.now(): Date`, `SystemClock`, and
   `FixedClock.set(instant: Date): void`.
 
-- [ ] **Step 1: Write the failing clock contract tests**
+- [x] **Step 1: Write the failing clock contract tests**
 
 ```ts
 // packages/time/src/clock.spec.ts
@@ -523,7 +523,7 @@ describe("Clock", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify red**
+- [x] **Step 2: Run the focused test and verify red**
 
 Run:
 
@@ -533,7 +533,7 @@ pnpm --filter @mrb/time test:unit
 
 Expected: FAIL because `clock.ts` does not exist.
 
-- [ ] **Step 3: Implement the minimal clock boundary**
+- [x] **Step 3: Implement the minimal clock boundary**
 
 ```ts
 // packages/time/src/clock.ts
@@ -571,7 +571,7 @@ export class FixedClock implements Clock {
 export { CLOCK, FixedClock, SystemClock, type Clock } from "./clock.js";
 ```
 
-- [ ] **Step 4: Configure the package**
+- [x] **Step 4: Configure the package**
 
 `packages/time/package.json` must expose `./src/index.ts` to workspace
 consumers and define:
@@ -587,7 +587,7 @@ consumers and define:
 }
 ```
 
-- [ ] **Step 5: Run the package and root gates**
+- [x] **Step 5: Run the package and root gates**
 
 Run:
 
@@ -599,7 +599,7 @@ npm test
 
 Expected: three clock tests pass and `npm test` exits `0`.
 
-- [ ] **Step 6: Commit the time boundary**
+- [x] **Step 6: Commit the time boundary**
 
 ```bash
 git add packages/time
@@ -631,7 +631,7 @@ git commit -m "feat: add injectable clock boundary"
   `createApp(): Promise<INestApplication>` and
   `GET /api/v1/health/live -> { status: "ok", now: UTC ISO string }`.
 
-- [ ] **Step 1: Write the failing full-app smoke test**
+- [x] **Step 1: Write the failing full-app smoke test**
 
 ```ts
 // apps/api/test/health.smoke-spec.ts
@@ -663,7 +663,7 @@ describe("GET /api/v1/health/live", () => {
 });
 ```
 
-- [ ] **Step 2: Run the smoke test and verify red**
+- [x] **Step 2: Run the smoke test and verify red**
 
 Run:
 
@@ -673,7 +673,7 @@ pnpm --filter @mrb/api test:unit
 
 Expected: FAIL because `createApp` does not exist.
 
-- [ ] **Step 3: Install NestJS 11 dependencies**
+- [x] **Step 3: Install NestJS 11 dependencies**
 
 Run:
 
@@ -695,7 +695,7 @@ pnpm --filter @mrb/api add -D --save-exact \
 pnpm --filter @mrb/api add @mrb/time@workspace:*
 ```
 
-- [ ] **Step 4: Implement the app factory and liveness policy**
+- [x] **Step 4: Implement the app factory and liveness policy**
 
 ```ts
 // apps/api/src/bootstrap.ts
@@ -779,7 +779,7 @@ import { HealthService } from "./health.service.js";
 export class HealthModule {}
 ```
 
-- [ ] **Step 5: Add API scripts and compile settings**
+- [x] **Step 5: Add API scripts and compile settings**
 
 Use `experimentalDecorators`, `emitDecoratorMetadata`, and NodeNext module
 resolution. Configure `apps/api/vitest.config.ts` with
@@ -810,7 +810,7 @@ Add:
 }
 ```
 
-- [ ] **Step 6: Run the API gates**
+- [x] **Step 6: Run the API gates**
 
 Run:
 
@@ -822,7 +822,7 @@ pnpm --filter @mrb/api build
 
 Expected: the liveness smoke test passes and the API compiles.
 
-- [ ] **Step 7: Commit the API skeleton**
+- [x] **Step 7: Commit the API skeleton**
 
 ```bash
 git add apps/api packages/time/package.json pnpm-lock.yaml
@@ -859,7 +859,7 @@ git commit -m "feat: add NestJS liveness API"
   `HealthService.ready(): Promise<{ status: "ok"; database: "up" }>`, and
   `GET /api/v1/health/ready`.
 
-- [ ] **Step 1: Write the failing PostgreSQL integration test**
+- [x] **Step 1: Write the failing PostgreSQL integration test**
 
 ```ts
 // apps/api/test/health.integration-spec.ts
@@ -909,7 +909,7 @@ describe("GET /api/v1/health/ready", () => {
 });
 ```
 
-- [ ] **Step 2: Run the integration test and verify red**
+- [x] **Step 2: Run the integration test and verify red**
 
 Run:
 
@@ -919,7 +919,7 @@ pnpm --filter @mrb/api test:integration
 
 Expected: FAIL because Prisma, the migration, and `health/ready` do not exist.
 
-- [ ] **Step 3: Install Prisma ORM 7 and Testcontainers**
+- [x] **Step 3: Install Prisma ORM 7 and Testcontainers**
 
 Run:
 
@@ -934,7 +934,7 @@ pnpm --filter @mrb/api add -D --save-exact \
   @types/pg@8
 ```
 
-- [ ] **Step 4: Configure Prisma 7 and the initial migration**
+- [x] **Step 4: Configure Prisma 7 and the initial migration**
 
 ```prisma
 // prisma/schema.prisma
@@ -976,7 +976,7 @@ DATABASE_URL=postgresql://meeting_room:meeting_room@localhost:5432/meeting_room?
 API_INTERNAL_URL=http://localhost:3001
 ```
 
-- [ ] **Step 5: Implement the NestJS database boundary**
+- [x] **Step 5: Implement the NestJS database boundary**
 
 ```ts
 // apps/api/src/database/database.service.ts
@@ -1028,7 +1028,7 @@ Inject `DatabaseService` beside `Clock` in `HealthService`. Do not expose the
 connection string or driver error. `HealthController.ready()` delegates to
 this method.
 
-- [ ] **Step 6: Generate Prisma Client and run integration**
+- [x] **Step 6: Generate Prisma Client and run integration**
 
 Run:
 
@@ -1041,7 +1041,7 @@ pnpm --filter @mrb/api typecheck
 Expected: migration applies, readiness returns `200`, and generated Prisma files
 remain ignored.
 
-- [ ] **Step 7: Commit database readiness**
+- [x] **Step 7: Commit database readiness**
 
 ```bash
 git add .env.example .gitignore prisma prisma.config.ts apps/api \
@@ -1074,7 +1074,7 @@ git commit -m "feat: add PostgreSQL readiness foundation"
 - Produces: Next.js App Router shell, same-origin `/api/*` rewrite, and the
   global semantic token contract used by later UI slices.
 
-- [ ] **Step 1: Write the failing accessible page test**
+- [x] **Step 1: Write the failing accessible page test**
 
 ```tsx
 // apps/web/src/app/page.spec.tsx
@@ -1097,7 +1097,7 @@ describe("foundation page", () => {
 });
 ```
 
-- [ ] **Step 2: Run the web test and verify red**
+- [x] **Step 2: Run the web test and verify red**
 
 Run:
 
@@ -1107,7 +1107,7 @@ pnpm --filter @mrb/web test:unit
 
 Expected: FAIL because the page and test environment do not exist.
 
-- [ ] **Step 3: Install the verified Next.js and React versions**
+- [x] **Step 3: Install the verified Next.js and React versions**
 
 Run:
 
@@ -1124,7 +1124,7 @@ pnpm --filter @mrb/web add -D --save-exact \
   jsdom@26
 ```
 
-- [ ] **Step 4: Define the ClearSpace semantic tokens**
+- [x] **Step 4: Define the ClearSpace semantic tokens**
 
 `tokens.css` must contain every normative token from
 `docs/design-system.md`, including:
@@ -1166,7 +1166,7 @@ pnpm --filter @mrb/web add -D --save-exact \
 Add the remaining design-system tokens verbatim. Outside `tokens.css`, use
 only `var(--token-name)` for normative colors.
 
-- [ ] **Step 5: Implement the root layout and foundation page**
+- [x] **Step 5: Implement the root layout and foundation page**
 
 Use `next/font/google` with Cyrillic subsets for Manrope and Inter. The page
 contains:
@@ -1197,7 +1197,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 6: Configure same-origin development proxy**
+- [x] **Step 6: Configure same-origin development proxy**
 
 ```ts
 // apps/web/next.config.ts
@@ -1219,7 +1219,7 @@ const config: NextConfig = {
 export default config;
 ```
 
-- [ ] **Step 7: Run web gates**
+- [x] **Step 7: Run web gates**
 
 Run:
 
@@ -1231,7 +1231,7 @@ pnpm --filter @mrb/web build
 
 Expected: component test passes and Next.js produces a production build.
 
-- [ ] **Step 8: Commit the web shell**
+- [x] **Step 8: Commit the web shell**
 
 ```bash
 git add apps/web pnpm-lock.yaml
@@ -1263,7 +1263,7 @@ git commit -m "feat: add ClearSpace web foundation"
   `createOpenApiDocument(app): OpenAPIObject` and generated
   `paths["/api/v1/health/live"]` / `paths["/api/v1/health/ready"]` types.
 
-- [ ] **Step 1: Write the failing OpenAPI contract test**
+- [x] **Step 1: Write the failing OpenAPI contract test**
 
 ```ts
 // apps/api/test/openapi.spec.ts
@@ -1291,7 +1291,7 @@ describe("OpenAPI document", () => {
 });
 ```
 
-- [ ] **Step 2: Run the contract test and verify red**
+- [x] **Step 2: Run the contract test and verify red**
 
 Run:
 
@@ -1301,7 +1301,7 @@ pnpm --filter @mrb/api test:unit -- openapi.spec.ts
 
 Expected: FAIL because `createOpenApiDocument` does not exist.
 
-- [ ] **Step 3: Install OpenAPI tooling**
+- [x] **Step 3: Install OpenAPI tooling**
 
 Run:
 
@@ -1312,7 +1312,7 @@ pnpm --filter @mrb/contracts add -D --save-exact \
   openapi-typescript@7
 ```
 
-- [ ] **Step 4: Implement the document builder**
+- [x] **Step 4: Implement the document builder**
 
 ```ts
 // apps/api/src/openapi/openapi.ts
@@ -1336,7 +1336,7 @@ export function createOpenApiDocument(
 with two-space indentation and a trailing newline, writes
 `apps/api/openapi.json`, and always closes the app in `finally`.
 
-- [ ] **Step 5: Add deterministic generation scripts**
+- [x] **Step 5: Add deterministic generation scripts**
 
 `apps/api/package.json`:
 
@@ -1393,7 +1393,7 @@ if (diff.status !== 0) {
 }
 ```
 
-- [ ] **Step 6: Generate and verify contracts**
+- [x] **Step 6: Generate and verify contracts**
 
 Run:
 
@@ -1407,7 +1407,7 @@ pnpm --filter @mrb/contracts typecheck
 Expected: OpenAPI tests pass, generation is deterministic, and contract types
 compile without importing Prisma models.
 
-- [ ] **Step 7: Commit the contract pipeline**
+- [x] **Step 7: Commit the contract pipeline**
 
 ```bash
 git add apps/api packages/contracts scripts/check-contracts.mjs \
@@ -1434,7 +1434,7 @@ git commit -m "feat: generate contracts from OpenAPI"
 - Produces: `pnpm dev:infra`, `pnpm test:e2e`, desktop viewport
   `1440 x 900`, and mobile viewport `390 x 844`.
 
-- [ ] **Step 1: Write the failing browser smoke test**
+- [x] **Step 1: Write the failing browser smoke test**
 
 ```ts
 // e2e/foundation.spec.ts
@@ -1461,7 +1461,7 @@ test("foundation page fits the approved mobile viewport", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2: Run Playwright and verify red**
+- [x] **Step 2: Run Playwright and verify red**
 
 Run:
 
@@ -1471,7 +1471,7 @@ pnpm test:e2e
 
 Expected: FAIL because Playwright and its web servers are not configured.
 
-- [ ] **Step 3: Add PostgreSQL development compose**
+- [x] **Step 3: Add PostgreSQL development compose**
 
 ```yaml
 # compose.dev.yaml
@@ -1499,7 +1499,7 @@ volumes:
 Do not add Redis, a broker, nginx, web, or API containers in this development
 compose file.
 
-- [ ] **Step 4: Install and configure Playwright**
+- [x] **Step 4: Install and configure Playwright**
 
 Run:
 
@@ -1538,7 +1538,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 5: Ignore runtime artifacts**
+- [x] **Step 5: Ignore runtime artifacts**
 
 Add:
 
@@ -1554,7 +1554,7 @@ test-results/
 *.tsbuildinfo
 ```
 
-- [ ] **Step 6: Run infrastructure and browser checks**
+- [x] **Step 6: Run infrastructure and browser checks**
 
 Run:
 
@@ -1566,7 +1566,7 @@ pnpm test:e2e
 Expected: compose validates and both Playwright tests pass through the
 same-origin API rewrite.
 
-- [ ] **Step 7: Commit development and browser harnesses**
+- [x] **Step 7: Commit development and browser harnesses**
 
 ```bash
 git add compose.dev.yaml playwright.config.ts e2e .gitignore \
@@ -1593,7 +1593,7 @@ git commit -m "test: add foundation browser harness"
 - Produces: reproducible clean-machine instructions, push/PR verification, and
   the completed foundation handoff.
 
-- [ ] **Step 1: Add the CI workflow**
+- [x] **Step 1: Add the CI workflow**
 
 The workflow must:
 
@@ -1634,7 +1634,7 @@ jobs:
 
 Do not add deployment, publishing, secrets, or production containers.
 
-- [ ] **Step 2: Write clean-machine README instructions**
+- [x] **Step 2: Write clean-machine README instructions**
 
 `README.md` must include exact commands for:
 
@@ -1662,7 +1662,7 @@ It must also document:
   foundation feature;
 - the implemented bonus list is empty at this stage.
 
-- [ ] **Step 3: Run the complete verification sequence**
+- [x] **Step 3: Run the complete verification sequence**
 
 Run, without omitting or weakening a command:
 
@@ -1685,7 +1685,7 @@ Expected:
 - Playwright reports `2 passed`;
 - no generated Prisma client or test artifact appears in `git status --short`.
 
-- [ ] **Step 4: Review scope and dependency direction**
+- [x] **Step 4: Review scope and dependency direction**
 
 Run:
 
@@ -1703,7 +1703,7 @@ Expected:
 - there are no secrets, feature stubs, domain tables, debug logs, or
   unrelated changes.
 
-- [ ] **Step 5: Record evidence and complete the active plan**
+- [x] **Step 5: Record evidence and complete the active plan**
 
 In the plan's progress section, record:
 
@@ -1720,7 +1720,7 @@ mkdir -p docs/plans/completed
 git mv docs/plans/active/foundation.md docs/plans/completed/foundation.md
 ```
 
-- [ ] **Step 6: Commit the final foundation documentation**
+- [x] **Step 6: Commit the final foundation documentation**
 
 ```bash
 git add .github/workflows/ci.yml README.md docs/plans
@@ -1731,18 +1731,18 @@ git commit -m "docs: complete foundation slice"
 
 ## Plan Self-Review Checklist
 
-- [ ] Every task has one independently reviewable deliverable.
-- [ ] Every runtime or domain dependency points in the direction required by
+- [x] Every task has one independently reviewable deliverable.
+- [x] Every runtime or domain dependency points in the direction required by
   `docs/architecture.md`.
-- [ ] `apps/web` has no Prisma or database import.
-- [ ] Browser networking remains same-origin.
-- [ ] ClearSpace tokens are centralized and UI code uses semantic variables.
-- [ ] Prisma 7 uses explicit generated output and a driver adapter.
-- [ ] PostgreSQL integration tests run the full Nest application.
-- [ ] `npm test` remains a working assignment entry point.
-- [ ] Generated OpenAPI and contracts are deterministic and checked.
-- [ ] Desktop and mobile smoke tests use the approved viewports.
-- [ ] No auth, room, calendar, booking, recurrence, notification, nginx, or
+- [x] `apps/web` has no Prisma or database import.
+- [x] Browser networking remains same-origin.
+- [x] ClearSpace tokens are centralized and UI code uses semantic variables.
+- [x] Prisma 7 uses explicit generated output and a driver adapter.
+- [x] PostgreSQL integration tests run the full Nest application.
+- [x] `npm test` remains a working assignment entry point.
+- [x] Generated OpenAPI and contracts are deterministic and checked.
+- [x] Desktop and mobile smoke tests use the approved viewports.
+- [x] No auth, room, calendar, booking, recurrence, notification, nginx, or
   production compose implementation has leaked into the foundation slice.
 
 ## Progress
@@ -1759,25 +1759,20 @@ git commit -m "docs: complete foundation slice"
 - Verified with Node.js `24.18.0` and pnpm `11.17.0`:
   - `pnpm install --frozen-lockfile` — passed;
   - `pnpm verify:workspace` — passed, 5 architectural packages;
+  - `docker compose -f compose.dev.yaml config` — passed with Docker Desktop
+    `4.83.0`, Engine `29.6.2`, and Compose `5.3.1`;
   - `pnpm format:check` — passed;
   - `pnpm lint` — passed;
   - `pnpm typecheck` — passed;
   - `npm test` — passed, 4 files and 6 tests;
+  - `pnpm test:integration` — passed, 1 full-app PostgreSQL `18.4`
+    Testcontainers readiness test;
   - `pnpm contracts:check` — passed;
   - `pnpm build` — passed for `@mrb/time`, `@mrb/web`, and `@mrb/api`;
   - `pnpm test:e2e` — passed, 2 Playwright tests.
-- Unavailable environment gates:
-  - `pnpm test:integration` cannot start PostgreSQL because no Docker-compatible
-    runtime or `docker-credential-desktop` executable is installed; Testcontainers
-    fails with `spawn docker-credential-desktop ENOENT`;
-  - `docker compose -f compose.dev.yaml config` cannot run because the `docker`
-    command is unavailable.
-- Known risk: the committed migration and readiness endpoint compile and their
-  public contracts are generated, but the migrated PostgreSQL success path has
-  not been runtime-verified in this environment.
-- The plan remains active until Docker is available and both missing gates pass.
-- Next action: install or expose a Docker-compatible runtime, run
-  `docker compose -f compose.dev.yaml config` and `pnpm test:integration`, then
-  repeat all final gates and move this plan to `docs/plans/completed/`.
-- Next product slice after foundation completion: auth, stateful sessions, and
-  seeded rooms.
+- Scope review found no Prisma/database access in `apps/web`, no browser CORS,
+  no domain tables, and no auth, rooms, calendar, booking, recurrence, or
+  notification implementation.
+- Known risks: none beyond the explicitly deferred product slices.
+- Foundation completed: 2026-07-27.
+- Next product slice: auth, stateful sessions, and seeded rooms.
