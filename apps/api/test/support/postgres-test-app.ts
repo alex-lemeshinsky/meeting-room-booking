@@ -39,6 +39,7 @@ export async function startPostgresTestApp(
   const databaseUrl = postgres.getConnectionUri();
   process.env.DATABASE_URL = databaseUrl;
   process.env.APP_ORIGIN = "http://127.0.0.1:3000";
+  let app: INestApplication | undefined;
 
   try {
     runPrismaCommand(["migrate", "deploy"], "migration");
@@ -47,23 +48,28 @@ export async function startPostgresTestApp(
       runPrismaCommand(["db", "seed"], "seed");
     }
 
-    const app = await createApp();
-    await app.init();
+    app = await createApp();
+    const initializedApp = app;
+    await initializedApp.init();
 
     return {
-      app,
+      app: initializedApp,
       postgres,
       databaseUrl,
       async stop(): Promise<void> {
         try {
-          await app.close();
+          await initializedApp.close();
         } finally {
           await postgres.stop();
         }
       }
     };
   } catch (error) {
-    await postgres.stop();
+    try {
+      await app?.close();
+    } finally {
+      await postgres.stop();
+    }
     throw error;
   }
 }
