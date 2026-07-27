@@ -229,6 +229,8 @@ test("main writes diagnostic output and returns an executable exit status", asyn
     nodeVersion: "v24.18.3",
     packageJson: validPackage,
     runCommand: passingRunner(),
+    databaseUrl:
+      "postgresql://meeting_room:meeting_room@localhost:5432/meeting_room",
     writeLine: (line) => lines.push(line)
   });
 
@@ -240,11 +242,48 @@ test("main writes diagnostic output and returns an executable exit status", asyn
     nodeVersion: "v24.17.0",
     packageJson: validPackage,
     runCommand: passingRunner(),
+    databaseUrl:
+      "postgresql://meeting_room:meeting_room@localhost:5432/meeting_room",
     writeLine: (line) => failureLines.push(line)
   });
 
   assert.equal(failureStatus, 1);
   assert.equal(failureLines[0], "environment not ready");
+});
+
+test("blocks pnpm work until DATABASE_URL is configured", async () => {
+  const lines = [];
+  const exitStatus = await main({
+    nodeVersion: "v24.18.0",
+    packageJson: validPackage,
+    runCommand: passingRunner(),
+    databaseUrl: "",
+    readEnvFile: async () => "# no database configuration\n",
+    writeLine: (line) => lines.push(line)
+  });
+
+  assert.equal(exitStatus, 1);
+  assert.deepEqual(lines.slice(-2), [
+    "✗ DATABASE_URL is not configured",
+    "  Run: cp .env.example .env"
+  ]);
+});
+
+test("accepts DATABASE_URL loaded from the local env file", async () => {
+  const lines = [];
+  const exitStatus = await main({
+    nodeVersion: "v24.18.0",
+    packageJson: validPackage,
+    runCommand: passingRunner(),
+    databaseUrl: undefined,
+    readEnvFile: async () =>
+      "DATABASE_URL=postgresql://meeting_room:meeting_room@localhost:5432/meeting_room?schema=public\n",
+    writeLine: (line) => lines.push(line)
+  });
+
+  assert.equal(exitStatus, 0);
+  assert.equal(lines[0], "environment ready");
+  assert.ok(lines.includes("✓ DATABASE_URL is configured"));
 });
 
 test("the production runner uses the Windows command shell for npm shims", async () => {
@@ -292,7 +331,12 @@ test("the executable propagates success and failure through its process status",
     });
 
     const success = await executeFile(process.execPath, [executable], {
-      env: { ...process.env, PATH: path }
+      env: {
+        ...process.env,
+        DATABASE_URL:
+          "postgresql://meeting_room:meeting_room@localhost:5432/meeting_room",
+        PATH: path
+      }
     });
     assert.match(success.stdout, /^environment ready/m);
 
@@ -301,7 +345,12 @@ test("the executable propagates success and failure through its process status",
     });
     await assert.rejects(
       executeFile(process.execPath, [executable], {
-        env: { ...process.env, PATH: path }
+        env: {
+          ...process.env,
+          DATABASE_URL:
+            "postgresql://meeting_room:meeting_room@localhost:5432/meeting_room",
+          PATH: path
+        }
       }),
       (error) => {
         assert.equal(error.code, 1);
