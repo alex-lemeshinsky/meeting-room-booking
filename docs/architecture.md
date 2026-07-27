@@ -3,13 +3,15 @@
 Дата: 2026-07-27
 Статус: затверджено
 
-Повний каталог функцій: [`docs/features.md`](docs/features.md). Історична design-spec, на основі якої створено цей документ: [`docs/superpowers/specs/2026-07-27-meeting-room-booking-design.md`](docs/superpowers/specs/2026-07-27-meeting-room-booking-design.md).
+Повний каталог функцій: [`docs/features.md`](features.md). Історична
+design-spec, на основі якої створено цей документ:
+[`docs/superpowers/specs/2026-07-27-meeting-room-booking-design.md`](superpowers/specs/2026-07-27-meeting-room-booking-design.md).
 
 ## 1. Мета і межі документа
 
 Цей документ фіксує технічну архітектуру застосунку для бронювання
 переговорних кімнат. Повний продуктовий обсяг описано в
-[`docs/features.md`](docs/features.md).
+[`docs/features.md`](features.md).
 
 Проєкт реалізує обов'язкові та бонусні функції поетапно. Архітектура одразу
 передбачає весь погоджений обсяг, але кожен етап має залишати застосунок у
@@ -668,7 +670,7 @@ request smoke-тести входять у повний набір і окрем
 ## 19. Поетапна реалізація
 
 Архітектура впроваджується за етапами з
-[`docs/features.md`](docs/features.md):
+[`docs/features.md`](features.md):
 
 1. каркас monorepo, база, env, тести;
 2. auth, rooms і sessions;

@@ -820,4 +820,4 @@ README дозволяє запустити проєкт на чистій маш
 
 Відомі неоднозначності функціональних вимог погоджено. Технічну архітектуру,
 бібліотеки, структуру модулів і способи реалізації правил зафіксовано в
-[`docs/superpowers/specs/2026-07-27-meeting-room-booking-design.md`](superpowers/specs/2026-07-27-meeting-room-booking-design.md).
+[`docs/architecture.md`](architecture.md).
