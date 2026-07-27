@@ -1,12 +1,15 @@
 import type { INestApplication } from "@nestjs/common";
 import type { Clock } from "@mrb/time";
+import { CLOCK } from "@mrb/time";
+import { Test } from "@nestjs/testing";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer
 } from "@testcontainers/postgresql";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
-import { createApp } from "../../src/bootstrap.js";
+import { AppModule } from "../../src/app.module.js";
+import { configureApp, createApp } from "../../src/bootstrap.js";
 
 export interface PostgresTestApp {
   app: INestApplication;
@@ -35,7 +38,9 @@ function runPrismaCommand(args: string[], label: string): void {
 export async function startPostgresTestApp(
   options: PostgresTestAppOptions = {}
 ): Promise<PostgresTestApp> {
-  const postgres = await new PostgreSqlContainer("postgres:18.4-alpine").start();
+  const postgres = await new PostgreSqlContainer(
+    "postgres:18.4-alpine"
+  ).start();
   const databaseUrl = postgres.getConnectionUri();
   process.env.DATABASE_URL = databaseUrl;
   process.env.APP_ORIGIN = "http://127.0.0.1:3000";
@@ -48,7 +53,17 @@ export async function startPostgresTestApp(
       runPrismaCommand(["db", "seed"], "seed");
     }
 
-    app = await createApp();
+    if (options.clock) {
+      const module = await Test.createTestingModule({
+        imports: [AppModule]
+      })
+        .overrideProvider(CLOCK)
+        .useValue(options.clock)
+        .compile();
+      app = configureApp(module.createNestApplication({ bufferLogs: true }));
+    } else {
+      app = await createApp();
+    }
     const initializedApp = app;
     await initializedApp.init();
 

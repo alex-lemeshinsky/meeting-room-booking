@@ -11,8 +11,12 @@ import { RequestIdMiddleware } from "./common/http/request-id.middleware.js";
 
 export async function createApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  app.setGlobalPrefix("api/v1");
   app.enableShutdownHooks();
+  return configureApp(app);
+}
+
+export function configureApp(app: INestApplication): INestApplication {
+  app.setGlobalPrefix("api/v1");
   app.use(cookieParser());
   const requestIds = new RequestIdMiddleware();
   app.use(requestIds.use);
