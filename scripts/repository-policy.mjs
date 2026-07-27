@@ -360,15 +360,8 @@ async function verifyMarkdownLinks(root, trackedFiles, violations) {
         continue;
       }
 
-      const isTaskStateIndex = sourcePath === "docs/superpowers/README.md";
-      const requiresTracking =
-        isTaskStateIndex || targetPath.startsWith("docs/superpowers/");
-
-      if (requiresTracking && !trackedFileSet.has(targetPath)) {
-        const kind = isTaskStateIndex ? "task-state" : "Superpowers";
-        violations.push(
-          `${sourcePath} links to untracked ${kind} file ${targetPath}`
-        );
+      if (!trackedFileSet.has(targetPath)) {
+        violations.push(`${sourcePath} links to untracked file ${targetPath}`);
       }
     }
   }

@@ -59,9 +59,6 @@ Focused-команди з root `package.json` залишаються досту�
 перегенеровує OpenAPI та public TypeScript contracts, тому локальна перевірка
 може змінити generated files у working tree.
 
-Поточний active plan, approved queue та historical records наведені в
-[`docs/superpowers/README.md`](docs/superpowers/README.md).
-
 ## Межі foundation-слайсу
 
 На цьому етапі немає користувачів, кімнат, seed-даних, автентифікації,

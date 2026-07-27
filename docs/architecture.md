@@ -3,9 +3,7 @@
 Дата: 2026-07-27
 Статус: затверджено
 
-Повний каталог функцій: [`docs/features.md`](features.md). Історична
-design-spec, на основі якої створено цей документ:
-[`docs/superpowers/specs/2026-07-27-meeting-room-booking-design.md`](superpowers/specs/2026-07-27-meeting-room-booking-design.md).
+Повний каталог функцій: [`docs/features.md`](features.md).
 
 ## 1. Мета і межі документа
 
@@ -60,7 +58,6 @@ prisma/
 e2e/                       # Playwright
 docs/
   features.md
-  superpowers/specs/
 compose.yaml
 nginx/
 ```

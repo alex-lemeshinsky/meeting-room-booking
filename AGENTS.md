@@ -17,10 +17,7 @@ Keep this file as a map and stable harness, not a copy of project docs.
 5. Read the relevant sections of `docs/architecture.md` for technical rules.
 6. Read the relevant sections of `docs/design-system.md` before UI, UX,
    responsive, accessibility, component, or styling work.
-7. Use `docs/superpowers/README.md` to discover durable task state.
-8. Read the approved Superpowers specification and implementation plan when
-   the task has them.
-9. Check for deeper `AGENTS.md` files before touching a subtree.
+7. Check for deeper `AGENTS.md` files before touching a subtree.
 
 Local precedence:
 
@@ -50,13 +47,11 @@ orient → specify → plan → execute → verify → self-review → commit �
 Before changes, state the goal, non-goals, observable acceptance criteria, verification
 commands, and risks to data, time, security, or compatibility.
 
-Use Superpowers spec-driven development for feature work, cross-module changes,
-migrations, security-sensitive flows, and material contract changes:
+Use spec-driven development for feature work, cross-module changes, migrations,
+security-sensitive flows, and material contract changes:
 
-1. Use `superpowers:brainstorming` to explore the requirement and record the
-   approved design specification in `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
-2. Use `superpowers:writing-plans` to turn the approved specification into a
-   task-by-task implementation plan at `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
+1. Explore the requirement and record an approved design specification locally.
+2. Turn the approved specification into a task-by-task implementation plan locally.
    The plan must state its goal, architecture, constraints, exact file changes,
    interfaces, focused tests, verification commands, and coherent commits.
 3. Execute the saved plan task-by-task with
@@ -135,8 +130,7 @@ dead code, and accidental generated artifacts.
 - behavior or scope → `docs/features.md`;
 - boundaries or technology → `docs/architecture.md`;
 - setup or operations → `README.md`;
-- approved designs → `docs/superpowers/specs/`;
-- implementation plans and their execution evidence → `docs/superpowers/plans/`.
+- approved designs and implementation plans → local task state (not versioned).
 
 Never rewrite a source-of-truth document after the fact merely to justify divergent
 code. Get approval before changing agreed product or architecture.

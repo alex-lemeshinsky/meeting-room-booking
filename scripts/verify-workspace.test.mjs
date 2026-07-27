@@ -24,7 +24,6 @@ const validTrackedFiles = [
   "pnpm-workspace.yaml",
   ...requiredPackages.map(([path]) => path),
   "apps/web/src/styles/tokens.css",
-  "docs/superpowers/README.md",
   "docs/guide.md"
 ];
 
@@ -72,7 +71,6 @@ async function createValidRepository() {
     ":root { --color-text: #172033; }\n"
   );
   await writeFixtureFile(root, "apps/api/src/.gitkeep");
-  await writeFixtureFile(root, "docs/superpowers/README.md", "# Task state\n");
   await writeFixtureFile(root, "docs/guide.md", "# Guide\n");
 
   return root;
@@ -342,20 +340,15 @@ test("rejects missing and untracked repository Markdown links", async () => {
     await writeFixtureFile(
       root,
       "docs/guide.md",
-      "[missing](missing.md)\n" + "[local spec](superpowers/specs/local.md)\n"
+      "[missing](missing.md)\n" + "[local file](local.md)\n"
     );
-    await writeFixtureFile(
-      root,
-      "docs/superpowers/specs/local.md",
-      "# Local only\n"
-    );
+    await writeFixtureFile(root, "docs/local.md", "# Local only\n");
     const trackedFiles = [...validTrackedFiles, "docs/guide.md"];
 
     await assert.rejects(verifyRepository(root, { trackedFiles }), (error) => {
       assert.deepEqual(error.violations, [
         "docs/guide.md links to missing file docs/missing.md",
-        "docs/guide.md links to untracked Superpowers file " +
-          "docs/superpowers/specs/local.md"
+        "docs/guide.md links to untracked file docs/local.md"
       ]);
       return true;
     });
@@ -368,75 +361,18 @@ test("rejects missing and untracked reference-style Markdown links", async () =>
       root,
       "docs/guide.md",
       "[missing][missing-ref]\n" +
-        "[local spec][spec]\n\n" +
+        "[local file][file]\n\n" +
         "[missing-ref]: missing.md\n" +
-        '[spec]: superpowers/specs/local.md "Local spec"\n'
+        '[file]: local.md "Local file"\n'
     );
-    await writeFixtureFile(
-      root,
-      "docs/superpowers/specs/local.md",
-      "# Local only\n"
-    );
+    await writeFixtureFile(root, "docs/local.md", "# Local only\n");
 
     await assert.rejects(
       verifyRepository(root, { trackedFiles: validTrackedFiles }),
       (error) => {
         assert.deepEqual(error.violations, [
           "docs/guide.md links to missing file docs/missing.md",
-          "docs/guide.md links to untracked Superpowers file " +
-            "docs/superpowers/specs/local.md"
-        ]);
-        return true;
-      }
-    );
-  });
-});
-
-test("rejects shortcut reference links in the task-state index", async () => {
-  await withValidRepository(async (root) => {
-    await writeFixtureFile(
-      root,
-      "docs/superpowers/plans/local.md",
-      "# Local plan\n"
-    );
-    await writeFixtureFile(
-      root,
-      "docs/superpowers/README.md",
-      "[Local plan]\n\n[Local plan]: plans/local.md\n"
-    );
-
-    await assert.rejects(
-      verifyRepository(root, { trackedFiles: validTrackedFiles }),
-      (error) => {
-        assert.deepEqual(error.violations, [
-          "docs/superpowers/README.md links to untracked task-state file " +
-            "docs/superpowers/plans/local.md"
-        ]);
-        return true;
-      }
-    );
-  });
-});
-
-test("rejects an untracked plan in the task-state index", async () => {
-  await withValidRepository(async (root) => {
-    await writeFixtureFile(
-      root,
-      "docs/superpowers/plans/local.md",
-      "# Local plan\n"
-    );
-    await writeFixtureFile(
-      root,
-      "docs/superpowers/README.md",
-      "[Local plan](plans/local.md)\n"
-    );
-
-    await assert.rejects(
-      verifyRepository(root, { trackedFiles: validTrackedFiles }),
-      (error) => {
-        assert.deepEqual(error.violations, [
-          "docs/superpowers/README.md links to untracked task-state file " +
-            "docs/superpowers/plans/local.md"
+          "docs/guide.md links to untracked file docs/local.md"
         ]);
         return true;
       }
@@ -491,28 +427,6 @@ test("rejects direct PrismaClient references in web JSX source", async () => {
       (error) => {
         assert.deepEqual(error.violations, [
           "apps/web/src/client.jsx must not reference Prisma or database access"
-        ]);
-        return true;
-      }
-    );
-  });
-});
-
-test("rejects every untracked task-state index target", async () => {
-  await withValidRepository(async (root) => {
-    await writeFixtureFile(root, "docs/local.md", "# Local task\n");
-    await writeFixtureFile(
-      root,
-      "docs/superpowers/README.md",
-      "[Local task](../local.md)\n"
-    );
-
-    await assert.rejects(
-      verifyRepository(root, { trackedFiles: validTrackedFiles }),
-      (error) => {
-        assert.deepEqual(error.violations, [
-          "docs/superpowers/README.md links to untracked task-state file " +
-            "docs/local.md"
         ]);
         return true;
       }
