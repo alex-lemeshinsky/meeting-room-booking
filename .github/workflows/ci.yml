@@ -29,8 +29,8 @@ jobs:
           node-version: 24.18.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - name: Check environment prerequisites
-        run: npm run doctor
+      - name: Check full environment prerequisites
+        run: npm run doctor:full
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run fast verification

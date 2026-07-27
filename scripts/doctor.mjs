@@ -34,12 +34,14 @@ export async function main(options = {}) {
     nodeVersion = process.version,
     packageJson = await readRootPackage(),
     runCommand = createCommandRunner(),
+    includeDocker = true,
     writeLine = console.log
   } = options;
   const environment = await checkEnvironment({
     nodeVersion,
     packageJson,
-    runCommand
+    runCommand,
+    includeDocker
   });
   const result = environment;
 
@@ -50,4 +52,8 @@ export async function main(options = {}) {
 const isExecutable =
   process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
 
-if (isExecutable) process.exitCode = await main();
+if (isExecutable) {
+  process.exitCode = await main({
+    includeDocker: process.argv.includes("--full")
+  });
+}

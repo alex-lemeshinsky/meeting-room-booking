@@ -89,20 +89,22 @@ function checkCompose(probeResult) {
 export async function checkEnvironment({
   nodeVersion,
   packageJson,
-  runCommand
+  runCommand,
+  includeDocker = true
 }) {
   const [pnpm, docker, compose] = await Promise.all([
     probe(runCommand, "pnpm", ["--version"]),
-    probe(runCommand, "docker", ["--version"]),
-    probe(runCommand, "docker", ["compose", "version"])
+    includeDocker ? probe(runCommand, "docker", ["--version"]) : undefined,
+    includeDocker
+      ? probe(runCommand, "docker", ["compose", "version"])
+      : undefined
   ]);
 
   const checks = [
     checkNode(nodeVersion, packageJson.engines?.node),
-    checkPnpm(pnpm, packageJson.packageManager),
-    checkDocker(docker),
-    checkCompose(compose)
+    checkPnpm(pnpm, packageJson.packageManager)
   ];
+  if (includeDocker) checks.push(checkDocker(docker), checkCompose(compose));
   const ok = checks.every(([line]) => line.startsWith("✓"));
 
   return {

@@ -657,7 +657,7 @@ GitHub Actions запускається на push, pull request і вручну 
 `workflow_dispatch`:
 
 1. налаштування закріплених версій Node.js і pnpm;
-2. `npm run doctor` до встановлення залежностей;
+2. `npm run doctor:full` до встановлення залежностей;
 3. `pnpm install --frozen-lockfile`;
 4. `pnpm verify:fast` до встановлення браузера;
 5. Chromium із системними залежностями;

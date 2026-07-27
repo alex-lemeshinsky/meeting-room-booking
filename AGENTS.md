@@ -13,7 +13,8 @@ Keep this file as a map and stable harness, not a copy of project docs.
 2. Inspect `git status --short` and recent commits.
 3. In a fresh environment, activate the checked-in Node.js version, install
    the pinned pnpm version, create `.env` from `.env.example` when it is
-   absent, and run `npm run doctor` before pnpm commands.
+   absent, and run `npm run doctor:fast` before pnpm commands. Run
+   `npm run doctor:full` before Docker, integration, or E2E work.
 4. Read the relevant sections of `docs/features.md` for product behavior.
 5. Read the relevant sections of `docs/architecture.md` for technical rules.
 6. Read the relevant sections of `docs/design-system.md` before UI, UX,

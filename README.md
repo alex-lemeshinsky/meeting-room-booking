@@ -17,7 +17,7 @@ nvm install
 nvm use
 npm install --global pnpm@11.17.0
 cp .env.example .env
-npm run doctor
+npm run doctor:fast
 pnpm install --frozen-lockfile
 pnpm dev:infra
 pnpm exec prisma migrate deploy
@@ -26,10 +26,10 @@ pnpm dev
 ```
 
 Можна використати інший менеджер Node.js замість `nvm`, але активна версія
-має відповідати `.nvmrc`. `npm run doctor` не потребує `node_modules`, не
-запускає Docker і не звертається до registry. Команда одразу перевіряє Node.js,
-pnpm, Docker CLI і Compose plugin. Виправте всі позначені `✗` перед
-встановленням залежностей.
+має відповідати `.nvmrc`. `npm run doctor:fast` не потребує `node_modules`,
+Docker або registry та перевіряє Node.js і pnpm. `npm run doctor:full` додатково
+перевіряє Docker CLI і Compose plugin перед integration або E2E work. Виправте
+всі позначені `✗` перед відповідним етапом.
 
 Після запуску:
 

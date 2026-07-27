@@ -155,6 +155,25 @@ test("uses Docker command exit status without constraining version output", asyn
   assert.ok(result.lines.includes("✓ Docker Compose plugin is available"));
 });
 
+test("fast preflight does not require Docker or Compose", async () => {
+  const result = await checkEnvironment({
+    nodeVersion: "v24.18.0",
+    packageJson: validPackage,
+    runCommand: passingRunner({
+      "docker --version": new Error("ENOENT"),
+      "docker compose version": new Error("plugin unavailable")
+    }),
+    includeDocker: false
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.lines, [
+    "environment ready",
+    "✓ Node.js 24.18.0 satisfies 24.18.x",
+    "✓ pnpm 11.17.0 satisfies pnpm@11.17.0"
+  ]);
+});
+
 test("aggregates failures in deterministic prerequisite order", async () => {
   const result = await checkEnvironment({
     nodeVersion: "v24.10.0",
