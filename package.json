@@ -7,6 +7,7 @@
   },
   "packageManager": "pnpm@11.17.0",
   "scripts": {
+    "db:seed": "prisma db seed",
     "doctor": "node scripts/doctor.mjs",
     "dev": "pnpm --parallel --filter @mrb/api --filter @mrb/web dev",
     "dev:infra": "docker compose -f compose.dev.yaml up -d postgres",
@@ -28,6 +29,7 @@
     "verify:all": "pnpm verify:fast && pnpm test:integration && pnpm test:e2e"
   },
   "devDependencies": {
+    "@prisma/adapter-pg": "7.9.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "~1.62.0",
     "eslint": "^10.8.0",

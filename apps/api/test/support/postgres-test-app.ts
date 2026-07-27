@@ -23,7 +23,7 @@ export interface PostgresTestAppOptions {
   clock?: Clock;
 }
 
-function runPrismaCommand(args: string[], label: string): void {
+export function runPrismaCommand(args: string[], label: string): void {
   const command = spawnSync("pnpm", ["exec", "prisma", ...args], {
     cwd: resolve(import.meta.dirname, "../../../.."),
     env: process.env,
