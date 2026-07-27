@@ -9,7 +9,15 @@ import {
   Res,
   UseGuards
 } from "@nestjs/common";
-import { ApiBody, ApiCreatedResponse, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags
+} from "@nestjs/swagger";
 import type { Response } from "express";
 import { AuthService } from "./auth.service.js";
 import type { AuthenticatedRequest } from "./auth.types.js";
@@ -34,6 +42,7 @@ export class AuthController {
   @Post("register")
   @HttpCode(201)
   @UseGuards(PreAuthMutationGuard)
+  @ApiOperation({ operationId: "register" })
   @ApiBody({ type: RegisterDto })
   @ApiCreatedResponse({ type: AuthResponseDto })
   register(@Body() input: RegisterDto): Promise<AuthResponseDto> {
@@ -43,7 +52,9 @@ export class AuthController {
   @Post("login")
   @HttpCode(200)
   @UseGuards(PreAuthMutationGuard)
+  @ApiOperation({ operationId: "login" })
   @ApiBody({ type: LoginDto })
+  @ApiOkResponse({ type: AuthResponseDto })
   async login(
     @Body() input: LoginDto,
     @Res({ passthrough: true }) response: Response
@@ -59,6 +70,9 @@ export class AuthController {
 
   @Get("session")
   @UseGuards(SessionGuard)
+  @ApiOperation({ operationId: "getSession" })
+  @ApiCookieAuth()
+  @ApiOkResponse({ type: AuthResponseDto })
   session(@Req() request: AuthenticatedRequest): AuthResponseDto {
     return { user: request.auth.user };
   }
@@ -66,6 +80,9 @@ export class AuthController {
   @Post("logout")
   @HttpCode(204)
   @UseGuards(SessionGuard, CsrfGuard)
+  @ApiOperation({ operationId: "logout" })
+  @ApiCookieAuth()
+  @ApiNoContentResponse()
   async logout(
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response

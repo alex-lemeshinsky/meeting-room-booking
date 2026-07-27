@@ -1,12 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 export class PublicUserDto {
-  @ApiProperty({ format: "uuid" })
+  @ApiProperty({ type: String, format: "uuid" })
   id!: string;
 
-  @ApiProperty({ example: "Олена" })
+  @ApiProperty({ type: String, example: "Олена" })
   name!: string;
 
-  @ApiProperty({ example: "olena@example.com", format: "email" })
+  @ApiProperty({ type: String, example: "olena@example.com", format: "email" })
   email!: string;
 }
