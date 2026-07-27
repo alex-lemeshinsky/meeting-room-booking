@@ -1,7 +1,7 @@
 # Meeting Room Booking — дизайн агентного harness
 
 Дата: 2026-07-27
-Статус: затверджено
+Status: historical
 
 ## 1. Мета
 

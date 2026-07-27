@@ -1,6 +1,6 @@
 # Agent Harness Hardening Implementation Plan
 
-Status: draft
+Status: active
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` (recommended) or

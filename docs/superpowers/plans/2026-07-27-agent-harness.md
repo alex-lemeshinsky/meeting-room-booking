@@ -1,5 +1,10 @@
 # Universal Agent Harness Implementation Plan
 
+Status: historical
+
+> Historical record. Do not execute this plan; its implementation was
+> completed by commit `3d6316c` and later workflow changes superseded it.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Create one concise, universal root `AGENTS.md` that makes incremental development, architecture preservation, verification, documentation, and handoff reproducible across coding agents.
