@@ -3,6 +3,7 @@ docs/superpowers/
 .worktrees/
 .env
 .next/
+apps/web/next-env.d.ts
 .pnpm-store/
 apps/api/dist/
 apps/api/src/generated/prisma/
