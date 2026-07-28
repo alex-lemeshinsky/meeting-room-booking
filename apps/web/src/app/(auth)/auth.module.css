@@ -1,0 +1,135 @@
+.main {
+  display: grid;
+  min-height: 100vh;
+  padding: var(--space-6);
+  place-items: center;
+}
+
+.panel {
+  width: min(100%, 26.25rem);
+}
+
+.brand {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-primary);
+  font: var(--type-subheading);
+}
+
+.monogram {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--color-action-primary);
+  color: var(--color-on-action);
+  font: var(--type-label);
+}
+
+.title {
+  margin: var(--space-8) 0 var(--space-2);
+  font: var(--type-display);
+}
+
+.description {
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-secondary);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.label {
+  font: var(--type-label);
+}
+
+.input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font: var(--type-body);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.input:focus-visible,
+.primaryAction:focus-visible,
+.switchPrompt a:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.requestError,
+.success {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+}
+
+.requestError {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.success {
+  background: var(--color-booking-own-bg);
+  color: var(--color-booking-own);
+}
+
+.primaryAction {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--color-action-primary);
+  color: var(--color-on-action);
+  cursor: pointer;
+  font: var(--type-subheading);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.primaryAction:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+.primaryAction:disabled {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-disabled);
+  cursor: progress;
+}
+
+.switchPrompt {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.switchPrompt a {
+  color: var(--color-action-primary);
+  font-weight: 650;
+}
+
+@media (max-width: 30rem) {
+  .main {
+    padding: var(--space-4);
+  }
+}

@@ -1,18 +1,8 @@
-import styles from "./page.module.css";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { SESSION_COOKIE } from "../lib/auth/cookies";
 
-export default function HomePage() {
-  return (
-    <main className={styles.main}>
-      <section className={styles.card}>
-        <p className={styles.eyebrow}>ClearSpace foundation</p>
-        <h1>Meeting Rooms</h1>
-        <p className={styles.description}>
-          Вебзастосунок готується до першого функціонального етапу.
-        </p>
-        <a className={styles.primaryAction} href="/api/v1/health/live">
-          Перевірити API
-        </a>
-      </section>
-    </main>
-  );
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  redirect(cookieStore.has(SESSION_COOKIE) ? "/rooms" : "/login");
 }
