@@ -4,7 +4,7 @@ import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer
 } from "@testcontainers/postgresql";
-import { E2eLifecycle } from "./e2e-launcher.js";
+import { E2eLifecycle, getE2eApiExitDiagnostic } from "./e2e-launcher.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
 
@@ -59,14 +59,11 @@ try {
 
       if (!lifecycle.isShutdownRequested) {
         const exit = await lifecycle.waitForApiExit();
-        if (exit.error) {
-          console.error("E2E API process failed to start.");
-        } else if (
-          !lifecycle.isShutdownRequested &&
-          (exit.code !== 0 || exit.signal !== null)
-        ) {
-          console.error("E2E API process exited unexpectedly.");
-        }
+        const diagnostic = getE2eApiExitDiagnostic(
+          exit,
+          lifecycle.isShutdownRequested
+        );
+        if (diagnostic) console.error(diagnostic);
         lifecycle.requestShutdown(
           exit.code === 0 && exit.signal === null && !exit.error ? 0 : 1
         );

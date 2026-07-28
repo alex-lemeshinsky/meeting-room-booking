@@ -20,6 +20,21 @@ export interface E2eApiExit {
   signal: NodeJS.Signals | null;
 }
 
+export function getE2eApiExitDiagnostic(
+  exit: E2eApiExit,
+  shutdownRequested: boolean
+): string | undefined {
+  if (exit.error) {
+    return "E2E API process failed to start.";
+  }
+
+  if (!shutdownRequested && (exit.code !== 0 || exit.signal !== null)) {
+    return "E2E API process exited unexpectedly.";
+  }
+
+  return undefined;
+}
+
 interface E2eLifecycleOptions {
   terminationTimeoutMs?: number;
 }

@@ -1,6 +1,9 @@
 import { EventEmitter } from "node:events";
 import { describe, expect, it, vi } from "vitest";
-import { E2eLifecycle } from "../../scripts/e2e-launcher.js";
+import {
+  E2eLifecycle,
+  getE2eApiExitDiagnostic
+} from "../../scripts/e2e-launcher.js";
 
 class FakeApiProcess extends EventEmitter {
   exitCode: number | null = null;
@@ -53,5 +56,31 @@ describe("E2eLifecycle", () => {
     expect(api.signals).toEqual(["SIGTERM", "SIGKILL"]);
     expect(events).toEqual(["api", "postgres"]);
     expect(lifecycle.exitCode).toBe(143);
+  });
+});
+
+describe("getE2eApiExitDiagnostic", () => {
+  it("stays quiet when an intentional shutdown terminates the API child", () => {
+    expect(
+      getE2eApiExitDiagnostic(
+        { code: null, error: false, signal: "SIGTERM" },
+        true
+      )
+    ).toBeUndefined();
+  });
+
+  it.each([
+    { code: 1, error: false, signal: null },
+    { code: null, error: false, signal: "SIGKILL" as const }
+  ])("diagnoses an unexpected API child exit %#", (exit) => {
+    expect(getE2eApiExitDiagnostic(exit, false)).toBe(
+      "E2E API process exited unexpectedly."
+    );
+  });
+
+  it("diagnoses an API child spawn error", () => {
+    expect(
+      getE2eApiExitDiagnostic({ code: null, error: true, signal: null }, false)
+    ).toBe("E2E API process failed to start.");
   });
 });
