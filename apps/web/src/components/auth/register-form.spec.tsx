@@ -118,6 +118,26 @@ describe("RegisterForm", () => {
     );
   });
 
+  it("falls back to a general error when the server fields container is an array", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiError("VALIDATION_ERROR", [["invalid"]]))
+    );
+    render(<RegisterForm />);
+
+    await user.type(screen.getByLabelText("Ім’я"), "Олена");
+    await user.type(screen.getByLabelText("Email"), "olena@example.com");
+    await user.type(screen.getByLabelText("Пароль"), "secret-password");
+    await user.click(
+      screen.getByRole("button", { name: "Створити обліковий запис" })
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося створити обліковий запис. Спробуйте ще раз."
+    );
+  });
+
   it("redirects to login after a successful registration", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue(apiSuccess());
