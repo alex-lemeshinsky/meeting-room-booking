@@ -175,7 +175,7 @@ export function RegisterForm() {
         disabled={isPending}
         type="submit"
       >
-        {isPending ? "Створення…" : "Створити обліковий запис"}
+        {isPending ? "Створення…" : "Зареєструватися"}
       </button>
       <p className={styles.switchPrompt}>
         Уже маєте обліковий запис? <Link href="/login">Увійти</Link>

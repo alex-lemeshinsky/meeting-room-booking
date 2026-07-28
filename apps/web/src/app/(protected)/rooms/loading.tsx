@@ -9,7 +9,7 @@ export default function RoomsLoading() {
     >
       <div className={styles.pageIntro}>
         <p className={styles.eyebrow}>Простори для зустрічей</p>
-        <h1>Кімнати</h1>
+        <h1>Переговорні кімнати</h1>
       </div>
       <div className={styles.skeletonList}>
         {Array.from({ length: 6 }, (_, index) => (

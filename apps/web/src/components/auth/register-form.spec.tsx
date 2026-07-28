@@ -56,9 +56,7 @@ describe("RegisterForm", () => {
     const user = userEvent.setup();
     render(<RegisterForm />);
 
-    await user.click(
-      screen.getByRole("button", { name: "Створити обліковий запис" })
-    );
+    await user.click(screen.getByRole("button", { name: "Зареєструватися" }));
 
     expect(screen.getByLabelText("Ім’я")).toHaveFocus();
   });
@@ -78,9 +76,7 @@ describe("RegisterForm", () => {
     await user.type(screen.getByLabelText("Ім’я"), "Олена");
     await user.type(screen.getByLabelText("Email"), "olena@example.com");
     await user.type(screen.getByLabelText("Пароль"), "secret-password");
-    await user.click(
-      screen.getByRole("button", { name: "Створити обліковий запис" })
-    );
+    await user.click(screen.getByRole("button", { name: "Зареєструватися" }));
 
     expect(
       await screen.findByText("Обліковий запис із цим email уже існує")
@@ -105,9 +101,7 @@ describe("RegisterForm", () => {
     await user.type(screen.getByLabelText("Ім’я"), "Олена");
     await user.type(screen.getByLabelText("Email"), "olena@example.com");
     await user.type(screen.getByLabelText("Пароль"), "secret-password");
-    await user.click(
-      screen.getByRole("button", { name: "Створити обліковий запис" })
-    );
+    await user.click(screen.getByRole("button", { name: "Зареєструватися" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Не вдалося створити обліковий запис. Спробуйте ще раз."
@@ -129,9 +123,7 @@ describe("RegisterForm", () => {
     await user.type(screen.getByLabelText("Ім’я"), "Олена");
     await user.type(screen.getByLabelText("Email"), "olena@example.com");
     await user.type(screen.getByLabelText("Пароль"), "secret-password");
-    await user.click(
-      screen.getByRole("button", { name: "Створити обліковий запис" })
-    );
+    await user.click(screen.getByRole("button", { name: "Зареєструватися" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Не вдалося створити обліковий запис. Спробуйте ще раз."
@@ -147,9 +139,7 @@ describe("RegisterForm", () => {
     await user.type(screen.getByLabelText("Ім’я"), "Олена");
     await user.type(screen.getByLabelText("Email"), "olena@example.com");
     await user.type(screen.getByLabelText("Пароль"), "secret-password");
-    await user.click(
-      screen.getByRole("button", { name: "Створити обліковий запис" })
-    );
+    await user.click(screen.getByRole("button", { name: "Зареєструватися" }));
 
     expect(router.replace).toHaveBeenCalledWith("/login?registered=1");
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/register", {

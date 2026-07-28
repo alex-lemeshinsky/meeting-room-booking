@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
@@ -12,14 +12,18 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "pnpm --filter @mrb/api dev",
-      url: "http://127.0.0.1:3001/api/v1/health/live",
-      reuseExistingServer: !process.env.CI
+      command: "pnpm --filter @mrb/api exec tsx scripts/start-e2e.ts",
+      url: "http://127.0.0.1:3001/api/v1/health/ready",
+      reuseExistingServer: false,
+      timeout: 120_000
     },
     {
       command: "pnpm --filter @mrb/web dev",
       url: "http://127.0.0.1:3000",
-      reuseExistingServer: !process.env.CI
+      reuseExistingServer: false,
+      env: {
+        API_INTERNAL_URL: "http://127.0.0.1:3001"
+      }
     }
   ]
 });

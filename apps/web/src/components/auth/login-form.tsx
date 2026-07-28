@@ -161,7 +161,7 @@ export function LoginForm({ registered = false }: LoginFormProps) {
       </button>
       <p className={styles.switchPrompt}>
         Ще не маєте облікового запису?{" "}
-        <Link href="/register">Зареєструватися</Link>
+        <Link href="/register">Створити обліковий запис</Link>
       </p>
     </form>
   );

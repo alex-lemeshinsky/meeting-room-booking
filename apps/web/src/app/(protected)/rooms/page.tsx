@@ -12,7 +12,7 @@ export default async function RoomsPage() {
       <section className={styles.roomsPage} aria-labelledby="rooms-title">
         <div className={styles.pageIntro}>
           <p className={styles.eyebrow}>Простори для зустрічей</p>
-          <h1 id="rooms-title">Кімнати</h1>
+          <h1 id="rooms-title">Переговорні кімнати</h1>
           <p>Оберіть переговорну кімнату для наступної зустрічі.</p>
         </div>
         <RoomList rooms={rooms} />
