@@ -13,6 +13,7 @@ import {
   ApiBody,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiHeader,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
@@ -82,6 +83,11 @@ export class AuthController {
   @UseGuards(SessionGuard, CsrfGuard)
   @ApiOperation({ operationId: "logout" })
   @ApiCookieAuth()
+  @ApiHeader({
+    name: "X-CSRF-Token",
+    required: true,
+    schema: { type: "string" }
+  })
   @ApiNoContentResponse()
   async logout(
     @Req() request: AuthenticatedRequest,

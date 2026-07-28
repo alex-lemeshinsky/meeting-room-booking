@@ -36,6 +36,14 @@ describe("OpenAPI document", () => {
     expect(document.paths["/api/v1/auth/logout"]?.post?.operationId).toBe(
       "logout"
     );
+    expect(
+      document.paths["/api/v1/auth/logout"]?.post?.parameters
+    ).toContainEqual({
+      in: "header",
+      name: "X-CSRF-Token",
+      required: true,
+      schema: { type: "string" }
+    });
     expect(document.paths["/api/v1/auth/session"]?.get?.operationId).toBe(
       "getSession"
     );
