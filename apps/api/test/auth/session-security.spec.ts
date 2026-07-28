@@ -165,6 +165,21 @@ describe("session authentication", () => {
     const [query, ...parameters] = vi.mocked(database.$executeRaw).mock
       .calls[0]!;
     expect(Array.isArray(query) && "raw" in query).toBe(true);
+    const normalizedSql = normalizeTaggedSql(query, parameters.length);
+    expect(normalizedSql).toBe(
+      [
+        'UPDATE "sessions"',
+        "SET",
+        '"last_seen_at" = GREATEST("last_seen_at", $1),',
+        '"idle_expires_at" = LEAST(',
+        '"absolute_expires_at",',
+        'GREATEST("idle_expires_at", $2)',
+        ")",
+        'WHERE "id" = $3::uuid',
+        'AND "idle_expires_at" > $4',
+        'AND "absolute_expires_at" > $5'
+      ].join(" ")
+    );
     expect(parameters).toEqual([
       NOW,
       new Date("2026-08-02T12:00:00.000Z"),
@@ -279,6 +294,20 @@ describe("session and CSRF guards", () => {
 
 function fixedClock(): Clock {
   return { now: () => new Date(NOW) };
+}
+
+function normalizeTaggedSql(query: unknown, parameterCount: number): string {
+  if (!Array.isArray(query) || !("raw" in query)) {
+    throw new TypeError("Expected a tagged SQL template");
+  }
+  return query
+    .map(
+      (fragment, index) =>
+        `${String(fragment)}${index < parameterCount ? `$${index + 1}` : ""}`
+    )
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function databaseWithSession(
