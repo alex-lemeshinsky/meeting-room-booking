@@ -62,18 +62,23 @@ export class SessionService {
       throw unauthenticated();
     }
 
-    const update = await this.database.session.updateMany({
-      where: {
-        id: session.id,
-        idleExpiresAt: { gt: now },
-        absoluteExpiresAt: { gt: now }
-      },
-      data: {
-        lastSeenAt: new Date(now),
-        idleExpiresAt: calculateNextIdleExpiry(now, session.absoluteExpiresAt)
-      }
-    });
-    if (update.count !== 1) throw unauthenticated();
+    const nextIdleExpiresAt = calculateNextIdleExpiry(
+      now,
+      session.absoluteExpiresAt
+    );
+    const updatedCount = await this.database.$executeRaw`
+      UPDATE "sessions"
+      SET
+        "last_seen_at" = GREATEST("last_seen_at", ${now}),
+        "idle_expires_at" = LEAST(
+          "absolute_expires_at",
+          GREATEST("idle_expires_at", ${nextIdleExpiresAt})
+        )
+      WHERE "id" = ${session.id}::uuid
+        AND "idle_expires_at" > ${now}
+        AND "absolute_expires_at" > ${now}
+    `;
+    if (updatedCount !== 1) throw unauthenticated();
 
     return {
       user: {

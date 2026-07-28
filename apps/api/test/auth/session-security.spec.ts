@@ -161,17 +161,17 @@ describe("session authentication", () => {
         absoluteExpiresAt: new Date("2026-08-02T12:00:00.000Z")
       })
     });
-    expect(database.session.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: "e40b96ad-6035-4b0c-aa18-9ad901813a96",
-        idleExpiresAt: { gt: NOW },
-        absoluteExpiresAt: { gt: NOW }
-      },
-      data: {
-        lastSeenAt: NOW,
-        idleExpiresAt: new Date("2026-08-02T12:00:00.000Z")
-      }
-    });
+    expect(database.$executeRaw).toHaveBeenCalledOnce();
+    const [query, ...parameters] = vi.mocked(database.$executeRaw).mock
+      .calls[0]!;
+    expect(Array.isArray(query) && "raw" in query).toBe(true);
+    expect(parameters).toEqual([
+      NOW,
+      new Date("2026-08-02T12:00:00.000Z"),
+      "e40b96ad-6035-4b0c-aa18-9ad901813a96",
+      NOW,
+      NOW
+    ]);
   });
 
   it("rejects a missing, expired, or concurrently invalidated session", async () => {
@@ -290,6 +290,7 @@ function databaseWithSession(
   } = {}
 ): DatabaseService {
   return {
+    $executeRaw: vi.fn().mockResolvedValue(options.updateCount ?? 1),
     session: {
       create: vi.fn(),
       deleteMany: vi.fn(),
@@ -309,8 +310,7 @@ function databaseWithSession(
           name: "Олена",
           emailNormalized: "olena@example.com"
         }
-      }),
-      updateMany: vi.fn().mockResolvedValue({ count: options.updateCount ?? 1 })
+      })
     }
   } as unknown as DatabaseService;
 }

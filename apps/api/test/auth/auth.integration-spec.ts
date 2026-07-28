@@ -1,6 +1,10 @@
 import { DatabaseService } from "../../src/database/database.service.js";
-import { hashSecret } from "../../src/auth/session/session-crypto.js";
-import { FixedClock } from "@mrb/time";
+import {
+  createSecret,
+  hashSecret
+} from "../../src/auth/session/session-crypto.js";
+import { SessionService } from "../../src/auth/session/session.service.js";
+import { FixedClock, type Clock } from "@mrb/time";
 import type { PostgresTestApp } from "../support/postgres-test-app.js";
 import { startPostgresTestApp } from "../support/postgres-test-app.js";
 import request from "supertest";
@@ -194,6 +198,60 @@ describe("authentication session lifecycle", () => {
     );
   });
 
+  it("keeps session refresh timestamps monotonic when older work commits last", async () => {
+    const database = context.app.get(DatabaseService);
+    const sessionSecret = createSecret();
+    const user = await database.user.create({
+      data: {
+        name: "Конкурентна Олена",
+        emailNormalized: "concurrent-session@example.com",
+        passwordHash: "not-used-by-this-session-test"
+      }
+    });
+    const session = await database.session.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashSecret(sessionSecret),
+        csrfTokenHash: hashSecret(createSecret()),
+        lastSeenAt: new Date("2026-07-27T12:00:00.000Z"),
+        idleExpiresAt: new Date("2026-08-03T12:00:00.000Z"),
+        absoluteExpiresAt: new Date("2026-08-26T12:00:00.000Z")
+      }
+    });
+    const olderNow = new Date("2026-07-28T12:00:00.000Z");
+    const newerNow = new Date("2026-07-29T12:00:00.000Z");
+    const olderMutation = blockNextSessionMutation(database);
+    const older = new SessionService(
+      olderMutation.database,
+      clockAt(olderNow)
+    ).authenticate(sessionSecret);
+
+    await olderMutation.reached;
+    const newerOutcome = await settle(
+      new SessionService(database, clockAt(newerNow)).authenticate(
+        sessionSecret
+      )
+    );
+    olderMutation.release();
+    const olderOutcome = await settle(older);
+
+    expect(newerOutcome).toMatchObject({
+      status: "fulfilled",
+      value: { session: { id: session.id } }
+    });
+    expect(olderOutcome).toMatchObject({
+      status: "fulfilled",
+      value: { session: { id: session.id } }
+    });
+    const refreshed = await database.session.findUniqueOrThrow({
+      where: { id: session.id }
+    });
+    expect(refreshed.lastSeenAt.toISOString()).toBe("2026-07-29T12:00:00.000Z");
+    expect(refreshed.idleExpiresAt.toISOString()).toBe(
+      "2026-08-05T12:00:00.000Z"
+    );
+  });
+
   it("rejects missing, idle-expired, and absolute-expired sessions", async () => {
     const server = context.app.getHttpServer();
     const database = context.app.get(DatabaseService);
@@ -315,4 +373,74 @@ function errorIdentity(body: { error?: { code?: string; message?: string } }): {
   message: string | undefined;
 } {
   return { code: body.error?.code, message: body.error?.message };
+}
+
+function clockAt(now: Date): Clock {
+  return { now: () => new Date(now) };
+}
+
+function blockNextSessionMutation(database: DatabaseService): {
+  database: DatabaseService;
+  reached: Promise<void>;
+  release(): void;
+} {
+  let markReached!: () => void;
+  let release!: () => void;
+  const reached = new Promise<void>((resolve) => {
+    markReached = resolve;
+  });
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let blocked = false;
+  const pauseOnce = async <T>(mutation: () => Promise<T>): Promise<T> => {
+    if (!blocked) {
+      blocked = true;
+      markReached();
+      await released;
+    }
+    return mutation();
+  };
+  const session = new Proxy(database.session, {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver);
+      if (property === "updateMany") {
+        return (...args: unknown[]) =>
+          pauseOnce(() =>
+            Reflect.apply(
+              value as (...parameters: unknown[]) => Promise<unknown>,
+              target,
+              args
+            )
+          );
+      }
+      return typeof value === "function" ? value.bind(target) : value;
+    }
+  });
+  const executeRaw = database.$executeRaw.bind(database);
+  const blockingDatabase = {
+    session,
+    $executeRaw: (...args: unknown[]) =>
+      pauseOnce(() =>
+        Reflect.apply(
+          executeRaw as (...parameters: unknown[]) => Promise<number>,
+          database,
+          args
+        )
+      )
+  } as unknown as DatabaseService;
+
+  return { database: blockingDatabase, reached, release };
+}
+
+async function settle<T>(
+  promise: Promise<T>
+): Promise<
+  { status: "fulfilled"; value: T } | { status: "rejected"; reason: unknown }
+> {
+  try {
+    return { status: "fulfilled", value: await promise };
+  } catch (reason) {
+    return { status: "rejected", reason };
+  }
 }
