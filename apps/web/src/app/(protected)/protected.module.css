@@ -1,0 +1,226 @@
+.appShell {
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  min-height: 4rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.productIdentity,
+.userControls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-subheading);
+}
+
+.productMark {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--color-action-primary);
+  color: var(--color-on-action);
+  font: var(--type-label);
+}
+
+.userName {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font: var(--type-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutControl {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+}
+
+.logoutControl p {
+  max-width: 16rem;
+  margin: 0;
+  color: var(--color-danger);
+  font: var(--type-caption);
+  text-align: end;
+}
+
+.logoutButton,
+.retryButton {
+  min-height: 2.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: var(--type-subheading);
+  padding: 0 var(--space-3);
+}
+
+.logoutButton:hover,
+.retryButton:hover {
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary);
+}
+
+.logoutButton:focus-visible,
+.retryButton:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.logoutButton:disabled {
+  cursor: wait;
+  color: var(--color-text-disabled);
+}
+
+.main {
+  width: min(100%, 75rem);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
+.roomsPage {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.pageIntro h1,
+.errorState h1 {
+  margin: 0;
+  font: var(--type-title);
+}
+
+.pageIntro p:not(.eyebrow),
+.emptyState p,
+.errorState p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--color-action-primary);
+  font: var(--type-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.roomList,
+.skeletonList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roomCard,
+.skeletonRow,
+.emptyState,
+.errorState {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+.roomCard {
+  min-height: 9.5rem;
+  padding: var(--space-6);
+}
+
+.roomCard h2,
+.emptyState h2 {
+  margin: 0;
+  font: var(--type-heading);
+}
+
+.roomDetails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-6) 0 0;
+}
+
+.roomDetails div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.roomDetails dt {
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+
+.roomDetails dd {
+  margin: 0;
+  font: var(--type-subheading);
+}
+
+.emptyState,
+.errorState {
+  padding: var(--space-8);
+}
+
+.errorState {
+  max-width: 38rem;
+}
+
+.retryButton {
+  margin-top: var(--space-6);
+  border-color: var(--color-action-primary);
+  background: var(--color-action-primary);
+  color: var(--color-on-action);
+}
+
+.retryButton:hover {
+  border-color: var(--color-action-hover);
+  background: var(--color-action-hover);
+  color: var(--color-on-action);
+}
+
+.skeletonRow {
+  position: relative;
+  min-height: 9.5rem;
+  overflow: hidden;
+  background: var(--color-bg-subtle);
+}
+
+.skeletonRow::after {
+  position: absolute;
+  inset: var(--space-6);
+  border-radius: var(--radius-control);
+  background: var(--color-border-default);
+  content: "";
+}
+
+@media (max-width: 40rem) {
+  .header {
+    padding-inline: var(--space-4);
+  }
+
+  .main {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .roomList,
+  .skeletonList {
+    grid-template-columns: 1fr;
+  }
+
+  .userName {
+    max-width: 7rem;
+  }
+}
