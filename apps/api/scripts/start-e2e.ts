@@ -1,20 +1,12 @@
-import {
-  spawn,
-  spawnSync,
-  type ChildProcess,
-  type SpawnSyncOptions
-} from "node:child_process";
+import { spawn, spawnSync, type SpawnSyncOptions } from "node:child_process";
 import { resolve } from "node:path";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer
 } from "@testcontainers/postgresql";
+import { E2eLifecycle } from "./e2e-launcher.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
-
-let api: ChildProcess | undefined;
-let postgres: StartedPostgreSqlContainer | undefined;
-let cleanup: Promise<void> | undefined;
 
 function runPrisma(
   args: string[],
@@ -28,62 +20,62 @@ function runPrisma(
   }
 }
 
-async function stop(exitCode: number): Promise<void> {
-  if (!cleanup) {
-    cleanup = (async () => {
-      if (api && api.exitCode === null && !api.killed) {
-        api.kill("SIGTERM");
-      }
+const lifecycle = new E2eLifecycle();
 
-      await postgres?.stop();
-    })();
-  }
-
-  try {
-    await cleanup;
-  } finally {
-    process.exitCode = exitCode;
-  }
-}
-
-function stopForSignal(exitCode: number): void {
-  void stop(exitCode);
-}
-
-process.once("SIGINT", () => stopForSignal(130));
-process.once("SIGTERM", () => stopForSignal(143));
+process.once("SIGINT", () => lifecycle.requestShutdown(130));
+process.once("SIGTERM", () => lifecycle.requestShutdown(143));
 
 try {
-  postgres = await new PostgreSqlContainer("postgres:18.4-alpine").start();
-  const databaseUrl = postgres.getConnectionUri();
-  const environment = {
-    ...process.env,
-    DATABASE_URL: databaseUrl,
-    APP_ORIGIN: "http://127.0.0.1:3000",
-    NODE_ENV: "test",
-    PORT: "3001"
-  };
-  const commandOptions = {
-    cwd: repositoryRoot,
-    env: environment,
-    stdio: "inherit" as const
-  };
+  if (!lifecycle.isShutdownRequested) {
+    const postgres: StartedPostgreSqlContainer = await new PostgreSqlContainer(
+      "postgres:18.4-alpine"
+    ).start();
+    lifecycle.attachPostgres(postgres);
 
-  runPrisma(["migrate", "deploy"], "migration", commandOptions);
-  runPrisma(["db", "seed"], "seed", commandOptions);
+    if (!lifecycle.isShutdownRequested) {
+      const databaseUrl = postgres.getConnectionUri();
+      const environment = {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+        APP_ORIGIN: "http://127.0.0.1:3000",
+        NODE_ENV: "test",
+        PORT: "3001"
+      };
+      const commandOptions = {
+        cwd: repositoryRoot,
+        env: environment,
+        stdio: "inherit" as const
+      };
 
-  api = spawn(
-    "pnpm",
-    ["--filter", "@mrb/api", "exec", "tsx", "src/main.ts"],
-    commandOptions
-  );
+      runPrisma(["migrate", "deploy"], "migration", commandOptions);
+      runPrisma(["db", "seed"], "seed", commandOptions);
 
-  api.once("error", () => {
-    void stop(1);
-  });
-  api.once("exit", (code, signal) => {
-    void stop(code === 0 && signal === null ? 0 : 1);
-  });
+      const api = spawn(
+        "pnpm",
+        ["--filter", "@mrb/api", "exec", "tsx", "src/main.ts"],
+        commandOptions
+      );
+      lifecycle.attachApi(api);
+
+      if (!lifecycle.isShutdownRequested) {
+        const exit = await lifecycle.waitForApiExit();
+        if (exit.error) {
+          console.error("E2E API process failed to start.");
+        } else if (exit.code !== 0 || exit.signal !== null) {
+          console.error("E2E API process exited unexpectedly.");
+        }
+        lifecycle.requestShutdown(
+          exit.code === 0 && exit.signal === null && !exit.error ? 0 : 1
+        );
+      }
+    }
+  }
 } catch {
-  await stop(1);
+  console.error("E2E launcher startup failed.");
+  lifecycle.requestShutdown(1);
+} finally {
+  if (!(await lifecycle.finalize())) {
+    console.error("E2E API process did not exit after shutdown.");
+  }
+  process.exitCode = lifecycle.exitCode;
 }
