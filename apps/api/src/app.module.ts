@@ -5,9 +5,11 @@ import { AuthModule } from "./auth/auth.module.js";
 import { CommonModule } from "./common/common.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
+import { RoomsController } from "./rooms/rooms.controller.js";
 import { RoomsModule } from "./rooms/rooms.module.js";
 
 @Module({
+  controllers: [RoomsController],
   imports: [
     ConfigModule.forRoot({
       envFilePath: resolve(process.cwd(), "../../.env"),

@@ -17,8 +17,10 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiResponse,
   ApiTags
 } from "@nestjs/swagger";
+import { ApiErrorDto } from "../common/http/api-error.dto.js";
 import type { Response } from "express";
 import { AuthService } from "./auth.service.js";
 import type { AuthenticatedRequest } from "./auth.types.js";
@@ -46,6 +48,11 @@ export class AuthController {
   @ApiOperation({ operationId: "register" })
   @ApiBody({ type: RegisterDto })
   @ApiCreatedResponse({ type: AuthResponseDto })
+  @ApiResponse({ status: 400, type: ApiErrorDto })
+  @ApiResponse({ status: 403, type: ApiErrorDto })
+  @ApiResponse({ status: 409, type: ApiErrorDto })
+  @ApiResponse({ status: 415, type: ApiErrorDto })
+  @ApiResponse({ status: 500, type: ApiErrorDto })
   register(@Body() input: RegisterDto): Promise<AuthResponseDto> {
     return this.auth.register(input);
   }
@@ -56,6 +63,11 @@ export class AuthController {
   @ApiOperation({ operationId: "login" })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({ type: AuthResponseDto })
+  @ApiResponse({ status: 400, type: ApiErrorDto })
+  @ApiResponse({ status: 401, type: ApiErrorDto })
+  @ApiResponse({ status: 403, type: ApiErrorDto })
+  @ApiResponse({ status: 415, type: ApiErrorDto })
+  @ApiResponse({ status: 500, type: ApiErrorDto })
   async login(
     @Body() input: LoginDto,
     @Res({ passthrough: true }) response: Response
@@ -74,6 +86,8 @@ export class AuthController {
   @ApiOperation({ operationId: "getSession" })
   @ApiCookieAuth()
   @ApiOkResponse({ type: AuthResponseDto })
+  @ApiResponse({ status: 401, type: ApiErrorDto })
+  @ApiResponse({ status: 500, type: ApiErrorDto })
   session(@Req() request: AuthenticatedRequest): AuthResponseDto {
     return { user: request.auth.user };
   }
@@ -89,6 +103,10 @@ export class AuthController {
     schema: { type: "string" }
   })
   @ApiNoContentResponse()
+  @ApiResponse({ status: 401, type: ApiErrorDto })
+  @ApiResponse({ status: 403, type: ApiErrorDto })
+  @ApiResponse({ status: 415, type: ApiErrorDto })
+  @ApiResponse({ status: 500, type: ApiErrorDto })
   async logout(
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response

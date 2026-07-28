@@ -1,11 +1,4 @@
-export interface ApiErrorBody {
-  error: {
-    code: string;
-    message: string;
-    fields?: Record<string, string[]>;
-    requestId: string;
-  };
-}
+import type { ApiErrorBody } from "./contracts";
 
 export class BrowserApiError extends Error {
   readonly code: string;

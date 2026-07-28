@@ -3,9 +3,11 @@ import {
   ApiCookieAuth,
   ApiOkResponse,
   ApiOperation,
+  ApiResponse,
   ApiTags
 } from "@nestjs/swagger";
 import { SessionGuard } from "../auth/guards/session.guard.js";
+import { ApiErrorDto } from "../common/http/api-error.dto.js";
 import { RoomListResponseDto } from "./room.dto.js";
 import { RoomsService } from "./rooms.service.js";
 
@@ -19,6 +21,8 @@ export class RoomsController {
   @ApiOperation({ operationId: "listRooms" })
   @ApiCookieAuth()
   @ApiOkResponse({ type: RoomListResponseDto })
+  @ApiResponse({ status: 401, type: ApiErrorDto })
+  @ApiResponse({ status: 500, type: ApiErrorDto })
   async list(): Promise<RoomListResponseDto> {
     return { rooms: await this.rooms.list() };
   }

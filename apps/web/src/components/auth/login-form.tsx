@@ -10,6 +10,7 @@ import styles from "../../app/(auth)/auth.module.css";
 
 interface LoginFormProps {
   registered?: boolean;
+  sessionEnded?: boolean;
 }
 
 type LoginValues = LoginBody;
@@ -24,7 +25,10 @@ function validate(values: LoginValues): FieldErrors {
   };
 }
 
-export function LoginForm({ registered = false }: LoginFormProps) {
+export function LoginForm({
+  registered = false,
+  sessionEnded = false
+}: LoginFormProps) {
   const router = useRouter();
   const [values, setValues] = useState<LoginValues>({
     email: "",
@@ -95,6 +99,11 @@ export function LoginForm({ registered = false }: LoginFormProps) {
       {registered ? (
         <p className={styles.success}>
           Обліковий запис створено. Тепер увійдіть.
+        </p>
+      ) : null}
+      {sessionEnded ? (
+        <p className={styles.success} role="status">
+          Сесія завершилася. Увійдіть знову.
         </p>
       ) : null}
       <div className={styles.field}>

@@ -1,7 +1,19 @@
-import type { INestApplication } from "@nestjs/common";
+import { Controller, Get, Module, type INestApplication } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "../../src/bootstrap.js";
+import { configureApp, createApp } from "../../src/bootstrap.js";
+
+@Controller("unexpected")
+class UnexpectedErrorController {
+  @Get()
+  fail(): never {
+    throw new Error("private-stack-marker");
+  }
+}
+
+@Module({ controllers: [UnexpectedErrorController] })
+class UnexpectedErrorModule {}
 
 describe("HTTP boundary", () => {
   let app: INestApplication;
@@ -57,5 +69,34 @@ describe("HTTP boundary", () => {
       .expect(415);
 
     expect(response.body.error.code).toBe("UNSUPPORTED_MEDIA_TYPE");
+  });
+
+  it("returns a stable redacted envelope for an unexpected exception", async () => {
+    const testingModule = await Test.createTestingModule({
+      imports: [UnexpectedErrorModule]
+    }).compile();
+    const errorApp = configureApp(testingModule.createNestApplication());
+
+    try {
+      await errorApp.init();
+      const response = await request(errorApp.getHttpServer())
+        .get("/api/v1/unexpected")
+        .set("X-Request-Id", "request-unexpected")
+        .expect(500);
+
+      expect(response.body).toEqual({
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Internal server error",
+          requestId: "request-unexpected"
+        }
+      });
+      expect(JSON.stringify(response.body)).not.toContain(
+        "private-stack-marker"
+      );
+      expect(JSON.stringify(response.body)).not.toContain("stack");
+    } finally {
+      await errorApp.close();
+    }
   });
 });

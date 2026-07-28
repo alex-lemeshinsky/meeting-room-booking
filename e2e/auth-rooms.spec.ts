@@ -12,6 +12,9 @@ test.describe.serial("authentication and rooms", () => {
 
     await page.goto("/rooms");
     await expect(page).toHaveURL(/\/login\?reason=session/);
+    await expect(page.getByRole("status")).toHaveText(
+      "Сесія завершилася. Увійдіть знову."
+    );
 
     await page.getByRole("link", { name: "Створити обліковий запис" }).click();
     await page.getByLabel("Ім’я").fill("Тестова користувачка");
@@ -42,6 +45,9 @@ test.describe.serial("authentication and rooms", () => {
     await expect(page).toHaveURL(/\/login\?loggedOut=1/);
     await page.goto("/rooms");
     await expect(page).toHaveURL(/\/login\?reason=session/);
+    await expect(page.getByRole("status")).toHaveText(
+      "Сесія завершилася. Увійдіть знову."
+    );
   });
 
   test("fits authentication and rooms pages at the approved mobile viewport", async ({

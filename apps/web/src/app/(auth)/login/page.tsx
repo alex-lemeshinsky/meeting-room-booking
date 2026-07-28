@@ -2,12 +2,16 @@ import { LoginForm } from "../../../components/auth/login-form";
 import styles from "../auth.module.css";
 
 interface LoginPageProps {
-  searchParams?: Promise<{ registered?: string | string[] }>;
+  searchParams?: Promise<{
+    reason?: string | string[];
+    registered?: string | string[];
+  }>;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const registered = params?.registered === "1";
+  const sessionEnded = params?.reason === "session";
 
   return (
     <main className={styles.main}>
@@ -24,7 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className={styles.description}>
           Використайте свій робочий обліковий запис.
         </p>
-        <LoginForm registered={registered} />
+        <LoginForm registered={registered} sessionEnded={sessionEnded} />
       </section>
     </main>
   );

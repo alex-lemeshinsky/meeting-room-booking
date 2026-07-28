@@ -83,7 +83,7 @@ function toApiError(exception: unknown): {
 
   return {
     status: 500,
-    code: "INTERNAL_SERVER_ERROR",
+    code: "INTERNAL_ERROR",
     message: "Internal server error"
   };
 }

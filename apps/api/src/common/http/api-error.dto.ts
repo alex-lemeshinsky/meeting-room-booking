@@ -1,10 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 export class ApiErrorDetailsDto {
-  @ApiProperty({ example: "VALIDATION_ERROR" })
+  @ApiProperty({ type: String, example: "VALIDATION_ERROR" })
   code!: string;
 
-  @ApiProperty({ example: "Request validation failed" })
+  @ApiProperty({ type: String, example: "Request validation failed" })
   message!: string;
 
   @ApiProperty({
@@ -14,7 +14,10 @@ export class ApiErrorDetailsDto {
   })
   fields?: Record<string, string[]>;
 
-  @ApiProperty({ example: "b6a3a1f7-07d8-4fd8-a0c5-ff1f5aa9b568" })
+  @ApiProperty({
+    type: String,
+    example: "b6a3a1f7-07d8-4fd8-a0c5-ff1f5aa9b568"
+  })
   requestId!: string;
 }
 
