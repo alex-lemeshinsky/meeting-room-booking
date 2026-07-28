@@ -50,7 +50,8 @@ describe("startPostgresTestApp", () => {
     expect(state.app.close).toHaveBeenCalledOnce();
     expect(state.postgres.stop).toHaveBeenCalledOnce();
     expect(state.app.close.mock.invocationCallOrder[0]).toBeLessThan(
-      state.postgres.stop.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY
+      state.postgres.stop.mock.invocationCallOrder[0] ??
+        Number.POSITIVE_INFINITY
     );
   });
 });

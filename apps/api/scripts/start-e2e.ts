@@ -61,7 +61,10 @@ try {
         const exit = await lifecycle.waitForApiExit();
         if (exit.error) {
           console.error("E2E API process failed to start.");
-        } else if (exit.code !== 0 || exit.signal !== null) {
+        } else if (
+          !lifecycle.isShutdownRequested &&
+          (exit.code !== 0 || exit.signal !== null)
+        ) {
           console.error("E2E API process exited unexpectedly.");
         }
         lifecycle.requestShutdown(

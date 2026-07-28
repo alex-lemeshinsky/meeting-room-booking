@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { URL } from "node:url";
 import { promisify } from "node:util";
 
 import {
@@ -454,4 +455,16 @@ test("resolves encoded relative paths and file fragments", async () => {
 
     assert.deepEqual(result, { packageCount: 5 });
   });
+});
+
+test("documents the auth and rooms clean-machine setup", async () => {
+  const [envExample, readme] = await Promise.all([
+    readFile(new URL("../.env.example", import.meta.url), "utf8"),
+    readFile(new URL("../README.md", import.meta.url), "utf8")
+  ]);
+
+  assert.match(envExample, /^APP_ORIGIN=http:\/\/localhost:3000$/m);
+  assert.match(readme, /pnpm db:seed/);
+  assert.match(readme, /olena@example\.com/);
+  assert.match(readme, /alex@example\.com/);
 });

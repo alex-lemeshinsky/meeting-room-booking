@@ -58,6 +58,8 @@ test.describe.serial("authentication and rooms", () => {
     ).toBe(true);
 
     await page.getByRole("link", { name: "Створити обліковий запис" }).click();
+    await expect(page).toHaveURL(/\/register/);
+    await expect(page.getByLabel("Ім’я")).toBeVisible();
     expect(
       await page
         .locator("html")
