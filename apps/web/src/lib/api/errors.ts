@@ -35,6 +35,19 @@ export function isApiErrorBody(value: unknown): value is ApiErrorBody {
     "requestId" in error &&
     typeof error.code === "string" &&
     typeof error.message === "string" &&
-    typeof error.requestId === "string"
+    typeof error.requestId === "string" &&
+    (!("fields" in error) || isFieldErrors(error.fields))
+  );
+}
+
+function isFieldErrors(value: unknown): value is Record<string, string[]> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Object.values(value).every(
+      (messages) =>
+        Array.isArray(messages) &&
+        messages.every((message) => typeof message === "string")
+    )
   );
 }

@@ -120,7 +120,8 @@ describe("LoginForm", () => {
 
   it("redirects to rooms and refreshes after a successful login", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(apiSuccess()));
+    const fetchMock = vi.fn().mockResolvedValue(apiSuccess());
+    vi.stubGlobal("fetch", fetchMock);
     render(<LoginForm />);
 
     await user.type(screen.getByLabelText("Email"), "olena@example.com");
@@ -129,5 +130,16 @@ describe("LoginForm", () => {
 
     expect(router.replace).toHaveBeenCalledWith("/rooms");
     expect(router.refresh).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "olena@example.com",
+        password: "secret-password"
+      })
+    });
+    expect(
+      (fetchMock.mock.calls[0]?.[1] as RequestInit).headers
+    ).not.toHaveProperty("Origin");
   });
 });

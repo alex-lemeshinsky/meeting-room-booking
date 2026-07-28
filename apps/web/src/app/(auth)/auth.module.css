@@ -124,6 +124,12 @@
 }
 
 .switchPrompt a {
+  display: inline-flex;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-2);
   color: var(--color-action-primary);
   font-weight: 650;
 }

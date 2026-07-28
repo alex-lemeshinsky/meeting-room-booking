@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => router
 }));
 
-function apiError(code: string, fields: Record<string, string[]> = {}) {
+function apiError(code: string, fields: unknown = {}) {
   return {
     ok: false,
     json: async () => ({
@@ -92,9 +92,36 @@ describe("RegisterForm", () => {
     );
   });
 
+  it("falls back to a general error when server field errors are malformed", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(apiError("VALIDATION_ERROR", { email: "invalid" }))
+    );
+    render(<RegisterForm />);
+
+    await user.type(screen.getByLabelText("Ім’я"), "Олена");
+    await user.type(screen.getByLabelText("Email"), "olena@example.com");
+    await user.type(screen.getByLabelText("Пароль"), "secret-password");
+    await user.click(
+      screen.getByRole("button", { name: "Створити обліковий запис" })
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося створити обліковий запис. Спробуйте ще раз."
+    );
+    expect(screen.getByLabelText("Email")).not.toHaveAttribute(
+      "aria-invalid",
+      "true"
+    );
+  });
+
   it("redirects to login after a successful registration", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(apiSuccess()));
+    const fetchMock = vi.fn().mockResolvedValue(apiSuccess());
+    vi.stubGlobal("fetch", fetchMock);
     render(<RegisterForm />);
 
     await user.type(screen.getByLabelText("Ім’я"), "Олена");
@@ -105,5 +132,17 @@ describe("RegisterForm", () => {
     );
 
     expect(router.replace).toHaveBeenCalledWith("/login?registered=1");
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Олена",
+        email: "olena@example.com",
+        password: "secret-password"
+      })
+    });
+    expect(
+      (fetchMock.mock.calls[0]?.[1] as RequestInit).headers
+    ).not.toHaveProperty("Origin");
   });
 });
