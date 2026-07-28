@@ -13,7 +13,8 @@ Keep this file as a map and stable harness, not a copy of project docs.
 2. Inspect `git status --short` and recent commits.
 3. In a fresh environment, activate the checked-in Node.js version, install
    the pinned pnpm version, create `.env` from `.env.example` when it is
-   absent, and run `npm run doctor` before pnpm commands.
+   absent, and run `npm run doctor:fast` before pnpm commands. Run
+   `npm run doctor:full` before Docker, integration, or E2E work.
 4. Read the relevant sections of `docs/features.md` for product behavior.
 5. Read the relevant sections of `docs/architecture.md` for technical rules.
 6. Read the relevant sections of `docs/design-system.md` before UI, UX,
@@ -48,21 +49,28 @@ orient → specify → plan → execute → verify → self-review → commit �
 Before changes, state the goal, non-goals, observable acceptance criteria, verification
 commands, and risks to data, time, security, or compatibility.
 
-Use spec-driven development for feature work, cross-module changes, migrations,
-security-sensitive flows, and material contract changes:
+Select the lightest delivery tier that preserves confidence:
 
-1. Explore the requirement and record an approved design specification locally.
-2. Turn the approved specification into a task-by-task implementation plan locally.
-   The plan must state its goal, architecture, constraints, exact file changes,
+1. **Local change** — a small, contained edit with no schema, public contract,
+   security, time-rule, or cross-module impact. Record a short in-session
+   acceptance contract and run focused checks.
+2. **Bounded feature** — a coherent change confined to one module boundary,
+   with no migration, public-contract, security-policy, or concurrency impact.
+   Record a compact acceptance brief: scope, non-goals, affected files,
+   observable criteria, and focused checks. Use one focused self- or peer-review
+   for the completed slice.
+3. **Material change** — a cross-module change, migration, security-sensitive
+   flow, time rule, public contract, concurrency guarantee, or architectural
+   decision. Record an approved design specification and a task-by-task plan
+   locally. The plan states goal, architecture, constraints, exact file changes,
    interfaces, focused tests, verification commands, and coherent commits.
-3. Execute the saved plan task-by-task with
-   `superpowers:subagent-driven-development` or `superpowers:executing-plans`.
-   Keep checkbox progress and verification evidence in that plan.
 
-For a small, single-file local change, a short in-session acceptance contract is
-enough; do not create a speculative plan. Do not use `docs/plans` or create
-duplicate progress files. Do not implement against an unapproved specification
-when the work requires one.
+For a material plan, use `superpowers:subagent-driven-development` only when
+tasks are independently reviewable and high-risk. Otherwise execute the plan
+inline with `superpowers:executing-plans`; bounded work does not require a
+per-task subagent/reviewer loop. Keep progress and verification evidence in the
+brief or plan. Do not use `docs/plans` or create duplicate progress files. Do
+not implement against an unapproved specification when the work requires one.
 
 Do not one-shot the project, skip an unfinished slice, expand scope without approval,
 guess external state, or overwrite unrelated work.
@@ -103,6 +111,15 @@ pnpm verify:fast
 pnpm verify:all
 ```
 
+Use a verification pyramid. During edits, run the smallest focused command that
+proves the changed behaviour. Run `pnpm verify:fast` once after each coherent
+code slice, before handoff or commit. Run `pnpm verify:all` when the slice
+changes database integration or migrations, concurrency, critical desktop or
+mobile journeys, release/CI configuration, or the relevant integration/E2E
+harness; it remains the final gate for a release-sized change. Documentation-
+only changes need formatting and repository-policy checks unless they alter a
+command or requirement covered by a stronger gate.
+
 `pnpm verify:fast` runs the deterministic repository, formatting, lint,
 typecheck, unit, contract-freshness, and build checks without Docker or a
 browser. `pnpm verify:all` adds PostgreSQL integration tests and Playwright.
@@ -133,6 +150,13 @@ dead code, and accidental generated artifacts.
 - setup or operations → `README.md`;
 - approved designs and implementation plans → local task state (not versioned).
 
+Keep the full design, plan, and working notes in local task state. Preserve the
+reviewable operational context in the pull request's `Handoff` template instead:
+scope, acceptance criteria, exact verification evidence, unverified items, known
+risks, and the next smallest slice. For a direct commit with no pull request, put
+the same concise handoff in the commit body or the task handoff message. Never
+copy private plans, credentials, tokens, cookies, or secrets into either artifact.
+
 Never rewrite a source-of-truth document after the fact merely to justify divergent
 code. Get approval before changing agreed product or architecture.
 
@@ -146,8 +170,8 @@ Preserve user changes and inspect targets before destructive actions. Never comm
 secrets or log passwords, cookies, session, CSRF, or verification tokens. Validate
 untrusted data at system boundaries.
 
-Handoff must state what changed, satisfied criteria, exact checks and results, anything
-unverified, known risks, and the next smallest slice.
+Handoff must use the durable format above and state what changed, satisfied criteria,
+exact checks and results, anything unverified, known risks, and the next smallest slice.
 
 Do not declare completion while criteria are unmet, relevant gates fail, documentation
 is stale, or Git state is unclear.

@@ -8,7 +8,9 @@
   "packageManager": "pnpm@11.17.0",
   "scripts": {
     "db:seed": "prisma db seed",
-    "doctor": "node scripts/doctor.mjs",
+    "doctor": "npm run doctor:fast",
+    "doctor:fast": "node scripts/doctor.mjs",
+    "doctor:full": "node scripts/doctor.mjs --full",
     "dev": "pnpm --parallel --filter @mrb/api --filter @mrb/web dev",
     "dev:infra": "docker compose -f compose.dev.yaml up -d postgres",
     "build": "pnpm -r --if-present build",

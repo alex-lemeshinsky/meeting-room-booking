@@ -467,4 +467,22 @@ test("documents the auth and rooms clean-machine setup", async () => {
   assert.match(readme, /pnpm db:seed/);
   assert.match(readme, /olena@example\.com/);
   assert.match(readme, /alex@example\.com/);
+
+  const firstRun = readme.slice(
+    readme.indexOf("## Перший запуск"),
+    readme.indexOf("## Перевірки")
+  );
+  assert.match(
+    firstRun,
+    /npm run doctor:fast\npnpm install --frozen-lockfile\nnpm run doctor:full\npnpm dev:infra/
+  );
+
+  const checks = readme.slice(
+    readme.indexOf("## Перевірки"),
+    readme.indexOf("## Межі")
+  );
+  assert.match(
+    checks,
+    /pnpm verify:fast\nnpm run doctor:full\npnpm verify:all/
+  );
 });

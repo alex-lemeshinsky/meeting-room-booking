@@ -1,9 +1,9 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createApp } from "../src/bootstrap.js";
+import { createOpenApiApp } from "../src/bootstrap.js";
 import { createOpenApiDocument } from "../src/openapi/openapi.js";
 
-const app = await createApp();
+const app = await createOpenApiApp();
 
 try {
   await app.init();

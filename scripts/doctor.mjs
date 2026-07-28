@@ -29,71 +29,21 @@ async function readRootPackage() {
   return JSON.parse(contents);
 }
 
-function readDatabaseUrlFromEnv(contents) {
-  for (const line of contents.split(/\r?\n/u)) {
-    const match = /^\s*DATABASE_URL\s*=\s*(.*?)\s*$/u.exec(line);
-    if (!match) continue;
-
-    const value = match[1];
-    if (!value) return undefined;
-
-    const quote = value.at(0);
-    if (
-      (quote === '"' || quote === "'") &&
-      value.at(-1) === quote &&
-      value.length >= 2
-    ) {
-      return value.slice(1, -1).trim() || undefined;
-    }
-
-    return value;
-  }
-
-  return undefined;
-}
-
-async function resolveDatabaseUrl(databaseUrl, readEnvFile) {
-  if (databaseUrl?.trim()) return databaseUrl.trim();
-
-  try {
-    return readDatabaseUrlFromEnv(await readEnvFile());
-  } catch {
-    return undefined;
-  }
-}
-
 export async function main(options = {}) {
   const {
     nodeVersion = process.version,
     packageJson = await readRootPackage(),
     runCommand = createCommandRunner(),
-    databaseUrl = process.env.DATABASE_URL,
-    readEnvFile = () =>
-      readFile(new URL("../.env", import.meta.url), { encoding: "utf8" }),
+    includeDocker = true,
     writeLine = console.log
   } = options;
   const environment = await checkEnvironment({
     nodeVersion,
     packageJson,
-    runCommand
+    runCommand,
+    includeDocker
   });
-  const configuredDatabaseUrl = await resolveDatabaseUrl(
-    databaseUrl,
-    readEnvFile
-  );
-  const databaseCheck = configuredDatabaseUrl
-    ? ["✓ DATABASE_URL is configured"]
-    : ["✗ DATABASE_URL is not configured", "  Run: cp .env.example .env"];
-  const result = {
-    ok: environment.ok && Boolean(configuredDatabaseUrl),
-    lines: [
-      environment.ok && configuredDatabaseUrl
-        ? "environment ready"
-        : "environment not ready",
-      ...environment.lines.slice(1),
-      ...databaseCheck
-    ]
-  };
+  const result = environment;
 
   for (const line of result.lines) writeLine(line);
   return result.ok ? 0 : 1;
@@ -102,4 +52,8 @@ export async function main(options = {}) {
 const isExecutable =
   process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
 
-if (isExecutable) process.exitCode = await main();
+if (isExecutable) {
+  process.exitCode = await main({
+    includeDocker: process.argv.includes("--full")
+  });
+}
