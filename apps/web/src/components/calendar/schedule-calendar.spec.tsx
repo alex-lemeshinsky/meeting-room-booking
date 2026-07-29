@@ -67,7 +67,7 @@ function apiError(code: string) {
   } as Response;
 }
 
-function renderSchedule() {
+function renderSchedule(initialWeekStart = "2026-07-27") {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -76,13 +76,17 @@ function renderSchedule() {
     }
   });
 
-  render(
+  const calendar = (weekStart: string) => (
     <QueryClientProvider client={queryClient}>
-      <ScheduleCalendar room={room} initialWeekStart="2026-07-27" />
+      <ScheduleCalendar room={room} initialWeekStart={weekStart} />
     </QueryClientProvider>
   );
+  const view = render(calendar(initialWeekStart));
 
-  return queryClient;
+  return {
+    queryClient,
+    rerenderWeek: (weekStart: string) => view.rerender(calendar(weekStart))
+  };
 }
 
 afterEach(() => {
@@ -90,6 +94,7 @@ afterEach(() => {
   router.push.mockReset();
   router.replace.mockReset();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("ScheduleCalendar", () => {
@@ -111,7 +116,7 @@ describe("ScheduleCalendar", () => {
     const fetchMock = vi.fn().mockResolvedValue(apiSuccess(scheduleResponse()));
     vi.stubGlobal("fetch", fetchMock);
 
-    const queryClient = renderSchedule();
+    const { queryClient } = renderSchedule();
 
     expect(screen.getByLabelText("Завантажуємо розклад")).toBeVisible();
     expect(await screen.findByText("Оберіть вільний слот")).toBeVisible();
@@ -145,12 +150,13 @@ describe("ScheduleCalendar", () => {
       .mockReturnValueOnce(nextResponse);
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
-    renderSchedule();
+    const { rerenderWeek } = renderSchedule();
     await screen.findByText("Оберіть вільний слот");
 
     await user.click(screen.getByRole("button", { name: "Наступний тиждень" }));
 
     expect(router.push).toHaveBeenCalledWith("/rooms/room-1?week=2026-08-03");
+    rerenderWeek("2026-08-03");
     expect(screen.getByText("Оберіть вільний слот")).toBeVisible();
     expect(await screen.findByText("Оновлюємо розклад")).toBeVisible();
 
@@ -162,6 +168,94 @@ describe("ScheduleCalendar", () => {
     await waitFor(() => {
       expect(screen.queryByText("Оновлюємо розклад")).not.toBeInTheDocument();
     });
+  });
+
+  it("treats a changed URL-derived week prop as authoritative", async () => {
+    let resolveNext: ((response: Response) => void) | undefined;
+    const nextResponse = new Promise<Response>((resolve) => {
+      resolveNext = resolve;
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiSuccess(scheduleResponse()))
+      .mockReturnValueOnce(nextResponse);
+    vi.stubGlobal("fetch", fetchMock);
+    const { rerenderWeek } = renderSchedule();
+    await screen.findByText("Оберіть вільний слот");
+
+    rerenderWeek("2026-08-03");
+
+    expect(await screen.findByText("Оновлюємо розклад")).toBeVisible();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/v1/rooms/room-1/schedule" +
+        "?from=2026-08-02T21%3A00%3A00.000Z" +
+        "&to=2026-08-09T21%3A00%3A00.000Z",
+      {
+        method: "GET",
+        credentials: "same-origin"
+      }
+    );
+
+    await act(async () => {
+      resolveNext?.(apiSuccess(scheduleResponse("2026-08-03")));
+      await nextResponse;
+    });
+  });
+
+  it("refreshes now geometry on a bounded timer", async () => {
+    vi.useFakeTimers({
+      toFake: ["Date", "setInterval", "clearInterval"]
+    });
+    vi.setSystemTime(new Date("2026-07-29T07:29:30.000Z"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiSuccess(scheduleResponse()))
+    );
+    renderSchedule();
+
+    expect(
+      await screen.findByTestId("calendar-day-header-2026-07-29")
+    ).toHaveAttribute("aria-current", "date");
+    expect(screen.getByTestId("now-indicator")).toHaveAttribute(
+      "data-slot-id",
+      "2026-07-29T07:00:00.000Z"
+    );
+
+    vi.setSystemTime(new Date("2026-07-29T07:30:30.000Z"));
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(screen.getByTestId("now-indicator")).toHaveAttribute(
+      "data-slot-id",
+      "2026-07-29T07:30:00.000Z"
+    );
+  });
+
+  it("refreshes the current local day across midnight", async () => {
+    vi.useFakeTimers({
+      toFake: ["Date", "setInterval", "clearInterval"]
+    });
+    vi.setSystemTime(new Date("2026-07-29T20:59:30.000Z"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiSuccess(scheduleResponse()))
+    );
+    renderSchedule();
+
+    expect(
+      await screen.findByTestId("calendar-day-header-2026-07-29")
+    ).toHaveAttribute("aria-current", "date");
+
+    vi.setSystemTime(new Date("2026-07-29T21:00:30.000Z"));
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(
+      screen.getByTestId("calendar-day-header-2026-07-30")
+    ).toHaveAttribute("aria-current", "date");
+    expect(screen.queryByTestId("now-indicator")).not.toBeInTheDocument();
   });
 
   it("shows inline errors and retries on request", async () => {

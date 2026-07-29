@@ -114,6 +114,145 @@ describe("calendar layout", () => {
     ]);
   });
 
+  it("aligns spring-gap slots to explicit shared rows", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse(),
+      weekStart: "2026-03-02",
+      timezone: "America/Los_Angeles",
+      now: new Date("2026-03-02T12:00:00.000Z")
+    });
+    const springSunday = layout.days.find(
+      (day) => day.localDate === "2026-03-08"
+    );
+
+    expect(layout.rows).toHaveLength(48);
+    expect(
+      springSunday?.slots.find((slot) => slot.label === "03:00")
+    ).toMatchObject({
+      rowIndex: 6
+    });
+  });
+
+  it("adds offset-labelled shared rows for both autumn-fold occurrences", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse(),
+      weekStart: "2026-10-26",
+      timezone: "America/Los_Angeles",
+      now: new Date("2026-10-26T12:00:00.000Z")
+    });
+    const autumnSunday = layout.days.find(
+      (day) => day.localDate === "2026-11-01"
+    );
+
+    expect(layout.rows).toHaveLength(50);
+    expect(layout.rows.slice(2, 6)).toEqual([
+      {
+        id: "60-0",
+        label: "01:00",
+        minuteOfDay: 60,
+        offsetLabel: "UTC-07:00"
+      },
+      {
+        id: "90-0",
+        label: "01:30",
+        minuteOfDay: 90,
+        offsetLabel: "UTC-07:00"
+      },
+      {
+        id: "60-1",
+        label: "01:00",
+        minuteOfDay: 60,
+        offsetLabel: "UTC-08:00"
+      },
+      {
+        id: "90-1",
+        label: "01:30",
+        minuteOfDay: 90,
+        offsetLabel: "UTC-08:00"
+      }
+    ]);
+    expect(
+      autumnSunday?.slots.find((slot) => slot.label === "02:00")
+    ).toMatchObject({
+      rowIndex: 6
+    });
+  });
+
+  it("keeps a real booking visible when its wall-clock minutes repeat across a fold", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse([
+        {
+          id: "booking-fold",
+          title: "Перехід часу",
+          startAt: "2026-11-01T08:30:00.000Z",
+          endAt: "2026-11-01T09:30:00.000Z",
+          organizer: { id: "user-1", name: "Олена" },
+          isOwn: true
+        }
+      ]),
+      weekStart: "2026-10-26",
+      timezone: "America/Los_Angeles",
+      now: new Date("2026-10-26T12:00:00.000Z")
+    });
+
+    expect(layout.bookings).toEqual([
+      expect.objectContaining({
+        bookingId: "booking-fold",
+        localDate: "2026-11-01",
+        startMinute: 90,
+        endMinute: 90,
+        startRowIndex: 3,
+        startOffsetPercent: 0,
+        heightInRows: 2
+      })
+    ]);
+  });
+
+  it("uses fractional instant geometry for quarter-hour bookings and office edges", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse([
+        {
+          id: "booking-quarter",
+          title: "Точна геометрія",
+          startAt: "2026-07-27T06:00:00.000Z",
+          endAt: "2026-07-27T06:30:00.000Z",
+          organizer: { id: "user-1", name: "Олена" },
+          isOwn: true
+        }
+      ]),
+      weekStart: "2026-07-27",
+      timezone: "Asia/Kathmandu",
+      now: new Date("2026-07-27T07:00:00.000Z")
+    });
+    const monday = layout.days[0];
+
+    expect(layout.range).toEqual({
+      startMinute: 690,
+      endMinute: 1320,
+      isFullDay: false
+    });
+    expect(
+      monday?.slots.find((slot) => slot.minuteOfDay === 690)
+    ).toMatchObject({
+      officeStartPercent: 50,
+      officeEndPercent: 100
+    });
+    expect(
+      monday?.slots.find((slot) => slot.minuteOfDay === 1290)
+    ).toMatchObject({
+      officeStartPercent: 0,
+      officeEndPercent: 50
+    });
+    expect(layout.bookings).toEqual([
+      expect.objectContaining({
+        bookingId: "booking-quarter",
+        startRowIndex: 0,
+        startOffsetPercent: 50,
+        heightInRows: 1
+      })
+    ]);
+  });
+
   it("splits a midnight booking into linked non-empty visible fragments", () => {
     const layout = buildCalendarLayout({
       response: scheduleResponse([

@@ -25,6 +25,16 @@ export interface ScheduleRequest {
 
 export interface CalendarLayoutSlot extends CalendarSlot {
   isOffice: boolean;
+  officeStartPercent: number;
+  officeEndPercent: number;
+  rowIndex: number;
+}
+
+export interface CalendarRow {
+  id: string;
+  label: string;
+  minuteOfDay: number;
+  offsetLabel?: string;
 }
 
 export interface CalendarLayoutDay {
@@ -44,8 +54,10 @@ export interface CalendarLayoutBooking {
   endMinute: number;
   continuesBefore: boolean;
   continuesAfter: boolean;
-  startSlotIndex: number;
-  slotSpan: number;
+  startRowIndex: number;
+  startOffsetPercent: number;
+  heightInRows: number;
+  accessibleLabel: string;
 }
 
 export interface CalendarLayout {
@@ -54,6 +66,7 @@ export interface CalendarLayout {
     endMinute: number;
     isFullDay: boolean;
   };
+  rows: CalendarRow[];
   days: CalendarLayoutDay[];
   bookings: CalendarLayoutBooking[];
   now:
@@ -124,30 +137,115 @@ export function buildCalendarLayout({
     (fragments) => fragments.length > 1
   );
   const range = buildVisibleRange(visibleOfficeFragments, crossesLocalMidnight);
-  const days = week.days.map((day) => ({
+  const visibleDays = week.days.map((day) => ({
     localDate: day.localDate,
     label: day.label,
     isToday: day.isToday,
-    slots: day.slots
-      .filter(
-        (slot) =>
-          slot.minuteOfDay >= range.startMinute &&
-          slot.minuteOfDay < range.endMinute
-      )
-      .map((slot) => ({
-        ...slot,
-        isOffice: officeIntervals.some(
-          (interval) =>
-            slot.instant >= interval.start && slot.instant < interval.end
-        )
-      }))
+    slots: day.slots.filter(
+      (slot) =>
+        slot.minuteOfDay >= range.startMinute &&
+        slot.minuteOfDay < range.endMinute
+    )
   }));
+  const rows = buildCalendarRows(visibleDays);
+  const rowIndexById = new Map(rows.map((row, index) => [row.id, index]));
+  const days = visibleDays.map((day) => {
+    const occurrences = new Map<number, number>();
+
+    return {
+      ...day,
+      slots: day.slots.map((slot) => {
+        const occurrence = occurrences.get(slot.minuteOfDay) ?? 0;
+        occurrences.set(slot.minuteOfDay, occurrence + 1);
+        const rowIndex = rowIndexById.get(
+          calendarRowId(slot.minuteOfDay, occurrence)
+        );
+        if (rowIndex === undefined) {
+          throw new RangeError("Calendar slot has no shared row");
+        }
+
+        const officeCoverage = getOfficeCoverage(slot, officeIntervals);
+        return {
+          ...slot,
+          ...officeCoverage,
+          isOffice:
+            officeCoverage.officeEndPercent > officeCoverage.officeStartPercent,
+          rowIndex
+        };
+      })
+    };
+  });
 
   return {
     range,
+    rows,
     days,
-    bookings: buildBookingFragments(response.bookings, days, range, timezone),
+    bookings: buildBookingFragments(response.bookings, days, timezone),
     now: buildNowIndicator(days, now)
+  };
+}
+
+function buildCalendarRows(
+  days: Array<{
+    slots: CalendarSlot[];
+  }>
+): CalendarRow[] {
+  const templateDay = days.reduce((template, day) =>
+    day.slots.length > template.slots.length ? day : template
+  );
+  const occurrences = new Map<number, number>();
+
+  return templateDay.slots.map((slot) => {
+    const occurrence = occurrences.get(slot.minuteOfDay) ?? 0;
+    occurrences.set(slot.minuteOfDay, occurrence + 1);
+
+    return {
+      id: calendarRowId(slot.minuteOfDay, occurrence),
+      label: slot.label,
+      minuteOfDay: slot.minuteOfDay,
+      ...(slot.offsetLabel === undefined
+        ? {}
+        : { offsetLabel: slot.offsetLabel })
+    };
+  });
+}
+
+function calendarRowId(minuteOfDay: number, occurrence: number): string {
+  return `${minuteOfDay}-${occurrence}`;
+}
+
+function getOfficeCoverage(
+  slot: CalendarSlot,
+  officeIntervals: Array<{ start: string; end: string }>
+): {
+  officeStartPercent: number;
+  officeEndPercent: number;
+} {
+  const slotStart = Date.parse(slot.instant);
+  const slotEnd = slotStart + SLOT_DURATION_MS;
+  let officeStart = slotEnd;
+  let officeEnd = slotStart;
+
+  for (const interval of officeIntervals) {
+    const overlapStart = Math.max(slotStart, Date.parse(interval.start));
+    const overlapEnd = Math.min(slotEnd, Date.parse(interval.end));
+
+    if (overlapStart < overlapEnd) {
+      officeStart = Math.min(officeStart, overlapStart);
+      officeEnd = Math.max(officeEnd, overlapEnd);
+    }
+  }
+
+  if (officeStart >= officeEnd) {
+    return {
+      officeStartPercent: 0,
+      officeEndPercent: 0
+    };
+  }
+
+  return {
+    officeStartPercent: ((officeStart - slotStart) / SLOT_DURATION_MS) * 100,
+    officeEndPercent: ((officeEnd - slotStart) / SLOT_DURATION_MS) * 100
   };
 }
 
@@ -182,7 +280,6 @@ function buildVisibleRange(
 function buildBookingFragments(
   bookings: ScheduleResponse["bookings"],
   days: CalendarLayoutDay[],
-  range: CalendarLayout["range"],
   timezone: string
 ): CalendarLayoutBooking[] {
   const dayByDate = new Map(days.map((day) => [day.localDate, day]));
@@ -198,24 +295,51 @@ function buildBookingFragments(
       timezone
     ).flatMap((fragment) => {
       const day = dayByDate.get(fragment.localDate);
-      const startMinute = Math.max(fragment.startMinute, range.startMinute);
-      const endMinute = Math.min(fragment.endMinute, range.endMinute);
 
-      if (day === undefined || endMinute <= startMinute) {
+      if (day === undefined) {
         return [];
       }
 
-      const occupiedSlotIndexes = day.slots.flatMap((slot, index) => {
+      const occupiedSlots = day.slots.filter((slot) => {
         const slotStart = Date.parse(slot.instant);
         const slotEnd = slotStart + SLOT_DURATION_MS;
-        return slotStart < bookingEnd && slotEnd > bookingStart ? [index] : [];
+        return slotStart < bookingEnd && slotEnd > bookingStart;
       });
-      const startSlotIndex = occupiedSlotIndexes[0];
-      const endSlotIndex = occupiedSlotIndexes[occupiedSlotIndexes.length - 1];
+      const firstSlot = occupiedSlots[0];
+      const lastSlot = occupiedSlots[occupiedSlots.length - 1];
 
-      if (startSlotIndex === undefined || endSlotIndex === undefined) {
+      if (firstSlot === undefined || lastSlot === undefined) {
         return [];
       }
+
+      const firstSlotStart = Date.parse(firstSlot.instant);
+      const lastSlotStart = Date.parse(lastSlot.instant);
+      const visibleStart = Math.max(bookingStart, firstSlotStart);
+      const visibleEnd = Math.min(bookingEnd, lastSlotStart + SLOT_DURATION_MS);
+      if (visibleStart >= visibleEnd) {
+        return [];
+      }
+
+      const startOffsetPercent =
+        ((visibleStart - firstSlotStart) / SLOT_DURATION_MS) * 100;
+      const endOffset = (visibleEnd - lastSlotStart) / SLOT_DURATION_MS;
+      const startPosition = firstSlot.rowIndex + startOffsetPercent / 100;
+      const endPosition = lastSlot.rowIndex + endOffset;
+      const startMinute =
+        firstSlot.minuteOfDay + (visibleStart - firstSlotStart) / 60_000;
+      const endMinute =
+        lastSlot.minuteOfDay + (visibleEnd - lastSlotStart) / 60_000;
+      const exactEndSlot = day.slots.find(
+        (slot) => Date.parse(slot.instant) === visibleEnd
+      );
+      const startLabel = formatLocalMinute(startMinute, firstSlot.offsetLabel);
+      const endLabel = formatLocalMinute(
+        endMinute,
+        exactEndSlot?.offsetLabel ?? lastSlot.offsetLabel
+      );
+      const ownershipLabel = booking.isOwn
+        ? "Моє"
+        : `Організатор: ${booking.organizer.name}`;
 
       return [
         {
@@ -227,16 +351,29 @@ function buildBookingFragments(
           startMinute,
           endMinute,
           continuesBefore:
-            fragment.continuesBefore ||
-            fragment.startMinute < range.startMinute,
-          continuesAfter:
-            fragment.continuesAfter || fragment.endMinute > range.endMinute,
-          startSlotIndex,
-          slotSpan: endSlotIndex - startSlotIndex + 1
+            fragment.continuesBefore || bookingStart < visibleStart,
+          continuesAfter: fragment.continuesAfter || bookingEnd > visibleEnd,
+          startRowIndex: firstSlot.rowIndex,
+          startOffsetPercent,
+          heightInRows: endPosition - startPosition,
+          accessibleLabel:
+            `${booking.title}. ${fragment.localDate}, ` +
+            `${startLabel}–${endLabel}. ${ownershipLabel}`
         }
       ];
     });
   });
+}
+
+function formatLocalMinute(minuteOfDay: number, offsetLabel?: string): string {
+  const wholeMinute = Math.floor(minuteOfDay);
+  const hour = Math.floor(wholeMinute / 60)
+    .toString()
+    .padStart(2, "0");
+  const minute = (wholeMinute % 60).toString().padStart(2, "0");
+  const time = `${hour}:${minute}`;
+
+  return offsetLabel === undefined ? time : `${time} ${offsetLabel}`;
 }
 
 function buildNowIndicator(

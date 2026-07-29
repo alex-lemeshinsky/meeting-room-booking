@@ -30,6 +30,8 @@ interface ScheduleQueryData {
   timezone: string;
 }
 
+const CALENDAR_CLOCK_INTERVAL_MS = 60_000;
+
 export function ScheduleCalendar({
   room,
   initialWeekStart
@@ -62,7 +64,8 @@ function ResolvedScheduleCalendar({
 }: ScheduleCalendarProps & { timezone: string }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [weekStart, setWeekStart] = useState(initialWeekStart);
+  const now = useCalendarNow();
+  const weekStart = initialWeekStart;
   const request = useMemo(
     () => createScheduleRequest(room.id, weekStart, timezone),
     [room.id, timezone, weekStart]
@@ -87,9 +90,10 @@ function ResolvedScheduleCalendar({
         : buildCalendarLayout({
             response: query.data.response,
             weekStart: query.data.weekStart,
-            timezone: query.data.timezone
+            timezone: query.data.timezone,
+            now
           }),
-    [query.data]
+    [now, query.data]
   );
 
   useEffect(() => {
@@ -100,7 +104,6 @@ function ResolvedScheduleCalendar({
 
   const navigateToWeek = useCallback(
     (nextWeekStart: string) => {
-      setWeekStart(nextWeekStart);
       router.push(`${pathname}?week=${encodeURIComponent(nextWeekStart)}`);
     },
     [pathname, router]
@@ -143,6 +146,20 @@ function ResolvedScheduleCalendar({
       )}
     </section>
   );
+}
+
+function useCalendarNow(): Date {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(new Date());
+    }, CALENDAR_CLOCK_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return now;
 }
 
 function CalendarSkeleton() {

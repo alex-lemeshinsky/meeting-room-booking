@@ -20,7 +20,10 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                 ? `${styles.dayHeader} ${styles.currentDayHeader}`
                 : styles.dayHeader
             }
+            aria-current={day.isToday ? "date" : undefined}
+            data-testid={`calendar-day-header-${day.localDate}`}
             dateTime={day.localDate}
+            id={`calendar-day-header-${day.localDate}`}
             key={day.localDate}
           >
             <span>{day.label}</span>
@@ -30,12 +33,16 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
       </div>
 
       <div className={styles.gridBody}>
-        <div className={styles.timeAxis} aria-hidden="true">
-          {buildTimeLabels(
-            layout.range.startMinute,
-            layout.range.endMinute
-          ).map((label) => (
-            <span key={label}>{label}</span>
+        <div
+          className={styles.timeAxis}
+          data-testid="calendar-time-axis"
+          aria-hidden="true"
+        >
+          {layout.rows.map((row) => (
+            <span data-testid="calendar-row-label" key={row.id}>
+              {row.label}
+              {row.offsetLabel === undefined ? null : ` ${row.offsetLabel}`}
+            </span>
           ))}
         </div>
 
@@ -46,13 +53,17 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
             );
             const now =
               layout.now?.localDate === day.localDate ? layout.now : undefined;
-            const nowSlotIndex =
+            const nowSlot =
               now === undefined
-                ? -1
-                : day.slots.findIndex((slot) => slot.id === now.slotId);
+                ? undefined
+                : day.slots.find((slot) => slot.id === now.slotId);
+            const slotByRow = new Map(
+              day.slots.map((slot) => [slot.rowIndex, slot])
+            );
 
             return (
               <section
+                aria-labelledby={`calendar-day-header-${day.localDate}`}
                 className={
                   day.isToday
                     ? `${styles.dayColumn} ${styles.currentDay}`
@@ -66,31 +77,59 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                   className={styles.daySlots}
                   data-testid="calendar-day"
                   style={{
-                    gridTemplateRows: `repeat(${day.slots.length}, 44px)`
+                    gridTemplateRows: `repeat(${layout.rows.length}, 44px)`
                   }}
                 >
-                  {day.slots.map((slot, index) => (
-                    <div
-                      className={
-                        slot.isOffice
-                          ? styles.slot
-                          : `${styles.slot} ${styles.nonOfficeSlot}`
-                      }
-                      data-testid="calendar-slot"
-                      data-slot-id={slot.id}
-                      key={slot.id}
-                      style={{ gridRow: index + 1 }}
-                    >
-                      {slot.offsetLabel === undefined ? null : (
-                        <small className={styles.offsetLabel}>
-                          {slot.offsetLabel}
-                        </small>
-                      )}
-                    </div>
-                  ))}
+                  {layout.rows.map((row, rowIndex) => {
+                    const slot = slotByRow.get(rowIndex);
+
+                    if (slot === undefined) {
+                      return (
+                        <div
+                          className={`${styles.slot} ${styles.unavailableSlot}`}
+                          data-testid="calendar-gap"
+                          key={row.id}
+                          style={{ gridRow: rowIndex + 1 }}
+                        />
+                      );
+                    }
+
+                    const isPartialOffice =
+                      slot.isOffice &&
+                      (slot.officeStartPercent > 0 ||
+                        slot.officeEndPercent < 100);
+                    return (
+                      <div
+                        className={
+                          !slot.isOffice
+                            ? `${styles.slot} ${styles.nonOfficeSlot}`
+                            : isPartialOffice
+                              ? `${styles.slot} ${styles.partialOfficeSlot}`
+                              : styles.slot
+                        }
+                        data-testid="calendar-slot"
+                        data-slot-id={slot.id}
+                        key={slot.id}
+                        style={
+                          {
+                            gridRow: rowIndex + 1,
+                            "--office-start": `${slot.officeStartPercent}%`,
+                            "--office-end": `${slot.officeEndPercent}%`
+                          } as CSSProperties
+                        }
+                      >
+                        {slot.offsetLabel === undefined ? null : (
+                          <small className={styles.offsetLabel}>
+                            {slot.offsetLabel}
+                          </small>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {bookings.map((booking) => (
                     <article
+                      aria-label={booking.accessibleLabel}
                       className={
                         booking.isOwn
                           ? `${styles.booking} ${styles.ownBooking}`
@@ -99,11 +138,15 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       data-booking-id={booking.bookingId}
                       data-testid="booking-fragment"
                       key={`${booking.bookingId}-${booking.localDate}-${booking.startMinute}`}
-                      style={{
-                        gridRow: `${booking.startSlotIndex + 1} / span ${
-                          booking.slotSpan
-                        }`
-                      }}
+                      style={
+                        {
+                          gridRow: booking.startRowIndex + 1,
+                          "--booking-offset": `${
+                            (44 * booking.startOffsetPercent) / 100
+                          }px`,
+                          "--booking-height": `${44 * booking.heightInRows}px`
+                        } as CSSProperties
+                      }
                     >
                       <strong>{booking.title}</strong>
                       <span>
@@ -112,14 +155,14 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                     </article>
                   ))}
 
-                  {now === undefined || nowSlotIndex < 0 ? null : (
+                  {now === undefined || nowSlot === undefined ? null : (
                     <span
                       className={styles.nowIndicator}
                       data-slot-id={now.slotId}
                       data-testid="now-indicator"
                       style={
                         {
-                          gridRow: nowSlotIndex + 1,
+                          gridRow: nowSlot.rowIndex + 1,
                           "--now-offset": `${(44 * now.offsetPercent) / 100}px`
                         } as CSSProperties
                       }
@@ -137,18 +180,4 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
       </div>
     </section>
   );
-}
-
-function buildTimeLabels(startMinute: number, endMinute: number): string[] {
-  const labels: string[] = [];
-
-  for (let minute = startMinute; minute < endMinute; minute += 30) {
-    const hour = Math.floor(minute / 60)
-      .toString()
-      .padStart(2, "0");
-    const minuteWithinHour = (minute % 60).toString().padStart(2, "0");
-    labels.push(`${hour}:${minuteWithinHour}`);
-  }
-
-  return labels;
 }

@@ -160,6 +160,19 @@
   background: var(--color-bg-subtle);
 }
 
+.partialOfficeSlot {
+  background: linear-gradient(
+    to bottom,
+    var(--color-bg-subtle) 0 var(--office-start),
+    transparent var(--office-start) var(--office-end),
+    var(--color-bg-subtle) var(--office-end) 100%
+  );
+}
+
+.unavailableSlot {
+  background: var(--color-bg-subtle);
+}
+
 .offsetLabel {
   display: block;
   padding: var(--space-1);
@@ -172,12 +185,13 @@
   display: grid;
   align-content: start;
   gap: 0;
-  min-height: 44px;
-  margin: 2px;
+  height: calc(var(--booking-height) - 4px);
+  margin: 0 2px;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-booking);
   overflow: hidden;
   font: var(--type-calendar);
+  transform: translateY(calc(var(--booking-offset) + 2px));
   pointer-events: none;
 }
 
