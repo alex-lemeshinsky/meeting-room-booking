@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { startTransition } from "react";
 import styles from "./schedule.module.css";
 
 export default function ScheduleError({
@@ -19,8 +20,10 @@ export default function ScheduleError({
       <div className={styles.routeActions}>
         <button
           onClick={() => {
-            router.refresh();
-            reset();
+            startTransition(() => {
+              router.refresh();
+              reset();
+            });
           }}
           type="button"
         >
