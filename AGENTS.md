@@ -139,6 +139,17 @@ series rollback, notification idempotency, cancellation, and both DST folds.
 Use Playwright for critical desktop and mobile journeys. Inspect loading, empty, error,
 timezone, and responsive states in a real browser.
 
+After completing a full user-facing feature, launch the project in development mode and
+validate that feature end to end in the in-app `Browser` plugin. Exercise both desktop
+and mobile viewports, including a happy path and an error path. Confirm the feature's
+logic and user-visible information are correct; there are no unexpected application or
+browser-console errors; and the responsive layout is clear, usable, and free of visual
+defects, leaked system/internal titles, or other unintended UI text. Treat this as a
+completion gate in addition to the automated checks. The main agent must investigate
+and automatically fix any errors found during this Browser validation, then rerun the
+affected scenario and relevant automated checks until they pass. Report the exact
+scenarios, fixes, and results in the handoff.
+
 Every bug fix gets a regression test at the lowest reliable layer. Never disable or
 weaken a test, lint, migration, or constraint to make a run green. Remove debug output,
 dead code, and accidental generated artifacts.
