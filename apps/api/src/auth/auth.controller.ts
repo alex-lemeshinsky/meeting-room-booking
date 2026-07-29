@@ -40,7 +40,7 @@ export class AuthController {
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(CookieService) private readonly cookies: CookieService,
     @Inject(SessionService) private readonly sessions: SessionService
-  ) {}
+  ) { }
 
   @Post("register")
   @HttpCode(201)
