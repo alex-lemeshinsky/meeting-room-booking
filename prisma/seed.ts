@@ -6,6 +6,7 @@ import {
 } from "@mrb/time";
 import { Argon2PasswordHasher } from "../apps/api/src/auth/password/argon2-password-hasher.js";
 import { PrismaClient } from "../apps/api/src/generated/prisma/client.js";
+import { parseSeedNowOverride, resolveSeedNow } from "./seed-clock.js";
 
 const users = [
   {
@@ -40,7 +41,7 @@ const bookingIds = [
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for seeding");
-const seedNow = parseSeedNow(process.env.MRB_SEED_NOW);
+const seedNowOverride = parseSeedNowOverride(process.env.MRB_SEED_NOW);
 
 const database = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl })
@@ -74,6 +75,7 @@ async function seed(): Promise<void> {
     });
   }
 
+  const seedNow = resolveSeedNow(seedNowOverride);
   const currentWeek = getWeekOfficeIntervals(seedNow);
   const pastWeek = getWeekOfficeIntervals(
     new Date(seedNow.getTime() - 14 * 24 * 60 * 60 * 1_000)
@@ -136,23 +138,6 @@ function getWeekOfficeIntervals(now: Date) {
   const weekStart = getCurrentLocalWeekStart("Europe/Kyiv", now);
   const week = getLocalWeek(weekStart, "Europe/Kyiv", now);
   return getKyivOfficeIntervals(week.from, week.to);
-}
-
-function parseSeedNow(value: string | undefined): Date {
-  if (value === undefined) return new Date();
-
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) {
-    throw new RangeError(
-      "MRB_SEED_NOW must be an ISO 8601 UTC instant with millisecond precision"
-    );
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime()) || parsed.toISOString() !== value) {
-    throw new RangeError("MRB_SEED_NOW must be a valid UTC instant");
-  }
-
-  return parsed;
 }
 
 function withinOfficeInterval(
