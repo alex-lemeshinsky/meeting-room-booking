@@ -3,7 +3,7 @@ import {
   getCurrentLocalWeekStart,
   getKyivOfficeIntervals,
   getLocalWeek
-} from "../packages/time/src/index.js";
+} from "@mrb/time";
 import { Argon2PasswordHasher } from "../apps/api/src/auth/password/argon2-password-hasher.js";
 import { PrismaClient } from "../apps/api/src/generated/prisma/client.js";
 

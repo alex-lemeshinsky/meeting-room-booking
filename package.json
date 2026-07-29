@@ -31,6 +31,7 @@
     "verify:all": "pnpm verify:fast && pnpm test:integration && pnpm test:e2e"
   },
   "devDependencies": {
+    "@mrb/time": "workspace:*",
     "@prisma/adapter-pg": "7.9.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "~1.62.0",
