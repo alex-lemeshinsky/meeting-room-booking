@@ -6,7 +6,18 @@ import ScheduleError from "./error";
 import ScheduleLoading from "./loading";
 import ScheduleNotFound from "./not-found";
 
-afterEach(cleanup);
+const router = {
+  refresh: vi.fn()
+};
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => router
+}));
+
+afterEach(() => {
+  cleanup();
+  router.refresh.mockReset();
+});
 
 describe("room schedule route states", () => {
   it("keeps room-schedule loading geometry stable", () => {
@@ -15,7 +26,7 @@ describe("room schedule route states", () => {
     expect(screen.getByLabelText("Завантажуємо розклад кімнати")).toBeVisible();
   });
 
-  it("offers a retry while preserving schedule context after a route error", async () => {
+  it("refreshes the failed server route while resetting its error boundary", async () => {
     const reset = vi.fn();
     const user = userEvent.setup();
     render(<ScheduleError error={new Error("failed")} reset={reset} />);
@@ -26,6 +37,7 @@ describe("room schedule route states", () => {
       })
     ).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Спробувати ще" }));
+    expect(router.refresh).toHaveBeenCalledOnce();
     expect(reset).toHaveBeenCalledOnce();
   });
 
