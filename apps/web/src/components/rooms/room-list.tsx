@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { RoomsResponse } from "../../lib/api/contracts";
 import styles from "../../app/(protected)/protected.module.css";
 
@@ -26,7 +27,11 @@ export function RoomList({ rooms }: RoomListProps) {
     <ul className={styles.roomList} aria-label="Переговорні кімнати">
       {rooms.map((room) => (
         <li className={styles.roomCard} key={room.id}>
-          <article>
+          <Link
+            aria-label={`Відкрити розклад кімнати ${room.name}`}
+            className={styles.roomLink}
+            href={`/rooms/${room.id}`}
+          >
             <h2>{room.name}</h2>
             <dl className={styles.roomDetails}>
               <div>
@@ -38,7 +43,10 @@ export function RoomList({ rooms }: RoomListProps) {
                 <dd>{capacityLabel(room.capacity)}</dd>
               </div>
             </dl>
-          </article>
+            <span className={styles.roomAction} aria-hidden="true">
+              Переглянути розклад
+            </span>
+          </Link>
         </li>
       ))}
     </ul>

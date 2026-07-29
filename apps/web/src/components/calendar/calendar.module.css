@@ -57,11 +57,20 @@
 }
 
 .gridShell {
-  min-width: 896px;
+  width: 100%;
+  min-width: 0;
+  max-height: 70vh;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-card);
-  overflow: clip;
+  overflow: auto;
+  overscroll-behavior: contain;
   background: var(--color-bg-surface);
+  scrollbar-gutter: stable;
+}
+
+.gridShell:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .gridHeader {
@@ -70,6 +79,7 @@
   z-index: var(--z-sticky);
   display: grid;
   grid-template-columns: 72px repeat(7, minmax(112px, 1fr));
+  width: max(100%, 856px);
   border-bottom: 1px solid var(--color-border-strong);
   background: var(--color-bg-surface);
 }
@@ -83,6 +93,10 @@
 }
 
 .timeHeader {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-sticky);
+  background: var(--color-bg-surface);
   color: var(--color-text-secondary);
 }
 
@@ -106,8 +120,7 @@
   position: relative;
   display: grid;
   grid-template-columns: 72px minmax(784px, 1fr);
-  max-height: 70vh;
-  overflow: auto;
+  width: max(100%, 856px);
 }
 
 .timeAxis {
@@ -169,7 +182,7 @@
   pointer-events: none;
 }
 
-.slot:nth-child(2n + 1) {
+.hourBoundary {
   border-bottom-color: var(--color-border-strong);
 }
 
@@ -222,6 +235,7 @@
 .bookingContent > span {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ownBooking {

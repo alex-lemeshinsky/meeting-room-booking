@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ScheduleResponse } from "../../lib/api/contracts";
 import { buildCalendarLayout } from "../../lib/calendar/schedule";
 import { CalendarGrid } from "./calendar-grid";
@@ -30,9 +30,49 @@ function layout(
   });
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+});
 
 describe("CalendarGrid", () => {
+  it("owns one accessible horizontal scroll region for header and body", () => {
+    render(<CalendarGrid layout={layout()} />);
+
+    const scrollRegion = screen.getByTestId("calendar-scroll-region");
+    expect(scrollRegion).toHaveAttribute("tabindex", "0");
+    expect(scrollRegion).toHaveAccessibleName("Прокручуваний тижневий розклад");
+    expect(
+      within(scrollRegion).getByTestId("calendar-day-header-2026-07-27")
+    ).toBeVisible();
+    expect(
+      within(scrollRegion).getByTestId("calendar-day-2026-07-27")
+    ).toBeVisible();
+  });
+
+  it("reveals the current day only on the first open", () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView
+    });
+    const view = render(<CalendarGrid layout={layout()} />);
+
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "auto",
+      block: "nearest",
+      inline: "center"
+    });
+
+    view.rerender(
+      <CalendarGrid
+        layout={layout([], "Europe/Kyiv", new Date("2026-07-30T07:15:00Z"))}
+      />
+    );
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+  });
+
   it("renders all seven empty date columns, their slots, and the empty hint", () => {
     render(<CalendarGrid layout={layout()} />);
 
@@ -44,6 +84,32 @@ describe("CalendarGrid", () => {
         (day) => within(day).getAllByTestId("calendar-slot").length === 20
       )
     ).toBe(true);
+  });
+
+  it("marks hour dividers from each row's local minute", () => {
+    render(<CalendarGrid layout={layout()} />);
+
+    const day = within(screen.getByTestId("calendar-day-2026-07-27"));
+    const slots = day.getAllByTestId("calendar-slot");
+    expect(slots[0]).toHaveAttribute("data-hour-boundary", "false");
+    expect(slots[1]).toHaveAttribute("data-hour-boundary", "true");
+    expect(slots[2]).toHaveAttribute("data-hour-boundary", "false");
+  });
+
+  it("does not reserve compact edge-label rows in an ordinary week", () => {
+    render(<CalendarGrid layout={layout()} />);
+
+    const timeAxis = screen.getByTestId("calendar-time-axis");
+    const firstDay = within(screen.getByTestId("calendar-day-2026-07-27"));
+    const dayGrid = firstDay.getByTestId("calendar-day");
+    expect(timeAxis.style.gridTemplateRows).toBe("repeat(20, 44px)");
+    expect(dayGrid.style.gridTemplateRows).toBe("repeat(20, 44px)");
+    expect(
+      within(timeAxis).queryByTestId("calendar-edge-label-band")
+    ).not.toBeInTheDocument();
+    expect(firstDay.getAllByTestId("calendar-slot")[0]).toHaveStyle({
+      gridRow: "1"
+    });
   });
 
   it("shows title and ownership or organizer in every booking fragment", () => {
@@ -147,7 +213,7 @@ describe("CalendarGrid", () => {
       '[data-testid="calendar-day-2026-11-01"] ' +
         '[data-slot-id="2026-11-01T10:00:00.000Z"]'
     );
-    expect(postFoldSlot).toHaveStyle({ gridRow: "8" });
+    expect(postFoldSlot).toHaveStyle({ gridRow: "7" });
   });
 
   it("gives every booking fragment accessible date, time, and ownership context", () => {

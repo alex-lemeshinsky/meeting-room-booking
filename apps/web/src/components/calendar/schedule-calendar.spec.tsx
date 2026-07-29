@@ -11,6 +11,12 @@ const router = {
   push: vi.fn(),
   replace: vi.fn()
 };
+const { detectBrowserTimezone, persistBrowserTimezoneCookie } = vi.hoisted(
+  () => ({
+    detectBrowserTimezone: vi.fn(() => "Europe/Kyiv"),
+    persistBrowserTimezoneCookie: vi.fn()
+  })
+);
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/rooms/room-1",
@@ -18,8 +24,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("../../lib/calendar/timezone", () => ({
-  detectBrowserTimezone: () => "Europe/Kyiv",
-  persistBrowserTimezoneCookie: () => undefined
+  detectBrowserTimezone,
+  persistBrowserTimezoneCookie
 }));
 
 const room = {
@@ -67,7 +73,10 @@ function apiError(code: string) {
   } as Response;
 }
 
-function renderSchedule(initialWeekStart = "2026-07-27") {
+function renderSchedule(
+  initialWeekStart: string | undefined,
+  initialTimezone?: string
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -76,9 +85,13 @@ function renderSchedule(initialWeekStart = "2026-07-27") {
     }
   });
 
-  const calendar = (weekStart: string) => (
+  const calendar = (weekStart: string | undefined) => (
     <QueryClientProvider client={queryClient}>
-      <ScheduleCalendar room={room} initialWeekStart={weekStart} />
+      <ScheduleCalendar
+        room={room}
+        initialWeekStart={weekStart}
+        initialTimezone={initialTimezone}
+      />
     </QueryClientProvider>
   );
   const view = render(calendar(initialWeekStart));
@@ -93,6 +106,9 @@ afterEach(() => {
   cleanup();
   router.push.mockReset();
   router.replace.mockReset();
+  detectBrowserTimezone.mockReset();
+  detectBrowserTimezone.mockReturnValue("Europe/Kyiv");
+  persistBrowserTimezoneCookie.mockReset();
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -112,11 +128,89 @@ describe("ScheduleCalendar", () => {
     expect(html).not.toContain("Ваш часовий пояс:");
   });
 
+  it("canonicalizes a missing or invalid route week to the current browser-local Monday", async () => {
+    vi.useFakeTimers({
+      toFake: ["Date"]
+    });
+    vi.setSystemTime(new Date("2026-07-29T10:00:00.000Z"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiSuccess(scheduleResponse()))
+    );
+
+    renderSchedule(undefined);
+
+    await waitFor(() => {
+      expect(router.replace).toHaveBeenCalledWith(
+        "/rooms/room-1?week=2026-07-27"
+      );
+    });
+    expect(await screen.findByText("Оберіть вільний слот")).toBeVisible();
+  });
+
+  it("uses a valid cookie timezone for stable server rendering", () => {
+    const queryClient = new QueryClient();
+    const response = {
+      ...scheduleResponse(),
+      from: "2026-07-27T04:00:00.000Z",
+      to: "2026-08-03T04:00:00.000Z"
+    };
+    queryClient.setQueryData(
+      ["schedule", "room-1", "2026-07-27", "America/New_York"],
+      {
+        response,
+        weekStart: "2026-07-27",
+        timezone: "America/New_York"
+      }
+    );
+
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <ScheduleCalendar
+          room={room}
+          initialWeekStart="2026-07-27"
+          initialTimezone="America/New_York"
+        />
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain("Ваш часовий пояс: ");
+    expect(html).toContain("America/New_York");
+    expect(html).not.toContain("data-calendar-skeleton");
+  });
+
+  it("refreshes the non-secret timezone cookie from authoritative browser detection", async () => {
+    detectBrowserTimezone.mockReturnValue("America/New_York");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        apiSuccess({
+          ...scheduleResponse(),
+          from: "2026-07-27T04:00:00.000Z",
+          to: "2026-08-03T04:00:00.000Z"
+        })
+      )
+    );
+
+    renderSchedule("2026-07-27", "Europe/Kyiv");
+
+    await waitFor(() => {
+      expect(persistBrowserTimezoneCookie).toHaveBeenCalledWith(
+        "America/New_York"
+      );
+      expect(
+        screen.getByText((_, element) =>
+          Boolean(element?.textContent === "Ваш часовий пояс: America/New_York")
+        )
+      ).toBeVisible();
+    });
+  });
+
   it("loads through the exact weekly query key, bounds, and same-origin request", async () => {
     const fetchMock = vi.fn().mockResolvedValue(apiSuccess(scheduleResponse()));
     vi.stubGlobal("fetch", fetchMock);
 
-    const { queryClient } = renderSchedule();
+    const { queryClient } = renderSchedule("2026-07-27");
 
     expect(screen.getByLabelText("Завантажуємо розклад")).toBeVisible();
     expect(await screen.findByText("Оберіть вільний слот")).toBeVisible();
@@ -150,7 +244,7 @@ describe("ScheduleCalendar", () => {
       .mockReturnValueOnce(nextResponse);
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
-    const { rerenderWeek } = renderSchedule();
+    const { rerenderWeek } = renderSchedule("2026-07-27");
     await screen.findByText("Оберіть вільний слот");
 
     await user.click(screen.getByRole("button", { name: "Наступний тиждень" }));
@@ -180,7 +274,7 @@ describe("ScheduleCalendar", () => {
       .mockResolvedValueOnce(apiSuccess(scheduleResponse()))
       .mockReturnValueOnce(nextResponse);
     vi.stubGlobal("fetch", fetchMock);
-    const { rerenderWeek } = renderSchedule();
+    const { rerenderWeek } = renderSchedule("2026-07-27");
     await screen.findByText("Оберіть вільний слот");
 
     rerenderWeek("2026-08-03");
@@ -211,7 +305,7 @@ describe("ScheduleCalendar", () => {
       "fetch",
       vi.fn().mockResolvedValue(apiSuccess(scheduleResponse()))
     );
-    renderSchedule();
+    renderSchedule("2026-07-27");
 
     expect(
       await screen.findByTestId("calendar-day-header-2026-07-29")
@@ -241,7 +335,7 @@ describe("ScheduleCalendar", () => {
       "fetch",
       vi.fn().mockResolvedValue(apiSuccess(scheduleResponse()))
     );
-    renderSchedule();
+    renderSchedule("2026-07-27");
 
     expect(
       await screen.findByTestId("calendar-day-header-2026-07-29")
@@ -265,7 +359,7 @@ describe("ScheduleCalendar", () => {
       .mockResolvedValueOnce(apiSuccess(scheduleResponse()));
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
-    renderSchedule();
+    renderSchedule("2026-07-27");
 
     expect(
       await screen.findByRole("heading", {
@@ -284,7 +378,7 @@ describe("ScheduleCalendar", () => {
       "fetch",
       vi.fn().mockResolvedValue(apiError("UNAUTHENTICATED"))
     );
-    renderSchedule();
+    renderSchedule("2026-07-27");
 
     await waitFor(() => {
       expect(router.replace).toHaveBeenCalledWith("/login?reason=session");

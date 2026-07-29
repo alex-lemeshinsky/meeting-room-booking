@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./calendar": "./src/calendar.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

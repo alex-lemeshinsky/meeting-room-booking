@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { getCurrentLocalWeekStart } from "@mrb/time/calendar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { RoomsResponse, ScheduleResponse } from "../../lib/api/contracts";
@@ -21,7 +22,8 @@ import { WeekToolbar } from "./week-toolbar";
 
 interface ScheduleCalendarProps {
   room: RoomsResponse["rooms"][number];
-  initialWeekStart: string;
+  initialWeekStart?: string | undefined;
+  initialTimezone?: string | undefined;
 }
 
 interface ScheduleQueryData {
@@ -34,9 +36,12 @@ const CALENDAR_CLOCK_INTERVAL_MS = 60_000;
 
 export function ScheduleCalendar({
   room,
-  initialWeekStart
+  initialWeekStart,
+  initialTimezone
 }: ScheduleCalendarProps) {
-  const [timezone, setTimezone] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState<string | null>(
+    initialTimezone ?? null
+  );
 
   useEffect(() => {
     const detectedTimezone = detectBrowserTimezone();
@@ -65,7 +70,7 @@ function ResolvedScheduleCalendar({
   const pathname = usePathname();
   const router = useRouter();
   const now = useCalendarNow();
-  const weekStart = initialWeekStart;
+  const weekStart = initialWeekStart ?? getCurrentLocalWeekStart(timezone, now);
   const request = useMemo(
     () => createScheduleRequest(room.id, weekStart, timezone),
     [room.id, timezone, weekStart]
@@ -101,6 +106,12 @@ function ResolvedScheduleCalendar({
       router.replace("/login?reason=session");
     }
   }, [isUnauthenticated, router]);
+
+  useEffect(() => {
+    if (initialWeekStart === undefined) {
+      router.replace(`${pathname}?week=${encodeURIComponent(weekStart)}`);
+    }
+  }, [initialWeekStart, pathname, router, weekStart]);
 
   const navigateToWeek = useCallback(
     (nextWeekStart: string) => {

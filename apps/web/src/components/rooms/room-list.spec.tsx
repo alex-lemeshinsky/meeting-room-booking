@@ -14,7 +14,7 @@ describe("RoomList", () => {
     ).toBeVisible();
   });
 
-  it("shows each room's name, floor, and capacity without schedule links", () => {
+  it("links each room card to its accessible schedule route", () => {
     render(
       <RoomList
         rooms={[{ id: "room-1", name: "Дніпро", floor: 1, capacity: 6 }]}
@@ -25,7 +25,7 @@ describe("RoomList", () => {
     expect(screen.getByText("1 поверх")).toBeVisible();
     expect(screen.getByText("6 місць")).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: /розклад/i })
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: "Відкрити розклад кімнати Дніпро" })
+    ).toHaveAttribute("href", "/rooms/room-1");
   });
 });

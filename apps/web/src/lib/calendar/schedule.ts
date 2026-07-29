@@ -3,7 +3,7 @@ import {
   getLocalWeek,
   splitBookingIntoLocalFragments,
   type CalendarSlot
-} from "@mrb/time";
+} from "@mrb/time/calendar";
 import { browserApi } from "../api/browser";
 import type { ScheduleResponse } from "../api/contracts";
 

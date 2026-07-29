@@ -28,3 +28,10 @@ export async function getRooms(): Promise<RoomsResponse> {
     await currentSessionSecret()
   );
 }
+
+export async function getRoom(
+  roomId: string
+): Promise<RoomsResponse["rooms"][number] | undefined> {
+  const { rooms } = await getRooms();
+  return rooms.find((room) => room.id === roomId);
+}

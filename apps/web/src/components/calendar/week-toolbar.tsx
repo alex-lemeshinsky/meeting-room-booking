@@ -1,6 +1,9 @@
 "use client";
 
-import { getCurrentLocalWeekStart, shiftLocalWeekStart } from "@mrb/time";
+import {
+  getCurrentLocalWeekStart,
+  shiftLocalWeekStart
+} from "@mrb/time/calendar";
 import styles from "./calendar.module.css";
 
 interface WeekToolbarProps {

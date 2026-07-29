@@ -1,4 +1,7 @@
+"use client";
+
 import { Fragment, type CSSProperties } from "react";
+import { useEffect, useRef } from "react";
 import type { CalendarLayout } from "../../lib/calendar/schedule";
 import styles from "./calendar.module.css";
 
@@ -9,14 +12,43 @@ interface CalendarGridProps {
   layout: CalendarLayout;
 }
 
+function endsAtHour(minuteOfDay: number): boolean {
+  return (minuteOfDay + 30) % 60 === 0;
+}
+
 export function CalendarGrid({ layout }: CalendarGridProps) {
-  const gridTemplateRows =
-    `${EDGE_LABEL_HEIGHT_PX}px ` +
-    `repeat(${layout.rows.length}, ${SLOT_HEIGHT_PX}px) ` +
-    `${EDGE_LABEL_HEIGHT_PX}px`;
+  const currentDayHeaderRef = useRef<HTMLTimeElement>(null);
+  const didRevealCurrentDay = useRef(false);
+  const hasCompactBookings = layout.bookings.some(
+    (booking) => booking.heightInRows < 1
+  );
+  const edgeRowOffset = hasCompactBookings ? 1 : 0;
+  const gridTemplateRows = hasCompactBookings
+    ? `${EDGE_LABEL_HEIGHT_PX}px ` +
+      `repeat(${layout.rows.length}, ${SLOT_HEIGHT_PX}px) ` +
+      `${EDGE_LABEL_HEIGHT_PX}px`
+    : `repeat(${layout.rows.length}, ${SLOT_HEIGHT_PX}px)`;
+
+  useEffect(() => {
+    if (didRevealCurrentDay.current || currentDayHeaderRef.current === null) {
+      return;
+    }
+
+    currentDayHeaderRef.current.scrollIntoView?.({
+      behavior: "auto",
+      block: "nearest",
+      inline: "center"
+    });
+    didRevealCurrentDay.current = true;
+  }, [layout.days]);
 
   return (
-    <section className={styles.gridShell} aria-label="Тижневий розклад">
+    <section
+      aria-label="Прокручуваний тижневий розклад"
+      className={styles.gridShell}
+      data-testid="calendar-scroll-region"
+      tabIndex={0}
+    >
       <div className={styles.gridHeader}>
         <span className={styles.timeHeader} aria-hidden="true">
           Час
@@ -33,6 +65,7 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
             dateTime={day.localDate}
             id={`calendar-day-header-${day.localDate}`}
             key={day.localDate}
+            ref={day.isToday ? currentDayHeaderRef : undefined}
           >
             <span>{day.label}</span>
             <small>{day.localDate}</small>
@@ -47,26 +80,38 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
           aria-hidden="true"
           style={{ gridTemplateRows }}
         >
-          <span
-            className={styles.edgeLabelBand}
-            data-edge="start"
-            style={{ gridRow: 1 }}
-          />
+          {hasCompactBookings ? (
+            <span
+              className={styles.edgeLabelBand}
+              data-edge="start"
+              data-testid="calendar-edge-label-band"
+              style={{ gridRow: 1 }}
+            />
+          ) : null}
           {layout.rows.map((row, rowIndex) => (
             <span
+              className={
+                endsAtHour(row.minuteOfDay) ? styles.hourBoundary : undefined
+              }
+              data-hour-boundary={
+                endsAtHour(row.minuteOfDay) ? "true" : "false"
+              }
               data-testid="calendar-row-label"
               key={row.id}
-              style={{ gridRow: rowIndex + 2 }}
+              style={{ gridRow: rowIndex + 1 + edgeRowOffset }}
             >
               {row.label}
               {row.offsetLabel === undefined ? null : ` ${row.offsetLabel}`}
             </span>
           ))}
-          <span
-            className={styles.edgeLabelBand}
-            data-edge="end"
-            style={{ gridRow: layout.rows.length + 2 }}
-          />
+          {hasCompactBookings ? (
+            <span
+              className={styles.edgeLabelBand}
+              data-edge="end"
+              data-testid="calendar-edge-label-band"
+              style={{ gridRow: layout.rows.length + 2 }}
+            />
+          ) : null}
         </div>
 
         <div className={styles.dayColumns}>
@@ -101,22 +146,33 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                   data-testid="calendar-day"
                   style={{ gridTemplateRows }}
                 >
-                  <span
-                    aria-hidden="true"
-                    className={styles.edgeLabelBand}
-                    data-edge="start"
-                    style={{ gridRow: 1 }}
-                  />
+                  {hasCompactBookings ? (
+                    <span
+                      aria-hidden="true"
+                      className={styles.edgeLabelBand}
+                      data-edge="start"
+                      data-testid="calendar-edge-label-band"
+                      style={{ gridRow: 1 }}
+                    />
+                  ) : null}
                   {layout.rows.map((row, rowIndex) => {
                     const slot = slotByRow.get(rowIndex);
+                    const hourBoundary = endsAtHour(row.minuteOfDay);
 
                     if (slot === undefined) {
                       return (
                         <div
-                          className={`${styles.slot} ${styles.unavailableSlot}`}
+                          className={[
+                            styles.slot,
+                            styles.unavailableSlot,
+                            hourBoundary ? styles.hourBoundary : ""
+                          ].join(" ")}
+                          data-hour-boundary={hourBoundary ? "true" : "false"}
                           data-testid="calendar-gap"
                           key={row.id}
-                          style={{ gridRow: rowIndex + 2 }}
+                          style={{
+                            gridRow: rowIndex + 1 + edgeRowOffset
+                          }}
                         />
                       );
                     }
@@ -127,19 +183,22 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                         slot.officeEndPercent < 100);
                     return (
                       <div
-                        className={
+                        className={[
+                          styles.slot,
                           !slot.isOffice
-                            ? `${styles.slot} ${styles.nonOfficeSlot}`
+                            ? styles.nonOfficeSlot
                             : isPartialOffice
-                              ? `${styles.slot} ${styles.partialOfficeSlot}`
-                              : styles.slot
-                        }
+                              ? styles.partialOfficeSlot
+                              : "",
+                          hourBoundary ? styles.hourBoundary : ""
+                        ].join(" ")}
+                        data-hour-boundary={hourBoundary ? "true" : "false"}
                         data-testid="calendar-slot"
                         data-slot-id={slot.id}
                         key={slot.id}
                         style={
                           {
-                            gridRow: rowIndex + 2,
+                            gridRow: rowIndex + 1 + edgeRowOffset,
                             "--office-start": `${slot.officeStartPercent}%`,
                             "--office-end": `${slot.officeEndPercent}%`
                           } as CSSProperties
@@ -153,12 +212,15 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       </div>
                     );
                   })}
-                  <span
-                    aria-hidden="true"
-                    className={styles.edgeLabelBand}
-                    data-edge="end"
-                    style={{ gridRow: layout.rows.length + 2 }}
-                  />
+                  {hasCompactBookings ? (
+                    <span
+                      aria-hidden="true"
+                      className={styles.edgeLabelBand}
+                      data-edge="end"
+                      data-testid="calendar-edge-label-band"
+                      style={{ gridRow: layout.rows.length + 2 }}
+                    />
+                  ) : null}
 
                   {bookings.map((booking) => {
                     const isCompact = booking.heightInRows < 1;
@@ -167,14 +229,16 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       : styles.otherBooking;
                     const bookingContent = (
                       <span className={styles.bookingContent}>
-                        <strong>{booking.title}</strong>
-                        <span>
+                        <strong title={booking.title}>{booking.title}</strong>
+                        <span
+                          title={booking.isOwn ? "Моє" : booking.organizerName}
+                        >
                           {booking.isOwn ? "Моє" : booking.organizerName}
                         </span>
                       </span>
                     );
                     const markerStyle = {
-                      gridRow: booking.startRowIndex + 2,
+                      gridRow: booking.startRowIndex + 1 + edgeRowOffset,
                       "--booking-offset": `${
                         (SLOT_HEIGHT_PX * booking.startOffsetPercent) / 100
                       }px`,
@@ -239,7 +303,7 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       data-testid="now-indicator"
                       style={
                         {
-                          gridRow: nowSlot.rowIndex + 2,
+                          gridRow: nowSlot.rowIndex + 1 + edgeRowOffset,
                           "--now-offset": `${
                             (SLOT_HEIGHT_PX * now.offsetPercent) / 100
                           }px`

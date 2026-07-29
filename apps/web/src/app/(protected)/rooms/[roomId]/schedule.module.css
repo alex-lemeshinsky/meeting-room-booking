@@ -1,0 +1,142 @@
+.schedulePage {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+}
+
+.backLink {
+  display: inline-flex;
+  min-height: 44px;
+  width: fit-content;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-action-primary);
+  font: var(--type-label);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-action-hover);
+}
+
+.backLink:focus-visible,
+.primaryLink:focus-visible,
+.routeActions a:focus-visible,
+.routeActions button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.roomContext {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.roomContext h1,
+.routeError h1 {
+  margin: 0;
+  font: var(--type-title);
+}
+
+.roomContext p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.roomContext p span + span::before {
+  margin-right: var(--space-4);
+  color: var(--color-border-strong);
+  content: "•";
+}
+
+.routeError {
+  display: grid;
+  max-width: 38rem;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+.routeError p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.routeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.routeActions button,
+.routeActions a,
+.primaryLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-action-primary);
+  border-radius: var(--radius-control);
+  background: var(--color-action-primary);
+  color: var(--color-on-action);
+  font: var(--type-label);
+  text-decoration: none;
+}
+
+.routeActions button {
+  cursor: pointer;
+}
+
+.routeActions a {
+  background: var(--color-bg-surface);
+  color: var(--color-action-primary);
+}
+
+.backLinkSkeleton,
+.roomContextSkeleton,
+.calendarSkeleton span {
+  border-radius: var(--radius-control);
+  background: var(--color-bg-subtle);
+}
+
+.backLinkSkeleton {
+  width: 11rem;
+  height: 44px;
+}
+
+.roomContextSkeleton {
+  width: min(100%, 28rem);
+  height: 72px;
+}
+
+.calendarSkeleton {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.calendarSkeleton span:nth-child(1) {
+  width: min(100%, 30rem);
+  height: 44px;
+}
+
+.calendarSkeleton span:nth-child(2) {
+  height: 64px;
+}
+
+.calendarSkeleton span:nth-child(3) {
+  height: 32rem;
+  border-radius: var(--radius-card);
+}
+
+@media (max-width: 40rem) {
+  .routeError {
+    padding: var(--space-6);
+  }
+}

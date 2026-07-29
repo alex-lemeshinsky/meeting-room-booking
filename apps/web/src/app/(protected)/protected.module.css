@@ -87,12 +87,14 @@
 
 .main {
   width: min(100%, 75rem);
+  min-width: 0;
   margin: 0 auto;
   padding: var(--space-8) var(--space-6);
 }
 
 .roomsPage {
   display: grid;
+  min-width: 0;
   gap: var(--space-6);
 }
 
@@ -138,13 +140,37 @@
 
 .roomCard {
   min-height: 9.5rem;
-  padding: var(--space-6);
+  overflow: hidden;
 }
 
 .roomCard h2,
 .emptyState h2 {
   margin: 0;
   font: var(--type-heading);
+}
+
+.roomLink {
+  display: grid;
+  height: 100%;
+  padding: var(--space-6);
+  color: inherit;
+  text-decoration: none;
+}
+
+.roomLink:hover h2,
+.roomLink:hover .roomAction {
+  color: var(--color-action-hover);
+}
+
+.roomLink:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: -3px;
+}
+
+.roomAction {
+  margin-top: var(--space-4);
+  color: var(--color-action-primary);
+  font: var(--type-label);
 }
 
 .roomDetails {
