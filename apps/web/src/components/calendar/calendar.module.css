@@ -115,7 +115,6 @@
   left: 0;
   z-index: var(--z-sticky);
   display: grid;
-  grid-auto-rows: 44px;
   border-right: 1px solid var(--color-border-strong);
   background: var(--color-bg-surface);
 }
@@ -144,6 +143,24 @@
 .daySlots {
   position: relative;
   display: grid;
+}
+
+.edgeLabelBand {
+  min-height: 40px;
+  background: var(--color-bg-subtle);
+  pointer-events: none;
+}
+
+.edgeLabelBand[data-edge="start"] {
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.edgeLabelBand[data-edge="end"] {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.timeAxis .edgeLabelBand {
+  padding: 0;
 }
 
 .slot {
@@ -225,39 +242,19 @@
   color: var(--color-booking-other);
 }
 
-.booking[data-display="compact"] {
-  overflow: visible;
-  padding: 0;
-  border-left: 0;
-  background: transparent;
+.compactBookingLabel {
+  height: 40px;
+  transform: none;
 }
 
-.booking[data-display="compact"]::before {
-  position: absolute;
-  inset: 0;
-  border-left: 3px solid var(--booking-edge);
-  border-radius: var(--radius-booking);
-  background: var(--booking-surface);
-  content: "";
-}
-
-.booking[data-display="compact"] .bookingContent {
+.compactBookingMarker {
   z-index: 1;
-  position: absolute;
-  right: 0;
-  left: var(--space-1);
-  min-height: 40px;
-  padding: var(--space-1) var(--space-2);
+  align-self: start;
+  height: calc(var(--booking-height) - 4px);
+  margin: 0 2px;
   border-radius: var(--radius-booking);
-  background: var(--booking-surface);
-}
-
-.booking[data-display="compact"][data-label-anchor="start"] .bookingContent {
-  top: 0;
-}
-
-.booking[data-display="compact"][data-label-anchor="end"] .bookingContent {
-  bottom: 0;
+  transform: translateY(calc(var(--booking-offset) + 2px));
+  pointer-events: none;
 }
 
 .nowIndicator {

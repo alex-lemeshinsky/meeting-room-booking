@@ -284,9 +284,17 @@ describe("calendar layout", () => {
     ]);
   });
 
-  it("keeps exact half-row geometry for both Chatham midnight fragments", () => {
+  it("keeps exact geometry for back-to-back Chatham midnight bookings", () => {
     const layout = buildCalendarLayout({
       response: scheduleResponse([
+        {
+          id: "booking-before-midnight",
+          title: "Попередня зустріч",
+          startAt: "2026-07-28T10:30:00.000Z",
+          endAt: "2026-07-28T11:00:00.000Z",
+          organizer: { id: "user-2", name: "Тарас" },
+          isOwn: false
+        },
         {
           id: "booking-chatham-midnight",
           title: "Північний перехід",
@@ -326,6 +334,17 @@ describe("calendar layout", () => {
         })
       )
     ).toEqual([
+      {
+        bookingId: "booking-before-midnight",
+        localDate: "2026-07-28",
+        startMinute: 1395,
+        endMinute: 1425,
+        continuesBefore: false,
+        continuesAfter: false,
+        startRowIndex: 46,
+        startOffsetPercent: 50,
+        heightInRows: 1
+      },
       {
         bookingId: "booking-chatham-midnight",
         localDate: "2026-07-28",

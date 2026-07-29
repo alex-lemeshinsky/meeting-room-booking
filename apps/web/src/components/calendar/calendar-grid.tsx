@@ -1,12 +1,20 @@
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties } from "react";
 import type { CalendarLayout } from "../../lib/calendar/schedule";
 import styles from "./calendar.module.css";
+
+const SLOT_HEIGHT_PX = 44;
+const EDGE_LABEL_HEIGHT_PX = 40;
 
 interface CalendarGridProps {
   layout: CalendarLayout;
 }
 
 export function CalendarGrid({ layout }: CalendarGridProps) {
+  const gridTemplateRows =
+    `${EDGE_LABEL_HEIGHT_PX}px ` +
+    `repeat(${layout.rows.length}, ${SLOT_HEIGHT_PX}px) ` +
+    `${EDGE_LABEL_HEIGHT_PX}px`;
+
   return (
     <section className={styles.gridShell} aria-label="Тижневий розклад">
       <div className={styles.gridHeader}>
@@ -37,13 +45,28 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
           className={styles.timeAxis}
           data-testid="calendar-time-axis"
           aria-hidden="true"
+          style={{ gridTemplateRows }}
         >
-          {layout.rows.map((row) => (
-            <span data-testid="calendar-row-label" key={row.id}>
+          <span
+            className={styles.edgeLabelBand}
+            data-edge="start"
+            style={{ gridRow: 1 }}
+          />
+          {layout.rows.map((row, rowIndex) => (
+            <span
+              data-testid="calendar-row-label"
+              key={row.id}
+              style={{ gridRow: rowIndex + 2 }}
+            >
               {row.label}
               {row.offsetLabel === undefined ? null : ` ${row.offsetLabel}`}
             </span>
           ))}
+          <span
+            className={styles.edgeLabelBand}
+            data-edge="end"
+            style={{ gridRow: layout.rows.length + 2 }}
+          />
         </div>
 
         <div className={styles.dayColumns}>
@@ -76,10 +99,14 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                 <div
                   className={styles.daySlots}
                   data-testid="calendar-day"
-                  style={{
-                    gridTemplateRows: `repeat(${layout.rows.length}, 44px)`
-                  }}
+                  style={{ gridTemplateRows }}
                 >
+                  <span
+                    aria-hidden="true"
+                    className={styles.edgeLabelBand}
+                    data-edge="start"
+                    style={{ gridRow: 1 }}
+                  />
                   {layout.rows.map((row, rowIndex) => {
                     const slot = slotByRow.get(rowIndex);
 
@@ -89,7 +116,7 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                           className={`${styles.slot} ${styles.unavailableSlot}`}
                           data-testid="calendar-gap"
                           key={row.id}
-                          style={{ gridRow: rowIndex + 1 }}
+                          style={{ gridRow: rowIndex + 2 }}
                         />
                       );
                     }
@@ -112,7 +139,7 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                         key={slot.id}
                         style={
                           {
-                            gridRow: rowIndex + 1,
+                            gridRow: rowIndex + 2,
                             "--office-start": `${slot.officeStartPercent}%`,
                             "--office-end": `${slot.officeEndPercent}%`
                           } as CSSProperties
@@ -126,46 +153,82 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       </div>
                     );
                   })}
+                  <span
+                    aria-hidden="true"
+                    className={styles.edgeLabelBand}
+                    data-edge="end"
+                    style={{ gridRow: layout.rows.length + 2 }}
+                  />
 
                   {bookings.map((booking) => {
                     const isCompact = booking.heightInRows < 1;
-
-                    return (
-                      <article
-                        aria-label={booking.accessibleLabel}
-                        className={
-                          booking.isOwn
-                            ? `${styles.booking} ${styles.ownBooking}`
-                            : `${styles.booking} ${styles.otherBooking}`
-                        }
-                        data-booking-id={booking.bookingId}
-                        data-display={isCompact ? "compact" : "standard"}
-                        data-label-anchor={
-                          isCompact
-                            ? booking.continuesAfter
-                              ? "end"
-                              : "start"
-                            : undefined
-                        }
-                        data-testid="booking-fragment"
-                        key={`${booking.bookingId}-${booking.localDate}-${booking.startMinute}`}
-                        style={
-                          {
-                            gridRow: booking.startRowIndex + 1,
-                            "--booking-offset": `${
-                              (44 * booking.startOffsetPercent) / 100
-                            }px`,
-                            "--booking-height": `${44 * booking.heightInRows}px`
-                          } as CSSProperties
-                        }
-                      >
-                        <span className={styles.bookingContent}>
-                          <strong>{booking.title}</strong>
-                          <span>
-                            {booking.isOwn ? "Моє" : booking.organizerName}
-                          </span>
+                    const appearanceClass = booking.isOwn
+                      ? styles.ownBooking
+                      : styles.otherBooking;
+                    const bookingContent = (
+                      <span className={styles.bookingContent}>
+                        <strong>{booking.title}</strong>
+                        <span>
+                          {booking.isOwn ? "Моє" : booking.organizerName}
                         </span>
-                      </article>
+                      </span>
+                    );
+                    const markerStyle = {
+                      gridRow: booking.startRowIndex + 2,
+                      "--booking-offset": `${
+                        (SLOT_HEIGHT_PX * booking.startOffsetPercent) / 100
+                      }px`,
+                      "--booking-height": `${
+                        SLOT_HEIGHT_PX * booking.heightInRows
+                      }px`
+                    } as CSSProperties;
+                    const bookingKey =
+                      `${booking.bookingId}-${booking.localDate}-` +
+                      `${booking.startMinute}`;
+
+                    if (!isCompact) {
+                      return (
+                        <article
+                          aria-label={booking.accessibleLabel}
+                          className={`${styles.booking} ${appearanceClass}`}
+                          data-booking-id={booking.bookingId}
+                          data-display="standard"
+                          data-testid="booking-fragment"
+                          key={bookingKey}
+                          style={markerStyle}
+                        >
+                          {bookingContent}
+                        </article>
+                      );
+                    }
+
+                    const labelAnchor = booking.continuesAfter
+                      ? "end"
+                      : "start";
+                    return (
+                      <Fragment key={bookingKey}>
+                        <span
+                          aria-hidden="true"
+                          className={`${styles.compactBookingMarker} ${appearanceClass}`}
+                          data-booking-id={booking.bookingId}
+                          data-testid="compact-booking-marker"
+                          style={markerStyle}
+                        />
+                        <article
+                          aria-label={booking.accessibleLabel}
+                          className={`${styles.booking} ${styles.compactBookingLabel} ${appearanceClass}`}
+                          data-booking-id={booking.bookingId}
+                          data-display="compact"
+                          data-label-anchor={labelAnchor}
+                          data-testid="booking-fragment"
+                          style={{
+                            gridRow:
+                              labelAnchor === "end" ? layout.rows.length + 2 : 1
+                          }}
+                        >
+                          {bookingContent}
+                        </article>
+                      </Fragment>
                     );
                   })}
 
@@ -176,8 +239,10 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       data-testid="now-indicator"
                       style={
                         {
-                          gridRow: nowSlot.rowIndex + 1,
-                          "--now-offset": `${(44 * now.offsetPercent) / 100}px`
+                          gridRow: nowSlot.rowIndex + 2,
+                          "--now-offset": `${
+                            (SLOT_HEIGHT_PX * now.offsetPercent) / 100
+                          }px`
                         } as CSSProperties
                       }
                     />

@@ -147,7 +147,7 @@ describe("CalendarGrid", () => {
       '[data-testid="calendar-day-2026-11-01"] ' +
         '[data-slot-id="2026-11-01T10:00:00.000Z"]'
     );
-    expect(postFoldSlot).toHaveStyle({ gridRow: "7" });
+    expect(postFoldSlot).toHaveStyle({ gridRow: "8" });
   });
 
   it("gives every booking fragment accessible date, time, and ownership context", () => {
@@ -212,11 +212,19 @@ describe("CalendarGrid", () => {
     );
   });
 
-  it("keeps both lines visible in exact half-row midnight fragments", () => {
+  it("reserves collision-free labels for back-to-back midnight fragments", () => {
     render(
       <CalendarGrid
         layout={layout(
           [
+            {
+              id: "booking-before-midnight",
+              title: "Попередня зустріч",
+              startAt: "2026-07-28T10:30:00.000Z",
+              endAt: "2026-07-28T11:00:00.000Z",
+              organizer: { id: "user-2", name: "Тарас" },
+              isOwn: false
+            },
             {
               id: "booking-chatham-midnight",
               title: "Північний перехід",
@@ -231,23 +239,46 @@ describe("CalendarGrid", () => {
       />
     );
 
-    const fragments = screen.getAllByTestId("booking-fragment");
-    expect(fragments).toHaveLength(2);
+    const previousBooking = screen
+      .getByText("Попередня зустріч")
+      .closest("article");
+    expect(previousBooking).toHaveAttribute("data-display", "standard");
+    expect(previousBooking).toHaveStyle({ gridRow: "48" });
+    expect(screen.getByText("Попередня зустріч")).toBeVisible();
+    expect(screen.getByText("Тарас")).toBeVisible();
 
-    for (const fragment of fragments) {
+    const compactLabels = screen
+      .getAllByText("Північний перехід")
+      .map((title) => title.closest("article"));
+    expect(compactLabels).toHaveLength(2);
+    for (const fragment of compactLabels) {
       expect(fragment).toHaveAttribute("data-display", "compact");
-      expect(fragment.style.getPropertyValue("--booking-height")).toBe("22px");
-      expect(within(fragment).getByText("Північний перехід")).toBeVisible();
-      expect(within(fragment).getByText("Моє")).toBeVisible();
+      expect(within(fragment as HTMLElement).getByText("Моє")).toBeVisible();
     }
+    expect(compactLabels[0]).toHaveAttribute("data-label-anchor", "end");
+    expect(compactLabels[0]).toHaveStyle({ gridRow: "50" });
+    expect(compactLabels[1]).toHaveAttribute("data-label-anchor", "start");
+    expect(compactLabels[1]).toHaveStyle({ gridRow: "1" });
 
-    expect(fragments[0]).toHaveAttribute("data-label-anchor", "end");
-    expect(fragments[0]?.style.getPropertyValue("--booking-offset")).toBe(
-      "22px"
-    );
-    expect(fragments[1]).toHaveAttribute("data-label-anchor", "start");
-    expect(fragments[1]?.style.getPropertyValue("--booking-offset")).toBe(
-      "0px"
-    );
+    const markers = screen.getAllByTestId("compact-booking-marker");
+    expect(markers).toHaveLength(2);
+    expect(markers[0]).toHaveStyle({ gridRow: "49" });
+    expect(markers[0]?.style.getPropertyValue("--booking-height")).toBe("22px");
+    expect(markers[0]?.style.getPropertyValue("--booking-offset")).toBe("22px");
+    expect(markers[1]).toHaveStyle({ gridRow: "2" });
+    expect(markers[1]?.style.getPropertyValue("--booking-height")).toBe("22px");
+    expect(markers[1]?.style.getPropertyValue("--booking-offset")).toBe("0px");
+
+    const timeAxis = screen.getByTestId("calendar-time-axis");
+    const day = screen.getByTestId("calendar-day-2026-07-28");
+    const dayGrid = within(day).getByTestId("calendar-day");
+    expect(timeAxis.style.gridTemplateRows).toBe("40px repeat(48, 44px) 40px");
+    expect(dayGrid.style.gridTemplateRows).toBe("40px repeat(48, 44px) 40px");
+    expect(
+      within(timeAxis).getAllByTestId("calendar-row-label")[0]
+    ).toHaveStyle({ gridRow: "2" });
+    expect(within(dayGrid).getAllByTestId("calendar-slot")[0]).toHaveStyle({
+      gridRow: "2"
+    });
   });
 });
