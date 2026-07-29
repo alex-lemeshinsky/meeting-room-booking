@@ -86,6 +86,7 @@ function ResolvedScheduleCalendar({
     }),
     retry: false
   });
+  const isUpdating = query.isFetching && query.data !== undefined;
   const isUnauthenticated =
     query.error instanceof BrowserApiError &&
     query.error.code === "UNAUTHENTICATED";
@@ -137,11 +138,7 @@ function ResolvedScheduleCalendar({
       />
       <TimezoneBanner timezone={timezone} />
 
-      {query.isFetching && query.data !== undefined ? (
-        <p className={styles.updatingStatus} role="status">
-          Оновлюємо розклад
-        </p>
-      ) : null}
+      {isUpdating ? <CalendarUpdatingStatus /> : null}
 
       {query.isError && isRoomNotFound ? (
         <RoomNotFoundState headingLevel={2} />
@@ -159,9 +156,37 @@ function ResolvedScheduleCalendar({
       ) : layout === null || isUnauthenticated ? (
         <CalendarSkeleton />
       ) : (
-        <CalendarGrid layout={layout} />
+        <div
+          aria-busy={isUpdating}
+          className={styles.calendarStage}
+          data-testid="calendar-stage"
+          data-updating={isUpdating ? "true" : undefined}
+        >
+          <CalendarGrid layout={layout} />
+        </div>
       )}
     </section>
+  );
+}
+
+function CalendarUpdatingStatus() {
+  return (
+    <div aria-live="polite" className={styles.updatingStatus} role="status">
+      <span aria-hidden="true" className={styles.updatingIcon}>
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+          <path d="M15.5 13.5a3 3 0 1 0 .6 3.4M16 12.5v3h-3" />
+        </svg>
+      </span>
+      <span className={styles.updatingCopy}>
+        <strong>Оновлюємо розклад</strong>
+        <span>
+          Попередній тиждень залишається на екрані, поки завантажуються нові
+          дані.
+        </span>
+      </span>
+      <span aria-hidden="true" className={styles.updatingProgress} />
+    </div>
   );
 }
 

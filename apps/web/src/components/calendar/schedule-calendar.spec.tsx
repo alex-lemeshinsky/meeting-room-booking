@@ -251,8 +251,17 @@ describe("ScheduleCalendar", () => {
 
     expect(router.push).toHaveBeenCalledWith("/rooms/room-1?week=2026-08-03");
     rerenderWeek("2026-08-03");
+    const stage = screen.getByTestId("calendar-stage");
+    const status = await screen.findByRole("status");
+
+    expect(stage).toHaveAttribute("aria-busy", "true");
+    expect(stage).toHaveAttribute("data-updating", "true");
+    expect(status).toHaveTextContent("Оновлюємо розклад");
+    expect(status).toHaveTextContent(
+      "Попередній тиждень залишається на екрані, поки завантажуються нові дані."
+    );
+    expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
     expect(screen.getByText("Оберіть вільний слот")).toBeVisible();
-    expect(await screen.findByText("Оновлюємо розклад")).toBeVisible();
 
     await act(async () => {
       resolveNext?.(apiSuccess(scheduleResponse("2026-08-03")));
@@ -260,7 +269,9 @@ describe("ScheduleCalendar", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText("Оновлюємо розклад")).not.toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(stage).toHaveAttribute("aria-busy", "false");
+      expect(stage).not.toHaveAttribute("data-updating");
     });
   });
 
