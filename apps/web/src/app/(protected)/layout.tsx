@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ProtectedHeader } from "../../components/shell/protected-header";
+import { QueryProvider } from "../../components/providers/query-provider";
 import { UnauthenticatedError } from "../../lib/api/server";
 import { SESSION_COOKIE } from "../../lib/auth/cookies";
 import { getCurrentSession } from "../../lib/auth/session";
@@ -22,7 +23,9 @@ export default async function ProtectedLayout({
     return (
       <div className={styles.appShell}>
         <ProtectedHeader userName={user.name} />
-        <main className={styles.main}>{children}</main>
+        <QueryProvider>
+          <main className={styles.main}>{children}</main>
+        </QueryProvider>
       </div>
     );
   } catch (error) {

@@ -1,0 +1,277 @@
+.calendarExperience {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+
+.secondaryAction,
+.retryAction {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-action-primary);
+  font: var(--type-label);
+  cursor: pointer;
+}
+
+.secondaryAction:hover,
+.retryAction:hover {
+  color: var(--color-action-hover);
+  border-color: var(--color-action-primary);
+}
+
+.secondaryAction:focus-visible,
+.retryAction:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.timezoneBanner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-action-soft);
+  color: var(--color-text-secondary);
+}
+
+.timezoneBanner strong {
+  color: var(--color-text-primary);
+}
+
+.updatingStatus {
+  min-height: 20px;
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.gridShell {
+  min-width: 896px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  overflow: clip;
+  background: var(--color-bg-surface);
+}
+
+.gridHeader {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: grid;
+  grid-template-columns: 72px repeat(7, minmax(112px, 1fr));
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-bg-surface);
+}
+
+.timeHeader,
+.dayHeader {
+  min-height: 56px;
+  padding: var(--space-2);
+  border-right: 1px solid var(--color-border-default);
+  font: var(--type-calendar);
+}
+
+.timeHeader {
+  color: var(--color-text-secondary);
+}
+
+.dayHeader {
+  display: grid;
+  align-content: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+
+.dayHeader small {
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+}
+
+.currentDayHeader {
+  background: var(--color-action-soft);
+}
+
+.gridBody {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(784px, 1fr);
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.timeAxis {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-sticky);
+  display: grid;
+  grid-auto-rows: 44px;
+  border-right: 1px solid var(--color-border-strong);
+  background: var(--color-bg-surface);
+}
+
+.timeAxis span {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  font: var(--type-time);
+}
+
+.dayColumns {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(112px, 1fr));
+}
+
+.dayColumn {
+  min-width: 112px;
+  border-right: 1px solid var(--color-border-default);
+}
+
+.currentDay {
+  background: var(--color-action-soft);
+}
+
+.daySlots {
+  position: relative;
+  display: grid;
+}
+
+.slot {
+  min-height: 44px;
+  border-bottom: 1px solid var(--color-border-default);
+  pointer-events: none;
+}
+
+.slot:nth-child(2n + 1) {
+  border-bottom-color: var(--color-border-strong);
+}
+
+.nonOfficeSlot {
+  background: var(--color-bg-subtle);
+}
+
+.offsetLabel {
+  display: block;
+  padding: var(--space-1);
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+}
+
+.booking {
+  z-index: 1;
+  display: grid;
+  align-content: start;
+  gap: 0;
+  min-height: 44px;
+  margin: 2px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-booking);
+  overflow: hidden;
+  font: var(--type-calendar);
+  pointer-events: none;
+}
+
+.booking strong,
+.booking span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ownBooking {
+  border-left: 3px solid var(--color-booking-own);
+  background: var(--color-booking-own-bg);
+  color: var(--color-booking-own);
+}
+
+.otherBooking {
+  border-left: 3px solid var(--color-booking-other-edge);
+  background: var(--color-booking-other-bg);
+  color: var(--color-booking-other);
+}
+
+.nowIndicator {
+  z-index: 2;
+  align-self: start;
+  width: 100%;
+  height: 2px;
+  transform: translateY(var(--now-offset));
+  background: var(--color-now-indicator);
+  pointer-events: none;
+}
+
+.emptyHint {
+  position: sticky;
+  left: 50%;
+  width: fit-content;
+  margin: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+}
+
+.errorState {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-card);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.errorState h2 {
+  margin: 0;
+  font: var(--type-heading);
+}
+
+.calendarSkeleton {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.skeletonLabel {
+  color: var(--color-text-secondary);
+}
+
+.skeletonToolbar,
+.skeletonBanner,
+.skeletonGrid span {
+  background: var(--color-bg-subtle);
+}
+
+.skeletonToolbar {
+  width: min(100%, 480px);
+  height: 44px;
+  border-radius: var(--radius-control);
+}
+
+.skeletonBanner {
+  height: 64px;
+  border-radius: var(--radius-card);
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(112px, 1fr));
+  min-height: 440px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+.skeletonGrid span {
+  border-right: 1px solid var(--color-border-default);
+}

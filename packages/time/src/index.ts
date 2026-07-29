@@ -2,6 +2,7 @@ export {
   getCurrentLocalWeekStart,
   getKyivOfficeIntervals,
   getLocalWeek,
+  shiftLocalWeekStart,
   splitBookingIntoLocalFragments,
   type BookingFragment,
   type CalendarDay,

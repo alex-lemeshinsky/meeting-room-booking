@@ -10,6 +10,7 @@ export interface CalendarSlot {
   instant: string;
   localDate: string;
   label: string;
+  minuteOfDay: number;
   offsetLabel?: string;
 }
 
@@ -70,6 +71,24 @@ export function getCurrentLocalWeekStart(
   return requiredIsoDate(
     localNow.startOf("day").minus({ days: localNow.weekday - 1 })
   );
+}
+
+export function shiftLocalWeekStart(
+  weekStart: string,
+  timezone: string,
+  weekOffset: number
+): string {
+  assertTimezone(timezone);
+  if (!Number.isInteger(weekOffset)) {
+    throw new RangeError("weekOffset must be an integer");
+  }
+
+  const start = parseLocalDate(weekStart, "weekStart", timezone);
+  if (start.weekday !== 1) {
+    throw new RangeError("weekStart must be a Monday local date");
+  }
+
+  return requiredIsoDate(start.plus({ weeks: weekOffset }));
 }
 
 export function getKyivOfficeIntervals(
@@ -181,6 +200,7 @@ function buildCalendarSlots(
       instant: utcInstant,
       localDate: requiredIsoDate(localSlot),
       label: localSlot.toFormat("HH:mm"),
+      minuteOfDay: minuteOfDay(localSlot),
       offsetLabel: `UTC${localSlot.toFormat("ZZ")}`
     });
   }
@@ -257,7 +277,6 @@ function assertOrderedInterval(
     throw new RangeError(`${startName} must be before ${endName}`);
   }
 }
-
 function requiredIsoDate(value: DateTime): string {
   const result = value.toISODate();
   if (result === null) {

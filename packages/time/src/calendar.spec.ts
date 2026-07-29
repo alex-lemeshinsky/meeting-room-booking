@@ -3,6 +3,7 @@ import {
   getCurrentLocalWeekStart,
   getKyivOfficeIntervals,
   getLocalWeek,
+  shiftLocalWeekStart,
   splitBookingIntoLocalFragments
 } from "./index.js";
 
@@ -96,6 +97,7 @@ describe("local calendar weeks", () => {
         instant: "2026-11-01T05:00:00.000Z",
         localDate: "2026-11-01",
         label: "01:00",
+        minuteOfDay: 60,
         offsetLabel: "UTC-04:00"
       },
       {
@@ -103,9 +105,22 @@ describe("local calendar weeks", () => {
         instant: "2026-11-01T06:00:00.000Z",
         localDate: "2026-11-01",
         label: "01:00",
+        minuteOfDay: 60,
         offsetLabel: "UTC-05:00"
       }
     ]);
+  });
+
+  it("shifts Monday week starts with local calendar arithmetic", () => {
+    expect(shiftLocalWeekStart("2026-03-02", "America/New_York", 1)).toBe(
+      "2026-03-09"
+    );
+    expect(shiftLocalWeekStart("2026-11-02", "America/New_York", -1)).toBe(
+      "2026-10-26"
+    );
+    expect(shiftLocalWeekStart("2026-07-27", "Europe/Kyiv", 0)).toBe(
+      "2026-07-27"
+    );
   });
 });
 
@@ -247,6 +262,21 @@ describe("calendar input validation", () => {
       /weekStart/i
     );
     expect(() => getLocalWeek("2026-07-28", "Europe/Kyiv")).toThrow(/Monday/i);
+    expect(() => shiftLocalWeekStart("2026-02-30", "Europe/Kyiv", 1)).toThrow(
+      /weekStart/i
+    );
+    expect(() => shiftLocalWeekStart("2026-07-28", "Europe/Kyiv", 1)).toThrow(
+      /Monday/i
+    );
+  });
+
+  it("rejects invalid week shift zones and non-integer offsets", () => {
+    expect(() => shiftLocalWeekStart("2026-07-27", "Not/A_Zone", 1)).toThrow(
+      /timezone/i
+    );
+    expect(() => shiftLocalWeekStart("2026-07-27", "Europe/Kyiv", 1.5)).toThrow(
+      /weekOffset/i
+    );
   });
 
   it("rejects invalid and empty office ranges", () => {
