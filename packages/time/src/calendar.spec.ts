@@ -56,6 +56,27 @@ describe("local calendar weeks", () => {
     );
   });
 
+  it("does not leak the next date into a day whose DST gap starts at midnight", () => {
+    const week = getLocalWeek(
+      "2026-08-31",
+      "America/Santiago",
+      new Date("2026-08-31T12:00:00.000Z")
+    );
+    const transitionDay = week.days[6];
+
+    expect(transitionDay?.localDate).toBe("2026-09-06");
+    expect(transitionDay?.slots).toHaveLength(46);
+    expect(transitionDay?.slots.map((slot) => slot.localDate)).not.toContain(
+      "2026-09-07"
+    );
+    expect(transitionDay?.slots.map((slot) => slot.label)).not.toContain(
+      "00:00"
+    );
+    expect(transitionDay?.slots.map((slot) => slot.label)).not.toContain(
+      "00:30"
+    );
+  });
+
   it("keeps repeated autumn slots distinct by UTC identity and offset", () => {
     const week = getLocalWeek(
       "2026-10-26",
@@ -167,6 +188,34 @@ describe("local booking fragments", () => {
       }
     ]);
   });
+
+  it("splits at midnight after a date whose DST gap starts at midnight", () => {
+    expect(
+      splitBookingIntoLocalFragments(
+        "booking-3",
+        "2026-09-07T02:30:00.000Z",
+        "2026-09-07T03:30:00.000Z",
+        "America/Santiago"
+      )
+    ).toEqual([
+      {
+        bookingId: "booking-3",
+        localDate: "2026-09-06",
+        startMinute: 1410,
+        endMinute: 1440,
+        continuesBefore: false,
+        continuesAfter: true
+      },
+      {
+        bookingId: "booking-3",
+        localDate: "2026-09-07",
+        startMinute: 0,
+        endMinute: 30,
+        continuesBefore: true,
+        continuesAfter: false
+      }
+    ]);
+  });
 });
 
 describe("calendar input validation", () => {
@@ -183,6 +232,15 @@ describe("calendar input validation", () => {
       )
     ).toThrow(/timezone/i);
   });
+
+  it.each(["+02:00", "-05:30"])(
+    "rejects the fixed-offset zone identifier %s",
+    (timezone) => {
+      expect(() =>
+        getCurrentLocalWeekStart(timezone, new Date("2026-07-27T10:00:00.000Z"))
+      ).toThrow(/timezone/i);
+    }
+  );
 
   it("rejects invalid local dates and non-Monday week starts", () => {
     expect(() => getLocalWeek("2026-02-30", "Europe/Kyiv")).toThrow(

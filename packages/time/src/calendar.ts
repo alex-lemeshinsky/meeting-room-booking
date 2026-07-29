@@ -3,6 +3,7 @@ import { DateTime, IANAZone } from "luxon";
 const KYIV_TIMEZONE = "Europe/Kyiv";
 const LOCAL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const INSTANT_PATTERN = /T.*(?:Z|[+-]\d{2}:\d{2})$/i;
+const FIXED_OFFSET_ZONE_PATTERN = /^[+-]\d{2}(?::?\d{2})?$/;
 
 export interface CalendarSlot {
   id: string;
@@ -138,10 +139,7 @@ export function splitBookingIntoLocalFragments(
 
   while (fragmentStart < end) {
     const localStart = fragmentStart.setZone(timezone);
-    const nextLocalMidnight = localStart
-      .startOf("day")
-      .plus({ days: 1 })
-      .toUTC();
+    const nextLocalMidnight = startOfNextLocalDate(localStart).toUTC();
     const fragmentEnd = nextLocalMidnight < end ? nextLocalMidnight : end;
     const localEnd = fragmentEnd.setZone(timezone);
     const endsAtNextLocalMidnight =
@@ -167,7 +165,7 @@ function buildCalendarSlots(
   localDay: DateTime,
   timezone: string
 ): CalendarSlot[] {
-  const dayEnd = localDay.plus({ days: 1 }).toUTC();
+  const dayEnd = startOfNextLocalDate(localDay).toUTC();
   const slots: Array<CalendarSlot & { offsetLabel: string }> = [];
 
   for (
@@ -197,8 +195,15 @@ function buildCalendarSlots(
   );
 }
 
+function startOfNextLocalDate(value: DateTime): DateTime {
+  return value.plus({ days: 1 }).startOf("day");
+}
+
 function assertTimezone(timezone: string): void {
-  if (!IANAZone.isValidZone(timezone)) {
+  if (
+    FIXED_OFFSET_ZONE_PATTERN.test(timezone) ||
+    !IANAZone.isValidZone(timezone)
+  ) {
     throw new RangeError(`timezone must be a valid IANA zone: ${timezone}`);
   }
 }
