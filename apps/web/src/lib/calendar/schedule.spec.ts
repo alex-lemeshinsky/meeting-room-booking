@@ -208,6 +208,37 @@ describe("calendar layout", () => {
     ]);
   });
 
+  it("projects a fold-boundary endpoint from the second occurrence instant", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse([
+        {
+          id: "booking-fold-boundary",
+          title: "Межа переходу",
+          startAt: "2026-11-01T08:30:00.000Z",
+          endAt: "2026-11-01T09:00:00.000Z",
+          organizer: { id: "user-1", name: "Олена" },
+          isOwn: true
+        }
+      ]),
+      weekStart: "2026-10-26",
+      timezone: "America/Los_Angeles",
+      now: new Date("2026-10-26T12:00:00.000Z")
+    });
+
+    expect(layout.bookings).toEqual([
+      expect.objectContaining({
+        bookingId: "booking-fold-boundary",
+        startMinute: 90,
+        endMinute: 60,
+        startRowIndex: 3,
+        startOffsetPercent: 0,
+        heightInRows: 1,
+        accessibleLabel:
+          "Межа переходу. 2026-11-01, " + "01:30 UTC-07:00–01:00 UTC-08:00. Моє"
+      })
+    ]);
+  });
+
   it("uses fractional instant geometry for quarter-hour bookings and office edges", () => {
     const layout = buildCalendarLayout({
       response: scheduleResponse([
@@ -250,6 +281,73 @@ describe("calendar layout", () => {
         startOffsetPercent: 50,
         heightInRows: 1
       })
+    ]);
+  });
+
+  it("keeps exact half-row geometry for both Chatham midnight fragments", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse([
+        {
+          id: "booking-chatham-midnight",
+          title: "Північний перехід",
+          startAt: "2026-07-28T11:00:00.000Z",
+          endAt: "2026-07-28T11:30:00.000Z",
+          organizer: { id: "user-1", name: "Олена" },
+          isOwn: true
+        }
+      ]),
+      weekStart: "2026-07-27",
+      timezone: "Pacific/Chatham",
+      now: new Date("2026-07-27T07:00:00.000Z")
+    });
+
+    expect(
+      layout.bookings.map(
+        ({
+          bookingId,
+          localDate,
+          startMinute,
+          endMinute,
+          continuesBefore,
+          continuesAfter,
+          startRowIndex,
+          startOffsetPercent,
+          heightInRows
+        }) => ({
+          bookingId,
+          localDate,
+          startMinute,
+          endMinute,
+          continuesBefore,
+          continuesAfter,
+          startRowIndex,
+          startOffsetPercent,
+          heightInRows
+        })
+      )
+    ).toEqual([
+      {
+        bookingId: "booking-chatham-midnight",
+        localDate: "2026-07-28",
+        startMinute: 1425,
+        endMinute: 1440,
+        continuesBefore: false,
+        continuesAfter: true,
+        startRowIndex: 47,
+        startOffsetPercent: 50,
+        heightInRows: 0.5
+      },
+      {
+        bookingId: "booking-chatham-midnight",
+        localDate: "2026-07-29",
+        startMinute: 0,
+        endMinute: 15,
+        continuesBefore: true,
+        continuesAfter: false,
+        startRowIndex: 0,
+        startOffsetPercent: 0,
+        heightInRows: 0.5
+      }
     ]);
   });
 

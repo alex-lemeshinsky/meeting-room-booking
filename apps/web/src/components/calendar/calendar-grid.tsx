@@ -127,33 +127,47 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                     );
                   })}
 
-                  {bookings.map((booking) => (
-                    <article
-                      aria-label={booking.accessibleLabel}
-                      className={
-                        booking.isOwn
-                          ? `${styles.booking} ${styles.ownBooking}`
-                          : `${styles.booking} ${styles.otherBooking}`
-                      }
-                      data-booking-id={booking.bookingId}
-                      data-testid="booking-fragment"
-                      key={`${booking.bookingId}-${booking.localDate}-${booking.startMinute}`}
-                      style={
-                        {
-                          gridRow: booking.startRowIndex + 1,
-                          "--booking-offset": `${
-                            (44 * booking.startOffsetPercent) / 100
-                          }px`,
-                          "--booking-height": `${44 * booking.heightInRows}px`
-                        } as CSSProperties
-                      }
-                    >
-                      <strong>{booking.title}</strong>
-                      <span>
-                        {booking.isOwn ? "Моє" : booking.organizerName}
-                      </span>
-                    </article>
-                  ))}
+                  {bookings.map((booking) => {
+                    const isCompact = booking.heightInRows < 1;
+
+                    return (
+                      <article
+                        aria-label={booking.accessibleLabel}
+                        className={
+                          booking.isOwn
+                            ? `${styles.booking} ${styles.ownBooking}`
+                            : `${styles.booking} ${styles.otherBooking}`
+                        }
+                        data-booking-id={booking.bookingId}
+                        data-display={isCompact ? "compact" : "standard"}
+                        data-label-anchor={
+                          isCompact
+                            ? booking.continuesAfter
+                              ? "end"
+                              : "start"
+                            : undefined
+                        }
+                        data-testid="booking-fragment"
+                        key={`${booking.bookingId}-${booking.localDate}-${booking.startMinute}`}
+                        style={
+                          {
+                            gridRow: booking.startRowIndex + 1,
+                            "--booking-offset": `${
+                              (44 * booking.startOffsetPercent) / 100
+                            }px`,
+                            "--booking-height": `${44 * booking.heightInRows}px`
+                          } as CSSProperties
+                        }
+                      >
+                        <span className={styles.bookingContent}>
+                          <strong>{booking.title}</strong>
+                          <span>
+                            {booking.isOwn ? "Моє" : booking.organizerName}
+                          </span>
+                        </span>
+                      </article>
+                    );
+                  })}
 
                   {now === undefined || nowSlot === undefined ? null : (
                     <span

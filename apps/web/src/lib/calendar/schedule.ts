@@ -327,11 +327,12 @@ function buildBookingFragments(
       const endPosition = lastSlot.rowIndex + endOffset;
       const startMinute =
         firstSlot.minuteOfDay + (visibleStart - firstSlotStart) / 60_000;
-      const endMinute =
-        lastSlot.minuteOfDay + (visibleEnd - lastSlotStart) / 60_000;
       const exactEndSlot = day.slots.find(
         (slot) => Date.parse(slot.instant) === visibleEnd
       );
+      const endMinute =
+        exactEndSlot?.minuteOfDay ??
+        lastSlot.minuteOfDay + (visibleEnd - lastSlotStart) / 60_000;
       const startLabel = formatLocalMinute(startMinute, firstSlot.offsetLabel);
       const endLabel = formatLocalMinute(
         endMinute,

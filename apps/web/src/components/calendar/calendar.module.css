@@ -182,9 +182,9 @@
 
 .booking {
   z-index: 1;
+  position: relative;
   display: grid;
   align-content: start;
-  gap: 0;
   height: calc(var(--booking-height) - 4px);
   margin: 0 2px;
   padding: var(--space-1) var(--space-2);
@@ -195,22 +195,69 @@
   pointer-events: none;
 }
 
-.booking strong,
-.booking span {
+.bookingContent {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+}
+
+.bookingContent > strong,
+.bookingContent > span {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .ownBooking {
-  border-left: 3px solid var(--color-booking-own);
-  background: var(--color-booking-own-bg);
+  --booking-edge: var(--color-booking-own);
+  --booking-surface: var(--color-booking-own-bg);
+
+  border-left: 3px solid var(--booking-edge);
+  background: var(--booking-surface);
   color: var(--color-booking-own);
 }
 
 .otherBooking {
-  border-left: 3px solid var(--color-booking-other-edge);
-  background: var(--color-booking-other-bg);
+  --booking-edge: var(--color-booking-other-edge);
+  --booking-surface: var(--color-booking-other-bg);
+
+  border-left: 3px solid var(--booking-edge);
+  background: var(--booking-surface);
   color: var(--color-booking-other);
+}
+
+.booking[data-display="compact"] {
+  overflow: visible;
+  padding: 0;
+  border-left: 0;
+  background: transparent;
+}
+
+.booking[data-display="compact"]::before {
+  position: absolute;
+  inset: 0;
+  border-left: 3px solid var(--booking-edge);
+  border-radius: var(--radius-booking);
+  background: var(--booking-surface);
+  content: "";
+}
+
+.booking[data-display="compact"] .bookingContent {
+  z-index: 1;
+  position: absolute;
+  right: 0;
+  left: var(--space-1);
+  min-height: 40px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-booking);
+  background: var(--booking-surface);
+}
+
+.booking[data-display="compact"][data-label-anchor="start"] .bookingContent {
+  top: 0;
+}
+
+.booking[data-display="compact"][data-label-anchor="end"] .bookingContent {
+  bottom: 0;
 }
 
 .nowIndicator {

@@ -181,4 +181,73 @@ describe("CalendarGrid", () => {
       "Демо. 2026-07-30, 11:00–12:00. Організатор: Тарас"
     );
   });
+
+  it("announces the exact second-occurrence time at a fold boundary", () => {
+    const foldLayout = buildCalendarLayout({
+      response: {
+        room,
+        from: "2026-10-26T07:00:00.000Z",
+        to: "2026-11-02T08:00:00.000Z",
+        bookings: [
+          {
+            id: "booking-fold-boundary",
+            title: "Межа переходу",
+            startAt: "2026-11-01T08:30:00.000Z",
+            endAt: "2026-11-01T09:00:00.000Z",
+            organizer: { id: "user-1", name: "Олена" },
+            isOwn: true
+          }
+        ]
+      },
+      weekStart: "2026-10-26",
+      timezone: "America/Los_Angeles",
+      now: new Date("2026-10-26T12:00:00.000Z")
+    });
+    render(<CalendarGrid layout={foldLayout} />);
+
+    expect(
+      screen.getByText("Межа переходу").closest("article")
+    ).toHaveAccessibleName(
+      "Межа переходу. 2026-11-01, " + "01:30 UTC-07:00–01:00 UTC-08:00. Моє"
+    );
+  });
+
+  it("keeps both lines visible in exact half-row midnight fragments", () => {
+    render(
+      <CalendarGrid
+        layout={layout(
+          [
+            {
+              id: "booking-chatham-midnight",
+              title: "Північний перехід",
+              startAt: "2026-07-28T11:00:00.000Z",
+              endAt: "2026-07-28T11:30:00.000Z",
+              organizer: { id: "user-1", name: "Олена" },
+              isOwn: true
+            }
+          ],
+          "Pacific/Chatham"
+        )}
+      />
+    );
+
+    const fragments = screen.getAllByTestId("booking-fragment");
+    expect(fragments).toHaveLength(2);
+
+    for (const fragment of fragments) {
+      expect(fragment).toHaveAttribute("data-display", "compact");
+      expect(fragment.style.getPropertyValue("--booking-height")).toBe("22px");
+      expect(within(fragment).getByText("Північний перехід")).toBeVisible();
+      expect(within(fragment).getByText("Моє")).toBeVisible();
+    }
+
+    expect(fragments[0]).toHaveAttribute("data-label-anchor", "end");
+    expect(fragments[0]?.style.getPropertyValue("--booking-offset")).toBe(
+      "22px"
+    );
+    expect(fragments[1]).toHaveAttribute("data-label-anchor", "start");
+    expect(fragments[1]?.style.getPropertyValue("--booking-offset")).toBe(
+      "0px"
+    );
+  });
 });
