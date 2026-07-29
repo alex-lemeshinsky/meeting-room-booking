@@ -115,6 +115,84 @@ describe("OpenAPI document", () => {
       createOpenApiDocument(app).paths["/api/v1/rooms"]?.get
     ).toBeDefined();
   });
+
+  it("publishes the authenticated room schedule operation with safe schemas", () => {
+    const document = createOpenApiDocument(app);
+    const operation = document.paths["/api/v1/rooms/{roomId}/schedule"]?.get;
+
+    expect(operation?.operationId).toBe("getRoomSchedule");
+    expect(operation?.security).toContainEqual({ cookie: [] });
+    expect(operation?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          in: "path",
+          name: "roomId",
+          required: true,
+          schema: expect.objectContaining({ type: "string", format: "uuid" })
+        }),
+        expect.objectContaining({
+          in: "query",
+          name: "from",
+          required: true,
+          schema: expect.objectContaining({
+            type: "string",
+            format: "date-time"
+          })
+        }),
+        expect.objectContaining({
+          in: "query",
+          name: "to",
+          required: true,
+          schema: expect.objectContaining({
+            type: "string",
+            format: "date-time"
+          })
+        })
+      ])
+    );
+    expect(operation?.responses?.[200]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ScheduleResponseDto" }
+        }
+      }
+    });
+    expectErrorResponses(operation?.responses, [400, 401, 404, 500]);
+    expect(document.components?.schemas?.ScheduleOrganizerDto).toMatchObject({
+      required: ["id", "name"],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        name: { type: "string" }
+      }
+    });
+    expect(document.components?.schemas?.ScheduleBookingDto).toMatchObject({
+      required: ["id", "title", "startAt", "endAt", "organizer", "isOwn"],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        startAt: { type: "string", format: "date-time" },
+        endAt: { type: "string", format: "date-time" },
+        organizer: {
+          $ref: "#/components/schemas/ScheduleOrganizerDto"
+        },
+        isOwn: { type: "boolean" }
+      }
+    });
+    expect(document.components?.schemas?.ScheduleResponseDto).toMatchObject({
+      required: ["room", "from", "to", "bookings"],
+      properties: {
+        room: { $ref: "#/components/schemas/RoomDto" },
+        from: { type: "string", format: "date-time" },
+        to: { type: "string", format: "date-time" },
+        bookings: {
+          type: "array",
+          items: { $ref: "#/components/schemas/ScheduleBookingDto" }
+        }
+      }
+    });
+    expect(JSON.stringify(operation)).not.toMatch(
+      /passwordHash|tokenHash|csrfTokenHash|sessionSecret|csrfSecret/
+    );
+  });
 });
 
 function expectErrorResponses(

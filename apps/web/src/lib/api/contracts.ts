@@ -12,4 +12,7 @@ export type AuthResponse =
 export type RoomsResponse =
   operations["listRooms"]["responses"][200]["content"]["application/json"];
 
+export type ScheduleResponse =
+  operations["getRoomSchedule"]["responses"][200]["content"]["application/json"];
+
 export type ApiErrorBody = components["schemas"]["ApiErrorDto"];

@@ -116,6 +116,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rooms/{roomId}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRoomSchedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -174,6 +190,22 @@ export interface components {
              */
             password: string;
         };
+        ScheduleParamsDto: {
+            /** Format: uuid */
+            roomId: string;
+        };
+        ScheduleQueryDto: {
+            /**
+             * Format: date-time
+             * @example 2035-01-01T00:00:00.000Z
+             */
+            from: string;
+            /**
+             * Format: date-time
+             * @example 2035-01-08T00:00:00.000Z
+             */
+            to: string;
+        };
         RoomDto: {
             /** Format: uuid */
             id: string;
@@ -186,6 +218,45 @@ export interface components {
         };
         RoomListResponseDto: {
             rooms: components["schemas"]["RoomDto"][];
+        };
+        ScheduleOrganizerDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Олена */
+            name: string;
+        };
+        ScheduleBookingDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Планування спринту */
+            title: string;
+            /**
+             * Format: date-time
+             * @example 2035-01-02T10:00:00.000Z
+             */
+            startAt: string;
+            /**
+             * Format: date-time
+             * @example 2035-01-02T11:00:00.000Z
+             */
+            endAt: string;
+            organizer: components["schemas"]["ScheduleOrganizerDto"];
+            /** @example true */
+            isOwn: boolean;
+        };
+        ScheduleResponseDto: {
+            room: components["schemas"]["RoomDto"];
+            /**
+             * Format: date-time
+             * @example 2035-01-01T00:00:00.000Z
+             */
+            from: string;
+            /**
+             * Format: date-time
+             * @example 2035-01-08T00:00:00.000Z
+             */
+            to: string;
+            bookings: components["schemas"]["ScheduleBookingDto"][];
         };
     };
     responses: never;
@@ -460,6 +531,62 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    getRoomSchedule: {
+        parameters: {
+            query: {
+                to: string;
+                from: string;
+            };
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

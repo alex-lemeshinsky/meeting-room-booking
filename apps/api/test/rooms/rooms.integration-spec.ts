@@ -10,6 +10,15 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 describe("GET /api/v1/rooms", () => {
   let context: PostgresTestApp;
+  const scheduleRoomId = "10000000-0000-4000-8000-000000000002";
+  const scheduleBookingIds = [
+    "30000000-0000-4000-8000-000000000001",
+    "30000000-0000-4000-8000-000000000002",
+    "30000000-0000-4000-8000-000000000003",
+    "30000000-0000-4000-8000-000000000004",
+    "30000000-0000-4000-8000-000000000005",
+    "30000000-0000-4000-8000-000000000006"
+  ] as const;
 
   beforeAll(async () => {
     context = await startPostgresTestApp({ seed: true });
@@ -153,4 +162,306 @@ describe("GET /api/v1/rooms", () => {
       })
     ).resolves.toEqual({ passwordHash: "existing-password-hash" });
   });
+
+  describe("GET /api/v1/rooms/:roomId/schedule", () => {
+    let authenticatedAgent: ReturnType<typeof request.agent>;
+
+    beforeAll(async () => {
+      const database = context.app.get(DatabaseService);
+      await database.booking.deleteMany({
+        where: { id: { in: [...scheduleBookingIds] } }
+      });
+      await database.booking.createMany({
+        data: [
+          {
+            id: scheduleBookingIds[0],
+            roomId: scheduleRoomId,
+            userId: "00000000-0000-4000-8000-000000000001",
+            title: "Ends at range start",
+            startAt: new Date("2034-12-31T23:00:00.000Z"),
+            endAt: new Date("2035-01-01T00:00:00.000Z"),
+            status: "ACTIVE"
+          },
+          {
+            id: scheduleBookingIds[1],
+            roomId: scheduleRoomId,
+            userId: "00000000-0000-4000-8000-000000000001",
+            title: "Olena planning",
+            startAt: new Date("2035-01-01T00:00:00.000Z"),
+            endAt: new Date("2035-01-01T01:00:00.000Z"),
+            status: "ACTIVE"
+          },
+          {
+            id: scheduleBookingIds[2],
+            roomId: scheduleRoomId,
+            userId: "00000000-0000-4000-8000-000000000002",
+            title: "Guest review",
+            startAt: new Date("2035-01-01T01:00:00.000Z"),
+            endAt: new Date("2035-01-01T02:00:00.000Z"),
+            status: "ACTIVE"
+          },
+          {
+            id: scheduleBookingIds[3],
+            roomId: scheduleRoomId,
+            userId: "00000000-0000-4000-8000-000000000002",
+            title: "Cancelled review",
+            startAt: new Date("2035-01-01T02:00:00.000Z"),
+            endAt: new Date("2035-01-01T03:00:00.000Z"),
+            status: "CANCELLED",
+            cancelledAt: new Date("2034-12-31T12:00:00.000Z")
+          },
+          {
+            id: scheduleBookingIds[4],
+            roomId: scheduleRoomId,
+            userId: "00000000-0000-4000-8000-000000000001",
+            title: "Ends at range end",
+            startAt: new Date("2035-01-07T23:00:00.000Z"),
+            endAt: new Date("2035-01-08T00:00:00.000Z"),
+            status: "ACTIVE"
+          },
+          {
+            id: scheduleBookingIds[5],
+            roomId: scheduleRoomId,
+            userId: "00000000-0000-4000-8000-000000000002",
+            title: "Starts at range end",
+            startAt: new Date("2035-01-08T00:00:00.000Z"),
+            endAt: new Date("2035-01-08T01:00:00.000Z"),
+            status: "ACTIVE"
+          }
+        ]
+      });
+
+      authenticatedAgent = request.agent(context.app.getHttpServer());
+      await authenticatedAgent
+        .post("/api/v1/auth/login")
+        .set("Origin", "http://127.0.0.1:3000")
+        .send({ email: "alex@example.com", password: "Meeting123!" })
+        .expect(200);
+    });
+
+    afterAll(async () => {
+      await context.app.get(DatabaseService).booking.deleteMany({
+        where: { id: { in: [...scheduleBookingIds] } }
+      });
+    });
+
+    it("requires an authenticated session", async () => {
+      await request(context.app.getHttpServer())
+        .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
+        .query({
+          from: "2035-01-01T00:00:00Z",
+          to: "2035-01-08T00:00:00Z"
+        })
+        .expect(401);
+    });
+
+    it("rejects room identifiers that are not UUID v4 values", async () => {
+      const response = await authenticatedAgent
+        .get("/api/v1/rooms/10000000-0000-1000-8000-000000000002/schedule")
+        .query({
+          from: "2035-01-01T00:00:00Z",
+          to: "2035-01-08T00:00:00Z"
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Request validation failed",
+          fields: { roomId: expect.any(Array) }
+        }
+      });
+    });
+
+    it.each([
+      [
+        "numeric offset from",
+        { from: "2035-01-01T02:00:00+02:00", to: "2035-03-01T00:00:00Z" },
+        "from"
+      ],
+      [
+        "local date-time from",
+        { from: "2035-01-01T00:00:00", to: "2035-03-01T00:00:00Z" },
+        "from"
+      ],
+      [
+        "nonexistent calendar date from",
+        { from: "2035-02-30T00:00:00Z", to: "2035-03-01T00:00:00Z" },
+        "from"
+      ],
+      [
+        "numeric offset to",
+        { from: "2035-01-01T00:00:00Z", to: "2035-01-08T02:00:00+02:00" },
+        "to"
+      ],
+      ["missing to", { from: "2035-01-01T00:00:00Z" }, "to"]
+    ])("rejects a %s schedule instant", async (_label, query, field) => {
+      const response = await authenticatedAgent
+        .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
+        .query(query)
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Request validation failed",
+          fields: { [field]: expect.any(Array) }
+        }
+      });
+    });
+
+    it("rejects a range whose start is not before its end", async () => {
+      const response = await authenticatedAgent
+        .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
+        .query({
+          from: "2035-01-08T00:00:00Z",
+          to: "2035-01-08T00:00:00Z"
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        error: {
+          code: "INVALID_SCHEDULE_RANGE",
+          message: "Schedule range is invalid",
+          fields: {
+            from: ["from must be before to"],
+            to: ["to must be after from"]
+          }
+        }
+      });
+    });
+
+    it("allows exactly eight days and rejects any wider range", async () => {
+      await authenticatedAgent
+        .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
+        .query({
+          from: "2035-01-01T00:00:00Z",
+          to: "2035-01-09T00:00:00Z"
+        })
+        .expect(200);
+
+      const response = await authenticatedAgent
+        .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
+        .query({
+          from: "2035-01-01T00:00:00Z",
+          to: "2035-01-09T00:00:00.001Z"
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        error: {
+          code: "INVALID_SCHEDULE_RANGE",
+          message: "Schedule range is invalid",
+          fields: {
+            to: ["Schedule range must not exceed 8 days"]
+          }
+        }
+      });
+    });
+
+    it("returns ROOM_NOT_FOUND for a valid absent room", async () => {
+      const response = await authenticatedAgent
+        .get("/api/v1/rooms/ffffffff-ffff-4fff-8fff-ffffffffffff/schedule")
+        .query({
+          from: "2035-01-01T00:00:00Z",
+          to: "2035-01-08T00:00:00Z"
+        })
+        .expect(404);
+
+      expect(response.body).toMatchObject({
+        error: {
+          code: "ROOM_NOT_FOUND",
+          message: "Room not found"
+        }
+      });
+    });
+
+    it("uses half-open overlap boundaries and excludes cancelled bookings", async () => {
+      const response = await getFixtureSchedule(authenticatedAgent);
+
+      expect(
+        response.body.bookings.map((booking: { id: string }) => booking.id)
+      ).toEqual([
+        scheduleBookingIds[1],
+        scheduleBookingIds[2],
+        scheduleBookingIds[4]
+      ]);
+    });
+
+    it("orders returned bookings by start instant", async () => {
+      const response = await getFixtureSchedule(authenticatedAgent);
+
+      expect(
+        response.body.bookings.map(
+          (booking: { startAt: string }) => booking.startAt
+        )
+      ).toEqual([
+        "2035-01-01T00:00:00.000Z",
+        "2035-01-01T01:00:00.000Z",
+        "2035-01-07T23:00:00.000Z"
+      ]);
+    });
+
+    it("returns only public organizer fields and computes ownership", async () => {
+      const response = await getFixtureSchedule(authenticatedAgent);
+
+      expect(response.body).toEqual({
+        room: {
+          id: scheduleRoomId,
+          name: "Дніпро",
+          floor: 1,
+          capacity: 6
+        },
+        from: "2035-01-01T00:00:00.000Z",
+        to: "2035-01-08T00:00:00.000Z",
+        bookings: [
+          {
+            id: scheduleBookingIds[1],
+            title: "Olena planning",
+            startAt: "2035-01-01T00:00:00.000Z",
+            endAt: "2035-01-01T01:00:00.000Z",
+            organizer: {
+              id: "00000000-0000-4000-8000-000000000001",
+              name: "Олена"
+            },
+            isOwn: false
+          },
+          {
+            id: scheduleBookingIds[2],
+            title: "Guest review",
+            startAt: "2035-01-01T01:00:00.000Z",
+            endAt: "2035-01-01T02:00:00.000Z",
+            organizer: {
+              id: "00000000-0000-4000-8000-000000000002",
+              name: "Алекс"
+            },
+            isOwn: true
+          },
+          {
+            id: scheduleBookingIds[4],
+            title: "Ends at range end",
+            startAt: "2035-01-07T23:00:00.000Z",
+            endAt: "2035-01-08T00:00:00.000Z",
+            organizer: {
+              id: "00000000-0000-4000-8000-000000000001",
+              name: "Олена"
+            },
+            isOwn: false
+          }
+        ]
+      });
+      expect(JSON.stringify(response.body)).not.toMatch(
+        /passwordHash|tokenHash|csrfTokenHash|cancelledAt|createdAt|updatedAt/
+      );
+    });
+  });
+
+  function getFixtureSchedule(
+    agent: ReturnType<typeof request.agent>
+  ): ReturnType<ReturnType<typeof request.agent>["get"]> {
+    return agent.get(`/api/v1/rooms/${scheduleRoomId}/schedule`).query({
+      from: "2035-01-01T00:00:00Z",
+      to: "2035-01-08T00:00:00Z"
+    });
+  }
 });

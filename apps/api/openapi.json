@@ -355,6 +355,101 @@
           "rooms"
         ]
       }
+    },
+    "/api/v1/rooms/{roomId}/schedule": {
+      "get": {
+        "operationId": "getRoomSchedule",
+        "parameters": [
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "roomId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "rooms"
+        ]
+      }
     }
   },
   "info": {
@@ -494,6 +589,37 @@
           "password"
         ]
       },
+      "ScheduleParamsDto": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "roomId"
+        ]
+      },
+      "ScheduleQueryDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2035-01-01T00:00:00.000Z"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2035-01-08T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
       "RoomDto": {
         "type": "object",
         "properties": {
@@ -535,6 +661,91 @@
         },
         "required": [
           "rooms"
+        ]
+      },
+      "ScheduleOrganizerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Олена"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "ScheduleBookingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "Планування спринту"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2035-01-02T10:00:00.000Z"
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2035-01-02T11:00:00.000Z"
+          },
+          "organizer": {
+            "$ref": "#/components/schemas/ScheduleOrganizerDto"
+          },
+          "isOwn": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "startAt",
+          "endAt",
+          "organizer",
+          "isOwn"
+        ]
+      },
+      "ScheduleResponseDto": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "$ref": "#/components/schemas/RoomDto"
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2035-01-01T00:00:00.000Z"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2035-01-08T00:00:00.000Z"
+          },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleBookingDto"
+            }
+          }
+        },
+        "required": [
+          "room",
+          "from",
+          "to",
+          "bookings"
         ]
       }
     }
