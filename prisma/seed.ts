@@ -1,4 +1,9 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import {
+  getCurrentLocalWeekStart,
+  getKyivOfficeIntervals,
+  getLocalWeek
+} from "../packages/time/src/index.js";
 import { Argon2PasswordHasher } from "../apps/api/src/auth/password/argon2-password-hasher.js";
 import { PrismaClient } from "../apps/api/src/generated/prisma/client.js";
 
@@ -24,6 +29,13 @@ const rooms = [
   ["10000000-0000-4000-8000-000000000004", "Обрій", 2, 10],
   ["10000000-0000-4000-8000-000000000005", "Поділ", 3, 12],
   ["10000000-0000-4000-8000-000000000006", "Софія", 3, 16]
+] as const;
+
+const bookingIds = [
+  "20000000-0000-4000-8000-000000000001",
+  "20000000-0000-4000-8000-000000000002",
+  "20000000-0000-4000-8000-000000000003",
+  "20000000-0000-4000-8000-000000000004"
 ] as const;
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -60,6 +72,87 @@ async function seed(): Promise<void> {
       create: { id, name, floor, capacity }
     });
   }
+
+  const now = new Date();
+  const currentWeek = getWeekOfficeIntervals(now);
+  const pastWeek = getWeekOfficeIntervals(
+    new Date(now.getTime() - 14 * 24 * 60 * 60 * 1_000)
+  );
+  const futureWeek = getWeekOfficeIntervals(
+    new Date(now.getTime() + 14 * 24 * 60 * 60 * 1_000)
+  );
+  const bookings = [
+    {
+      id: bookingIds[0],
+      roomId: rooms[1][0],
+      userId: users[0].id,
+      title: "Планування спринту",
+      ...withinOfficeInterval(currentWeek[1], 30, 60)
+    },
+    {
+      id: bookingIds[1],
+      roomId: rooms[0][0],
+      userId: users[1].id,
+      title: "Огляд дизайну",
+      ...withinOfficeInterval(currentWeek[3], 240, 60)
+    },
+    {
+      id: bookingIds[2],
+      roomId: rooms[2][0],
+      userId: users[0].id,
+      title: "Підсумки ретроспективи",
+      ...withinOfficeInterval(pastWeek[1], 120, 60)
+    },
+    {
+      id: bookingIds[3],
+      roomId: rooms[3][0],
+      userId: users[1].id,
+      title: "Планування кварталу",
+      ...withinOfficeInterval(futureWeek[2], 360, 60)
+    }
+  ];
+
+  for (const booking of bookings) {
+    await database.booking.upsert({
+      where: { id: booking.id },
+      update: {
+        roomId: booking.roomId,
+        userId: booking.userId,
+        title: booking.title,
+        startAt: booking.startAt,
+        endAt: booking.endAt,
+        status: "ACTIVE",
+        cancelledAt: null
+      },
+      create: {
+        ...booking,
+        status: "ACTIVE"
+      }
+    });
+  }
+}
+
+function getWeekOfficeIntervals(now: Date) {
+  const weekStart = getCurrentLocalWeekStart("Europe/Kyiv", now);
+  const week = getLocalWeek(weekStart, "Europe/Kyiv", now);
+  return getKyivOfficeIntervals(week.from, week.to);
+}
+
+function withinOfficeInterval(
+  interval: { start: string; end: string },
+  startMinutes: number,
+  durationMinutes: number
+): { startAt: Date; endAt: Date } {
+  const officeStart = new Date(interval.start).getTime();
+  const officeEnd = new Date(interval.end).getTime();
+  const startAt = new Date(officeStart + startMinutes * 60_000);
+  const endAt = new Date(startAt.getTime() + durationMinutes * 60_000);
+
+  if (endAt.getTime() > officeEnd) {
+    throw new RangeError("Seed booking must remain within Kyiv office hours");
+  }
+
+  return { startAt, endAt };
 }
 
 try {
