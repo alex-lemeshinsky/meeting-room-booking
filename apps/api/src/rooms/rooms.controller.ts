@@ -21,7 +21,11 @@ import { SessionGuard } from "../auth/guards/session.guard.js";
 import type { AuthenticatedRequest } from "../auth/auth.types.js";
 import { ApiErrorDto } from "../common/http/api-error.dto.js";
 import { RoomListResponseDto } from "./room.dto.js";
-import { ScheduleParamsDto, ScheduleQueryDto } from "./schedule-query.dto.js";
+import {
+  ScheduleParamsDto,
+  ScheduleQueryDto,
+  UTC_INSTANT_PATTERN_SOURCE
+} from "./schedule-query.dto.js";
 import { ScheduleResponseDto } from "./schedule.dto.js";
 import { RoomsService } from "./rooms.service.js";
 
@@ -53,12 +57,20 @@ export class RoomsController {
   @ApiQuery({
     name: "from",
     required: true,
-    schema: { type: "string", format: "date-time" }
+    schema: {
+      type: "string",
+      format: "date-time",
+      pattern: UTC_INSTANT_PATTERN_SOURCE
+    }
   })
   @ApiQuery({
     name: "to",
     required: true,
-    schema: { type: "string", format: "date-time" }
+    schema: {
+      type: "string",
+      format: "date-time",
+      pattern: UTC_INSTANT_PATTERN_SOURCE
+    }
   })
   @ApiOkResponse({ type: ScheduleResponseDto })
   @ApiResponse({ status: 400, type: ApiErrorDto })

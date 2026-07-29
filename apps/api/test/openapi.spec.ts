@@ -3,6 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createOpenApiApp } from "../src/bootstrap.js";
 import { createOpenApiDocument } from "../src/openapi/openapi.js";
 
+const UTC_MILLISECOND_INSTANT_PATTERN =
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$";
+
 describe("OpenAPI document", () => {
   let app: INestApplication;
   let createdWithoutDatabaseUrl = false;
@@ -136,7 +139,8 @@ describe("OpenAPI document", () => {
           required: true,
           schema: expect.objectContaining({
             type: "string",
-            format: "date-time"
+            format: "date-time",
+            pattern: UTC_MILLISECOND_INSTANT_PATTERN
           })
         }),
         expect.objectContaining({
@@ -145,7 +149,8 @@ describe("OpenAPI document", () => {
           required: true,
           schema: expect.objectContaining({
             type: "string",
-            format: "date-time"
+            format: "date-time",
+            pattern: UTC_MILLISECOND_INSTANT_PATTERN
           })
         })
       ])
@@ -163,6 +168,13 @@ describe("OpenAPI document", () => {
       properties: {
         id: { type: "string", format: "uuid" },
         name: { type: "string" }
+      }
+    });
+    expect(document.components?.schemas?.ScheduleQueryDto).toMatchObject({
+      required: ["from", "to"],
+      properties: {
+        from: { pattern: UTC_MILLISECOND_INSTANT_PATTERN },
+        to: { pattern: UTC_MILLISECOND_INSTANT_PATTERN }
       }
     });
     expect(document.components?.schemas?.ScheduleBookingDto).toMatchObject({

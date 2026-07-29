@@ -310,6 +310,77 @@ describe("GET /api/v1/rooms", () => {
       });
     });
 
+    it.each([
+      [
+        "an eight-day range with sub-millisecond overflow",
+        {
+          from: "2035-01-01T00:00:00Z",
+          to: "2035-01-09T00:00:00.000999Z"
+        },
+        ["to"]
+      ],
+      [
+        "a positive sub-millisecond range",
+        {
+          from: "2035-01-01T00:00:00.000000Z",
+          to: "2035-01-01T00:00:00.000999Z"
+        },
+        ["from", "to"]
+      ]
+    ])("rejects %s at validation", async (_label, query, fields) => {
+      const response = await authenticatedAgent
+        .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
+        .query(query)
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Request validation failed",
+          fields: Object.fromEntries(
+            fields.map((field) => [field, expect.any(Array)])
+          )
+        }
+      });
+    });
+
+    it.each([
+      [
+        "one",
+        "2035-01-01T00:00:00.1Z",
+        "2035-01-01T00:00:00.2Z",
+        "2035-01-01T00:00:00.100Z",
+        "2035-01-01T00:00:00.200Z"
+      ],
+      [
+        "two",
+        "2035-01-01T00:00:00.01Z",
+        "2035-01-01T00:00:00.02Z",
+        "2035-01-01T00:00:00.010Z",
+        "2035-01-01T00:00:00.020Z"
+      ],
+      [
+        "three",
+        "2035-01-01T00:00:00.001Z",
+        "2035-01-01T00:00:00.002Z",
+        "2035-01-01T00:00:00.001Z",
+        "2035-01-01T00:00:00.002Z"
+      ]
+    ])(
+      "accepts a positive range with %s fractional digits",
+      async (_label, from, to, normalizedFrom, normalizedTo) => {
+        const response = await authenticatedAgent
+          .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
+          .query({ from, to })
+          .expect(200);
+
+        expect(response.body).toMatchObject({
+          from: normalizedFrom,
+          to: normalizedTo
+        });
+      }
+    );
+
     it("rejects a range whose start is not before its end", async () => {
       const response = await authenticatedAgent
         .get(`/api/v1/rooms/${scheduleRoomId}/schedule`)
