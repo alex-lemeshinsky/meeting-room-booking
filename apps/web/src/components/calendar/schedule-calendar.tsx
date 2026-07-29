@@ -15,6 +15,7 @@ import {
   detectBrowserTimezone,
   persistBrowserTimezoneCookie
 } from "../../lib/calendar/timezone";
+import { RoomNotFoundState } from "../rooms/room-not-found-state";
 import { CalendarGrid } from "./calendar-grid";
 import styles from "./calendar.module.css";
 import { TimezoneBanner } from "./timezone-banner";
@@ -88,6 +89,9 @@ function ResolvedScheduleCalendar({
   const isUnauthenticated =
     query.error instanceof BrowserApiError &&
     query.error.code === "UNAUTHENTICATED";
+  const isRoomNotFound =
+    query.error instanceof BrowserApiError &&
+    query.error.code === "ROOM_NOT_FOUND";
   const layout = useMemo(
     () =>
       query.data === undefined
@@ -139,7 +143,9 @@ function ResolvedScheduleCalendar({
         </p>
       ) : null}
 
-      {query.isError && !isUnauthenticated ? (
+      {query.isError && isRoomNotFound ? (
+        <RoomNotFoundState headingLevel={2} />
+      ) : query.isError && !isUnauthenticated ? (
         <section className={styles.errorState} role="alert">
           <h2>Не вдалося завантажити розклад</h2>
           <button

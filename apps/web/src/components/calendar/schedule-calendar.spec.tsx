@@ -373,6 +373,30 @@ describe("ScheduleCalendar", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("shows the room not-found experience when the schedule room disappears", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiError("ROOM_NOT_FOUND"))
+    );
+    renderSchedule("2026-07-27");
+
+    expect(
+      await screen.findByRole("heading", { name: "Кімнату не знайдено" })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Повернутися до кімнат" })
+    ).toHaveAttribute("href", "/rooms");
+    expect(
+      screen.queryByRole("button", { name: "Спробувати ще" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Не вдалося завантажити розклад"
+      })
+    ).not.toBeInTheDocument();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   it("redirects unauthenticated query failures to the session login", async () => {
     vi.stubGlobal(
       "fetch",
