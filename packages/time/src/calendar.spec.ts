@@ -27,6 +27,20 @@ describe("local calendar weeks", () => {
     });
   });
 
+  it("formats Ukrainian day headings and full dates", () => {
+    const week = getLocalWeek(
+      "2026-07-27",
+      "Europe/Kyiv",
+      new Date("2026-07-29T07:15:00.000Z")
+    );
+
+    expect(week.days[2]).toMatchObject({
+      localDate: "2026-07-29",
+      label: "ср, 29 лип.",
+      fullDateLabel: "середа, 29 липня 2026 р."
+    });
+  });
+
   it("uses the previous Monday while New York is still on Sunday", () => {
     const now = new Date("2026-07-27T03:30:00.000Z");
 

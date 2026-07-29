@@ -107,11 +107,6 @@
   text-align: center;
 }
 
-.dayHeader small {
-  color: var(--color-text-secondary);
-  font: var(--type-caption);
-}
-
 .currentDayHeader {
   background: var(--color-action-soft);
 }
@@ -177,9 +172,17 @@
 }
 
 .slot {
+  position: relative;
   min-height: 44px;
   border-bottom: 1px solid var(--color-border-default);
   pointer-events: none;
+}
+
+.elapsedCoverage {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--elapsed-coverage);
+  background: color-mix(in srgb, var(--color-text-secondary) 18%, transparent);
 }
 
 .hourBoundary {
@@ -204,6 +207,7 @@
 }
 
 .offsetLabel {
+  position: relative;
   display: block;
   padding: var(--space-1);
   color: var(--color-text-secondary);
@@ -236,6 +240,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ownBookingLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ownBookingLabel svg {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .ownBooking {
@@ -279,6 +300,18 @@
   transform: translateY(var(--now-offset));
   background: var(--color-now-indicator);
   pointer-events: none;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .emptyHint {

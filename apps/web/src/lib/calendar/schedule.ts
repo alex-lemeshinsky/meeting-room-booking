@@ -24,6 +24,7 @@ export interface ScheduleRequest {
 }
 
 export interface CalendarLayoutSlot extends CalendarSlot {
+  elapsedPercent: number;
   isOffice: boolean;
   officeStartPercent: number;
   officeEndPercent: number;
@@ -40,6 +41,7 @@ export interface CalendarRow {
 export interface CalendarLayoutDay {
   localDate: string;
   label: string;
+  fullDateLabel: string;
   isToday: boolean;
   slots: CalendarLayoutSlot[];
 }
@@ -140,6 +142,7 @@ export function buildCalendarLayout({
   const visibleDays = week.days.map((day) => ({
     localDate: day.localDate,
     label: day.label,
+    fullDateLabel: day.fullDateLabel,
     isToday: day.isToday,
     slots: day.slots.filter(
       (slot) =>
@@ -168,6 +171,7 @@ export function buildCalendarLayout({
         return {
           ...slot,
           ...officeCoverage,
+          elapsedPercent: getElapsedCoverage(slot, day.isToday, now),
           isOffice:
             officeCoverage.officeEndPercent > officeCoverage.officeStartPercent,
           rowIndex
@@ -358,7 +362,7 @@ function buildBookingFragments(
           startOffsetPercent,
           heightInRows: endPosition - startPosition,
           accessibleLabel:
-            `${booking.title}. ${fragment.localDate}, ` +
+            `${booking.title}. ${day.fullDateLabel}, ` +
             `${startLabel}–${endLabel}. ${ownershipLabel}`
         }
       ];
@@ -375,6 +379,20 @@ function formatLocalMinute(minuteOfDay: number, offsetLabel?: string): string {
   const time = `${hour}:${minute}`;
 
   return offsetLabel === undefined ? time : `${time} ${offsetLabel}`;
+}
+
+function getElapsedCoverage(
+  slot: CalendarSlot,
+  isToday: boolean,
+  now: Date
+): number {
+  if (!isToday) {
+    return 0;
+  }
+
+  const elapsed =
+    ((now.getTime() - Date.parse(slot.instant)) / SLOT_DURATION_MS) * 100;
+  return Math.min(100, Math.max(0, elapsed));
 }
 
 function buildNowIndicator(

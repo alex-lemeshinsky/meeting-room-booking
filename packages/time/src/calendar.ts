@@ -17,6 +17,7 @@ export interface CalendarSlot {
 export interface CalendarDay {
   localDate: string;
   label: string;
+  fullDateLabel: string;
   isToday: boolean;
   slots: CalendarSlot[];
 }
@@ -46,10 +47,17 @@ export function getLocalWeek(
   const end = start.plus({ days: 7 });
   const days = Array.from({ length: 7 }, (_, index) => {
     const day = start.plus({ days: index });
+    const localizedDay = day.setLocale("uk-UA");
 
     return {
       localDate: requiredIsoDate(day),
-      label: day.setLocale("en-US").toFormat("ccc, LLL d"),
+      label: localizedDay.toFormat("ccc, d LLL"),
+      fullDateLabel: localizedDay.toLocaleString({
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }),
       isToday: requiredIsoDate(day) === today,
       slots: buildCalendarSlots(day, timezone)
     };

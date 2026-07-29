@@ -188,6 +188,149 @@ describe("CalendarGrid", () => {
     );
   });
 
+  it("renders elapsed coverage without marking future or other-day slots", () => {
+    render(<CalendarGrid layout={layout()} />);
+
+    const today = within(screen.getByTestId("calendar-day-2026-07-29"));
+    const yesterday = within(screen.getByTestId("calendar-day-2026-07-28"));
+    const fullPastSlot = today
+      .getAllByTestId("calendar-slot")
+      .find((slot) =>
+        slot.getAttribute("data-slot-id")?.endsWith("06:00:00.000Z")
+      );
+    const currentSlot = today
+      .getAllByTestId("calendar-slot")
+      .find((slot) =>
+        slot.getAttribute("data-slot-id")?.endsWith("07:00:00.000Z")
+      );
+    const futureSlot = today
+      .getAllByTestId("calendar-slot")
+      .find((slot) =>
+        slot.getAttribute("data-slot-id")?.endsWith("07:30:00.000Z")
+      );
+
+    expect(fullPastSlot).toHaveAttribute("data-elapsed", "full");
+    expect(
+      within(fullPastSlot as HTMLElement).getByTestId("elapsed-coverage")
+    ).toHaveStyle({ "--elapsed-coverage": "100%" });
+    expect(currentSlot).toHaveAttribute("data-elapsed", "partial");
+    expect(
+      within(currentSlot as HTMLElement).getByTestId("elapsed-coverage")
+    ).toHaveStyle({ "--elapsed-coverage": "50%" });
+    expect(futureSlot).toHaveAttribute("data-elapsed", "none");
+    expect(
+      within(futureSlot as HTMLElement).queryByTestId("elapsed-coverage")
+    ).not.toBeInTheDocument();
+    expect(
+      yesterday
+        .getAllByTestId("calendar-slot")
+        .every((slot) => slot.getAttribute("data-elapsed") === "none")
+    ).toBe(true);
+    expect(
+      screen.getByTestId("calendar-scroll-region")
+    ).toHaveAccessibleDescription(
+      "Затінення показує минулу частину поточного дня."
+    );
+  });
+
+  it("keeps elapsed coverage distinct from non-office slot availability", () => {
+    render(
+      <CalendarGrid
+        layout={layout(
+          [],
+          "America/Los_Angeles",
+          new Date("2026-07-28T05:15:00.000Z")
+        )}
+      />
+    );
+
+    const currentDay = within(screen.getByTestId("calendar-day-2026-07-27"));
+    const elapsedNonOfficeSlot = currentDay
+      .getAllByTestId("calendar-slot")
+      .find((slot) =>
+        slot.getAttribute("data-slot-id")?.endsWith("04:00:00.000Z")
+      );
+
+    expect(elapsedNonOfficeSlot).toHaveAttribute("data-office", "false");
+    expect(elapsedNonOfficeSlot).toHaveAttribute("data-elapsed", "full");
+    expect(
+      within(elapsedNonOfficeSlot as HTMLElement).getByTestId(
+        "elapsed-coverage"
+      )
+    ).toBeVisible();
+    expect(currentDay.queryByTestId("calendar-gap")).not.toBeInTheDocument();
+  });
+
+  it("keeps elapsed, booking, and current-time layers in the current slot", () => {
+    render(
+      <CalendarGrid
+        layout={layout([
+          {
+            id: "booking-own",
+            title: "Планування",
+            startAt: "2026-07-29T07:00:00.000Z",
+            endAt: "2026-07-29T08:00:00.000Z",
+            organizer: { id: "user-1", name: "Олена" },
+            isOwn: true
+          }
+        ])}
+      />
+    );
+
+    const today = within(screen.getByTestId("calendar-day-2026-07-29"));
+    expect(today.getAllByTestId("elapsed-coverage")).toHaveLength(3);
+    expect(today.getByTestId("booking-fragment")).toBeVisible();
+    expect(today.getByTestId("now-indicator")).toBeVisible();
+  });
+
+  it("uses Ukrainian day labels and a localized full booking date", () => {
+    render(
+      <CalendarGrid
+        layout={layout([
+          {
+            id: "booking-own",
+            title: "Планування",
+            startAt: "2026-07-29T07:00:00.000Z",
+            endAt: "2026-07-29T08:00:00.000Z",
+            organizer: { id: "user-1", name: "Олена" },
+            isOwn: true
+          }
+        ])}
+      />
+    );
+
+    expect(screen.getByText("ср, 29 лип.")).toBeVisible();
+    expect(
+      screen.getByText("Планування").closest("article")
+    ).toHaveAccessibleName(
+      "Планування. середа, 29 липня 2026 р., 10:00–11:00. Моє"
+    );
+  });
+
+  it("decorates the visible own-booking label with a hidden check icon", () => {
+    render(
+      <CalendarGrid
+        layout={layout([
+          {
+            id: "booking-own",
+            title: "Планування",
+            startAt: "2026-07-29T07:00:00.000Z",
+            endAt: "2026-07-29T08:00:00.000Z",
+            organizer: { id: "user-1", name: "Олена" },
+            isOwn: true
+          }
+        ])}
+      />
+    );
+
+    const ownership = screen.getByText("Моє");
+    expect(ownership).toHaveAccessibleName("Моє");
+    expect(ownership.querySelector("svg")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
+  });
+
   it("renders the explicit fold row axis and aligns post-fold slots", () => {
     const foldLayout = buildCalendarLayout({
       response: {
@@ -242,9 +385,11 @@ describe("CalendarGrid", () => {
 
     expect(
       screen.getByText("Планування").closest("article")
-    ).toHaveAccessibleName("Планування. 2026-07-29, 10:00–11:00. Моє");
+    ).toHaveAccessibleName(
+      "Планування. середа, 29 липня 2026 р., 10:00–11:00. Моє"
+    );
     expect(screen.getByText("Демо").closest("article")).toHaveAccessibleName(
-      "Демо. 2026-07-30, 11:00–12:00. Організатор: Тарас"
+      "Демо. четвер, 30 липня 2026 р., 11:00–12:00. Організатор: Тарас"
     );
   });
 
@@ -274,7 +419,8 @@ describe("CalendarGrid", () => {
     expect(
       screen.getByText("Межа переходу").closest("article")
     ).toHaveAccessibleName(
-      "Межа переходу. 2026-11-01, " + "01:30 UTC-07:00–01:00 UTC-08:00. Моє"
+      "Межа переходу. неділя, 1 листопада 2026 р., " +
+        "01:30 UTC-07:00–01:00 UTC-08:00. Моє"
     );
   });
 

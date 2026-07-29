@@ -234,7 +234,8 @@ describe("calendar layout", () => {
         startOffsetPercent: 0,
         heightInRows: 1,
         accessibleLabel:
-          "Межа переходу. 2026-11-01, " + "01:30 UTC-07:00–01:00 UTC-08:00. Моє"
+          "Межа переходу. неділя, 1 листопада 2026 р., " +
+          "01:30 UTC-07:00–01:00 UTC-08:00. Моє"
       })
     ]);
   });
@@ -461,5 +462,52 @@ describe("calendar layout", () => {
       slotId: "2026-07-29T07:00:00.000Z",
       offsetPercent: 50
     });
+  });
+
+  it("models full, fractional, and future elapsed coverage only on today", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse(),
+      weekStart: "2026-07-27",
+      timezone: "Europe/Kyiv",
+      now: new Date("2026-07-29T07:15:00.000Z")
+    });
+    const today = layout.days.find((day) => day.localDate === "2026-07-29");
+    const tomorrow = layout.days.find((day) => day.localDate === "2026-07-30");
+
+    expect(
+      today?.slots
+        .filter((slot) => [540, 570, 600, 630].includes(slot.minuteOfDay))
+        .map(({ minuteOfDay, elapsedPercent }) => ({
+          minuteOfDay,
+          elapsedPercent
+        }))
+    ).toEqual([
+      { minuteOfDay: 540, elapsedPercent: 100 },
+      { minuteOfDay: 570, elapsedPercent: 100 },
+      { minuteOfDay: 600, elapsedPercent: 50 },
+      { minuteOfDay: 630, elapsedPercent: 0 }
+    ]);
+    expect(tomorrow?.slots.every((slot) => slot.elapsedPercent === 0)).toBe(
+      true
+    );
+  });
+
+  it("uses UTC slot identity for elapsed coverage across an autumn fold", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse(),
+      weekStart: "2026-10-26",
+      timezone: "America/Los_Angeles",
+      now: new Date("2026-11-01T09:15:00.000Z")
+    });
+    const foldDay = layout.days.find((day) => day.localDate === "2026-11-01");
+
+    expect(
+      foldDay?.slots
+        .filter((slot) => slot.minuteOfDay === 60)
+        .map(({ id, elapsedPercent }) => ({ id, elapsedPercent }))
+    ).toEqual([
+      { id: "2026-11-01T08:00:00.000Z", elapsedPercent: 100 },
+      { id: "2026-11-01T09:00:00.000Z", elapsedPercent: 50 }
+    ]);
   });
 });

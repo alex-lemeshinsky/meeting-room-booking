@@ -16,6 +16,14 @@ function endsAtHour(minuteOfDay: number): boolean {
   return (minuteOfDay + 30) % 60 === 0;
 }
 
+function elapsedState(elapsedPercent: number): "none" | "partial" | "full" {
+  if (elapsedPercent <= 0) {
+    return "none";
+  }
+
+  return elapsedPercent >= 100 ? "full" : "partial";
+}
+
 export function CalendarGrid({ layout }: CalendarGridProps) {
   const currentDayHeaderRef = useRef<HTMLTimeElement>(null);
   const didRevealCurrentDay = useRef(false);
@@ -45,10 +53,14 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
   return (
     <section
       aria-label="Прокручуваний тижневий розклад"
+      aria-describedby="calendar-elapsed-description"
       className={styles.gridShell}
       data-testid="calendar-scroll-region"
       tabIndex={0}
     >
+      <p className={styles.visuallyHidden} id="calendar-elapsed-description">
+        Затінення показує минулу частину поточного дня.
+      </p>
       <div className={styles.gridHeader}>
         <span className={styles.timeHeader} aria-hidden="true">
           Час
@@ -66,9 +78,9 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
             id={`calendar-day-header-${day.localDate}`}
             key={day.localDate}
             ref={day.isToday ? currentDayHeaderRef : undefined}
+            aria-label={day.fullDateLabel}
           >
             <span>{day.label}</span>
-            <small>{day.localDate}</small>
           </time>
         ))}
       </div>
@@ -181,6 +193,7 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       slot.isOffice &&
                       (slot.officeStartPercent > 0 ||
                         slot.officeEndPercent < 100);
+                    const elapsed = elapsedState(slot.elapsedPercent);
                     return (
                       <div
                         className={[
@@ -192,7 +205,9 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                               : "",
                           hourBoundary ? styles.hourBoundary : ""
                         ].join(" ")}
+                        data-elapsed={elapsed}
                         data-hour-boundary={hourBoundary ? "true" : "false"}
+                        data-office={slot.isOffice ? "true" : "false"}
                         data-testid="calendar-slot"
                         data-slot-id={slot.id}
                         key={slot.id}
@@ -204,6 +219,18 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                           } as CSSProperties
                         }
                       >
+                        {slot.elapsedPercent > 0 ? (
+                          <span
+                            aria-hidden="true"
+                            className={styles.elapsedCoverage}
+                            data-testid="elapsed-coverage"
+                            style={
+                              {
+                                "--elapsed-coverage": `${slot.elapsedPercent}%`
+                              } as CSSProperties
+                            }
+                          />
+                        ) : null}
                         {slot.offsetLabel === undefined ? null : (
                           <small className={styles.offsetLabel}>
                             {slot.offsetLabel}
@@ -231,9 +258,25 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                       <span className={styles.bookingContent}>
                         <strong title={booking.title}>{booking.title}</strong>
                         <span
+                          className={
+                            booking.isOwn ? styles.ownBookingLabel : undefined
+                          }
                           title={booking.isOwn ? "Моє" : booking.organizerName}
                         >
-                          {booking.isOwn ? "Моє" : booking.organizerName}
+                          {booking.isOwn ? (
+                            <>
+                              <svg
+                                aria-hidden="true"
+                                focusable="false"
+                                viewBox="0 0 16 16"
+                              >
+                                <path d="m3 8 3 3 7-7" />
+                              </svg>
+                              Моє
+                            </>
+                          ) : (
+                            booking.organizerName
+                          )}
                         </span>
                       </span>
                     );
