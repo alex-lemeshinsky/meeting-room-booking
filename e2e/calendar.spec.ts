@@ -3,6 +3,7 @@ import {
   getCurrentLocalWeekStart,
   shiftLocalWeekStart
 } from "@mrb/time/calendar";
+import { E2E_NOW_ISO } from "./support/e2e-clock";
 
 const DISPLAY_TIMEZONE = "Europe/Kyiv";
 const DNIPRO_BOOKING_ID = "20000000-0000-4000-8000-000000000001";
@@ -20,7 +21,10 @@ async function loginAsSeededUser(page: Page): Promise<void> {
 }
 
 async function openCurrentDniproSchedule(page: Page): Promise<string> {
-  const currentWeek = getCurrentLocalWeekStart(DISPLAY_TIMEZONE);
+  const currentWeek = getCurrentLocalWeekStart(
+    DISPLAY_TIMEZONE,
+    new Date(E2E_NOW_ISO)
+  );
 
   await page
     .getByRole("link", { name: "Відкрити розклад кімнати Дніпро" })
@@ -43,6 +47,10 @@ test.describe("read-only weekly calendar", () => {
   test.use({
     timezoneId: DISPLAY_TIMEZONE,
     viewport: { width: 1440, height: 900 }
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(E2E_NOW_ISO);
   });
 
   test("opens the seeded room schedule and navigates current, next, and previous weeks", async ({
@@ -195,7 +203,12 @@ test.describe("read-only weekly calendar", () => {
       if (!region) return 0;
 
       const viewport = region.getBoundingClientRect();
-      const contentLeft = viewport.left + 72;
+      const timeAxis = region.querySelector(
+        '[data-testid="calendar-time-axis"]'
+      );
+      if (!timeAxis) return 0;
+
+      const contentLeft = timeAxis.getBoundingClientRect().right;
       return headers.filter((header) => {
         const bounds = header.getBoundingClientRect();
         const visibleWidth =
@@ -213,9 +226,15 @@ test.describe("read-only weekly calendar", () => {
         if (!region) return false;
 
         const viewport = region.getBoundingClientRect();
+        const timeAxis = region.querySelector(
+          '[data-testid="calendar-time-axis"]'
+        );
+        if (!timeAxis) return false;
+
+        const contentLeft = timeAxis.getBoundingClientRect().right;
         const bounds = header.getBoundingClientRect();
         return (
-          bounds.right > viewport.left + 72 && bounds.left < viewport.right
+          bounds.left >= contentLeft - 1 && bounds.right <= viewport.right + 1
         );
       })
     ).toBe(true);

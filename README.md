@@ -95,7 +95,7 @@ apps/
 packages/
   config/     спільний strict TypeScript config
   contracts/  OpenAPI-generated public types
-  time/       Clock boundary
-prisma/       schema та foundation migration
-e2e/          Playwright smoke tests
+  time/       DST-безпечні календарні та Clock примітиви
+prisma/       schema, міграції та deterministic seed
+e2e/          Playwright user journeys
 ```

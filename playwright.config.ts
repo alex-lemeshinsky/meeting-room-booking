@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { E2E_NOW_ISO } from "./e2e/support/e2e-clock";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -15,7 +16,10 @@ export default defineConfig({
       command: "pnpm --filter @mrb/api exec tsx scripts/start-e2e.ts",
       url: "http://127.0.0.1:3001/api/v1/health/ready",
       reuseExistingServer: false,
-      timeout: 120_000
+      timeout: 120_000,
+      env: {
+        MRB_SEED_NOW: E2E_NOW_ISO
+      }
     },
     {
       command: "pnpm --filter @mrb/web dev",
