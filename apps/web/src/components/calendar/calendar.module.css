@@ -51,11 +51,14 @@
 }
 
 .updatingStatus {
-  position: relative;
+  position: fixed;
+  z-index: var(--z-toast);
+  inset: auto var(--space-4) var(--space-4) auto;
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr);
   gap: var(--space-3);
   align-items: center;
+  width: min(420px, calc(100vw - var(--space-8)));
   min-width: 0;
   padding: var(--space-3) var(--space-4);
   overflow: hidden;
@@ -63,6 +66,7 @@
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
   box-shadow: var(--shadow-raised);
+  pointer-events: none;
 }
 
 .updatingIcon {
@@ -116,13 +120,18 @@
   animation: calendar-update-progress 1.1s var(--ease-standard) infinite;
 }
 
+.calendarPresentation,
 .calendarStage {
   min-width: 0;
-  transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+.calendarStage {
+  border-radius: var(--radius-card);
+  transition: box-shadow var(--duration-base) var(--ease-standard);
 }
 
 .calendarStage[data-updating="true"] {
-  opacity: 0.72;
+  box-shadow: 0 0 0 3px var(--color-action-soft);
 }
 
 @keyframes calendar-update-progress {

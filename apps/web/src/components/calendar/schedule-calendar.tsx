@@ -138,8 +138,6 @@ function ResolvedScheduleCalendar({
       />
       <TimezoneBanner timezone={timezone} />
 
-      {isUpdating ? <CalendarUpdatingStatus /> : null}
-
       {query.isError && isRoomNotFound ? (
         <RoomNotFoundState headingLevel={2} />
       ) : query.isError && !isUnauthenticated ? (
@@ -157,12 +155,18 @@ function ResolvedScheduleCalendar({
         <CalendarSkeleton />
       ) : (
         <div
-          aria-busy={isUpdating}
-          className={styles.calendarStage}
-          data-testid="calendar-stage"
-          data-updating={isUpdating ? "true" : undefined}
+          className={styles.calendarPresentation}
+          data-testid="calendar-presentation"
         >
-          <CalendarGrid layout={layout} />
+          {isUpdating ? <CalendarUpdatingStatus /> : null}
+          <div
+            aria-busy={isUpdating}
+            className={styles.calendarStage}
+            data-testid="calendar-stage"
+            data-updating={isUpdating ? "true" : undefined}
+          >
+            <CalendarGrid layout={layout} />
+          </div>
         </div>
       )}
     </section>

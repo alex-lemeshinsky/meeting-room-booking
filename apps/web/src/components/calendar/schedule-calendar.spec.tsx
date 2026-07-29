@@ -2,9 +2,11 @@ import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ScheduleResponse } from "../../lib/api/contracts";
+import styles from "./calendar.module.css";
 import { ScheduleCalendar } from "./schedule-calendar";
 
 const router = {
@@ -233,6 +235,44 @@ describe("ScheduleCalendar", () => {
     ).toBe("success");
   });
 
+  it("keeps the updating presentation out of flow without fading retained content", () => {
+    const calendarStylesheetSource = readFileSync(
+      "src/components/calendar/calendar.module.css",
+      "utf8"
+    );
+    const calendarStylesheet = calendarStylesheetSource
+      .replaceAll(".updatingStatus", `.${styles.updatingStatus}`)
+      .replaceAll(".calendarStage", `.${styles.calendarStage}`);
+
+    render(
+      <>
+        <style>{calendarStylesheet}</style>
+        <div>
+          <div
+            className={styles.updatingStatus}
+            data-testid="updating-status"
+          />
+          <div
+            className={styles.calendarStage}
+            data-testid="updating-stage"
+            data-updating="true"
+          />
+        </div>
+      </>
+    );
+
+    const statusStyles = window.getComputedStyle(
+      screen.getByTestId("updating-status")
+    );
+    const stageStyles = window.getComputedStyle(
+      screen.getByTestId("updating-stage")
+    );
+
+    expect(statusStyles.position).toBe("fixed");
+    expect(statusStyles.pointerEvents).toBe("none");
+    expect(stageStyles.opacity).toBe("1");
+  });
+
   it("writes the next local Monday to the room URL and retains the prior grid while updating", async () => {
     let resolveNext: ((response: Response) => void) | undefined;
     const nextResponse = new Promise<Response>((resolve) => {
@@ -246,14 +286,20 @@ describe("ScheduleCalendar", () => {
     const user = userEvent.setup();
     const { rerenderWeek } = renderSchedule("2026-07-27");
     await screen.findByText("Оберіть вільний слот");
+    const stage = screen.getByTestId("calendar-stage");
+    const presentation = screen.getByTestId("calendar-presentation");
+
+    expect(stage.parentElement).toBe(presentation);
 
     await user.click(screen.getByRole("button", { name: "Наступний тиждень" }));
 
     expect(router.push).toHaveBeenCalledWith("/rooms/room-1?week=2026-08-03");
     rerenderWeek("2026-08-03");
-    const stage = screen.getByTestId("calendar-stage");
     const status = await screen.findByRole("status");
 
+    expect(screen.getByTestId("calendar-stage")).toBe(stage);
+    expect(screen.getByTestId("calendar-presentation")).toBe(presentation);
+    expect(status.parentElement).toBe(presentation);
     expect(stage).toHaveAttribute("aria-busy", "true");
     expect(stage).toHaveAttribute("data-updating", "true");
     expect(status).toHaveTextContent("Оновлюємо розклад");
@@ -270,6 +316,8 @@ describe("ScheduleCalendar", () => {
 
     await waitFor(() => {
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(screen.getByTestId("calendar-presentation")).toBe(presentation);
+      expect(screen.getByTestId("calendar-stage")).toBe(stage);
       expect(stage).toHaveAttribute("aria-busy", "false");
       expect(stage).not.toHaveAttribute("data-updating");
     });
