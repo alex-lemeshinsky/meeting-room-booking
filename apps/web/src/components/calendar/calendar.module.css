@@ -512,3 +512,10 @@
 .skeletonGrid span {
   border-right: 1px solid var(--color-border-default);
 }
+
+@media (max-width: 40rem) {
+  .updatingStatus,
+  .successToast {
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}

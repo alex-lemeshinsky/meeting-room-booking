@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { LogoutButton } from "./logout-button";
+import { ProtectedNavigation } from "./protected-navigation";
 import styles from "../../app/(protected)/protected.module.css";
 
 interface ProtectedHeaderProps {
@@ -8,12 +10,13 @@ interface ProtectedHeaderProps {
 export function ProtectedHeader({ userName }: ProtectedHeaderProps) {
   return (
     <header className={styles.header}>
-      <div className={styles.productIdentity}>
+      <Link className={styles.productIdentity} href="/rooms">
         <span aria-hidden="true" className={styles.productMark}>
           MR
         </span>
         <span>Meeting Rooms</span>
-      </div>
+      </Link>
+      <ProtectedNavigation />
       <div className={styles.userControls}>
         <span className={styles.userName}>{userName}</span>
         <LogoutButton />

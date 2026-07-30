@@ -341,7 +341,7 @@ test.describe("weekly calendar", () => {
         ","
       )
     );
-    await expect(touchTargets).toHaveCount(4);
+    await expect(touchTargets).toHaveCount(6);
     expect(
       await touchTargets.evaluateAll((elements) =>
         elements.every((element) => {
@@ -384,6 +384,30 @@ test.describe("weekly calendar", () => {
     await page.keyboard.press("Escape");
     await expect(mobileDialog).toHaveCount(0);
     await expect(mobileSlot).toBeFocused();
+
+    await mobileSlot.click();
+    await page.getByLabel("Назва").fill("E2E мобільне бронювання");
+    await page
+      .getByRole("dialog", { name: "Нове бронювання" })
+      .getByRole("button", { name: "Забронювати" })
+      .click();
+    const successToast = page.getByRole("status").filter({
+      hasText: "Бронювання створено: Дніпро, 11:00–11:30."
+    });
+    await expect(successToast).toBeVisible();
+    expect(
+      await successToast.evaluate((element) => {
+        const navigation = document.querySelector(
+          'nav[aria-label="Основна навігація"]'
+        );
+        if (!(navigation instanceof HTMLElement)) return false;
+
+        return (
+          element.getBoundingClientRect().bottom <=
+          navigation.getBoundingClientRect().top
+        );
+      })
+    ).toBe(true);
 
     await scrollRegion.evaluate((element) => {
       element.scrollLeft = 0;

@@ -21,4 +21,10 @@ export type CreateBookingBody =
 export type CreateBookingResponse =
   operations["createBooking"]["responses"][201]["content"]["application/json"];
 
+export type CancelBookingResponse =
+  operations["cancelBooking"]["responses"][200]["content"]["application/json"];
+
+export type MyBookingsResponse =
+  operations["listMyBookings"]["responses"][200]["content"]["application/json"];
+
 export type ApiErrorBody = components["schemas"]["ApiErrorDto"];

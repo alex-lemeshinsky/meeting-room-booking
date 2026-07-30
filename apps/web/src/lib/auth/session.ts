@@ -1,6 +1,10 @@
 import "server-only";
 import { cookies } from "next/headers";
-import type { AuthResponse, RoomsResponse } from "../api/contracts";
+import type {
+  AuthResponse,
+  MyBookingsResponse,
+  RoomsResponse
+} from "../api/contracts";
 import { serverApi, UnauthenticatedError } from "../api/server";
 import { SESSION_COOKIE } from "./cookies";
 
@@ -34,4 +38,11 @@ export async function getRoom(
 ): Promise<RoomsResponse["rooms"][number] | undefined> {
   const { rooms } = await getRooms();
   return rooms.find((room) => room.id === roomId);
+}
+
+export async function getMyBookings(): Promise<MyBookingsResponse> {
+  return serverApi<MyBookingsResponse>(
+    "/api/v1/my-bookings?section=upcoming",
+    await currentSessionSecret()
+  );
 }
