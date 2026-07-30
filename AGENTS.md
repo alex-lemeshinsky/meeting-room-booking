@@ -61,9 +61,10 @@ Select the lightest delivery tier that preserves confidence:
    for the completed slice.
 3. **Material change** — a cross-module change, migration, security-sensitive
    flow, time rule, public contract, concurrency guarantee, or architectural
-   decision. Record an approved design specification and a task-by-task plan
-   locally. The plan states goal, architecture, constraints, exact file changes,
-   interfaces, focused tests, verification commands, and coherent commits.
+   decision. Record an approved design specification and a task-by-task plan in
+   the ignored `docs/superpowers/` folder. The plan states goal, architecture,
+   constraints, exact file changes, interfaces, focused tests, verification
+   commands, and coherent commits.
 
 For a material plan, use `superpowers:subagent-driven-development` only when
 tasks are independently reviewable and high-risk. Otherwise execute the plan
@@ -159,10 +160,12 @@ dead code, and accidental generated artifacts.
 - behavior or scope → `docs/features.md`;
 - boundaries or technology → `docs/architecture.md`;
 - setup or operations → `README.md`;
-- approved designs and implementation plans → local task state (not versioned).
+- approved designs, implementation plans, and working notes → `docs/superpowers/`
+  (not versioned; it is Git-ignored).
 
-Keep the full design, plan, and working notes in local task state. Preserve the
-reviewable operational context in the pull request's `Handoff` template instead:
+Keep the full design, plan, and working notes in `docs/superpowers/` so they
+persist across task-context compaction. Preserve the reviewable operational
+context in the pull request's `Handoff` template instead:
 scope, acceptance criteria, exact verification evidence, unverified items, known
 risks, and the next smallest slice. For a direct commit with no pull request, put
 the same concise handoff in the commit body or the task handoff message. Never
