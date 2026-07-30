@@ -205,6 +205,62 @@ describe("OpenAPI document", () => {
       /passwordHash|tokenHash|csrfTokenHash|sessionSecret|csrfSecret/
     );
   });
+
+  it("publishes the authenticated CSRF-protected booking creation contract", () => {
+    const document = createOpenApiDocument(app);
+    const operation = document.paths["/api/v1/bookings"]?.post;
+
+    expect(operation?.operationId).toBe("createBooking");
+    expect(operation?.security).toContainEqual({ cookie: [] });
+    expect(operation?.parameters).toContainEqual({
+      in: "header",
+      name: "X-CSRF-Token",
+      required: true,
+      schema: { type: "string" }
+    });
+    expect(operation?.requestBody).toMatchObject({
+      required: true,
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/CreateBookingDto" }
+        }
+      }
+    });
+    expect(operation?.responses?.[201]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/CreateBookingResponseDto" }
+        }
+      }
+    });
+    expectErrorResponses(
+      operation?.responses,
+      [400, 401, 403, 404, 409, 415, 500]
+    );
+    expect(document.components?.schemas?.CreateBookingDto).toMatchObject({
+      required: ["roomId", "title", "startAt", "endAt"],
+      properties: {
+        roomId: { type: "string", format: "uuid" },
+        title: { type: "string" },
+        startAt: {
+          type: "string",
+          format: "date-time",
+          pattern: UTC_MILLISECOND_INSTANT_PATTERN
+        },
+        endAt: {
+          type: "string",
+          format: "date-time",
+          pattern: UTC_MILLISECOND_INSTANT_PATTERN
+        }
+      }
+    });
+    expect(document.components?.schemas?.CreatedBookingDto).toMatchObject({
+      required: ["id", "roomId", "title", "startAt", "endAt"]
+    });
+    expect(JSON.stringify(operation)).not.toMatch(
+      /passwordHash|tokenHash|csrfTokenHash|sessionSecret|csrfSecret/
+    );
+  });
 });
 
 function expectErrorResponses(
