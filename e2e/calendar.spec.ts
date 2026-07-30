@@ -43,7 +43,7 @@ async function openCurrentDniproSchedule(page: Page): Promise<string> {
   return currentWeek;
 }
 
-test.describe("read-only weekly calendar", () => {
+test.describe("weekly calendar", () => {
   test.use({
     timezoneId: DISPLAY_TIMEZONE,
     viewport: { width: 1440, height: 900 }
@@ -103,6 +103,103 @@ test.describe("read-only weekly calendar", () => {
       (url) => url.searchParams.get("week") === previousWeek
     );
     await expect(page.getByText("Оберіть вільний слот")).toBeVisible();
+  });
+
+  test("creates a booking from a free slot and keeps it after reload", async ({
+    page
+  }) => {
+    await loginAsSeededUser(page);
+    await openCurrentDniproSchedule(page);
+
+    const slot = page.getByRole("button", {
+      name: /Забронювати четвер, 10 січня 2030 р., 09:00/
+    });
+    await slot.click();
+
+    const dialog = page.getByRole("dialog", { name: "Нове бронювання" });
+    await expect(dialog).toBeVisible();
+    expect(
+      await dialog.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        return {
+          right: Math.round(bounds.right),
+          viewportWidth: window.innerWidth,
+          width: Math.round(bounds.width)
+        };
+      })
+    ).toEqual({ right: 1440, viewportWidth: 1440, width: 480 });
+    await expect(page.getByLabel("Кімната")).toHaveValue("Дніпро");
+    await expect(page.getByLabel("Дата")).toHaveValue("2030-01-10");
+    await expect(page.getByLabel("Початок")).toHaveValue(
+      "2030-01-10T07:00:00.000Z"
+    );
+    await expect(page.getByLabel("Завершення")).toHaveValue(
+      "2030-01-10T07:30:00.000Z"
+    );
+
+    await page.getByLabel("Назва").fill("E2E командне планування");
+    await dialog.getByRole("button", { name: "Забронювати" }).click();
+
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      page.getByRole("status").filter({
+        hasText: "Бронювання створено: Дніпро, 09:00–09:30."
+      })
+    ).toBeVisible();
+    await expect(page.getByText("E2E командне планування")).toBeVisible();
+    await expect(page.getByTestId("calendar-scroll-region")).toBeFocused();
+
+    await page.reload();
+    await expect(page.getByText("E2E командне планування")).toBeVisible();
+  });
+
+  test("preserves the form when the server reports a booking conflict", async ({
+    page
+  }) => {
+    await loginAsSeededUser(page);
+    await openCurrentDniproSchedule(page);
+    await page.route("**/api/v1/bookings", async (route) => {
+      await route.fulfill({
+        body: JSON.stringify({
+          error: {
+            code: "BOOKING_CONFLICT",
+            message: "Booking overlaps an existing active booking",
+            requestId: "calendar-conflict-e2e"
+          }
+        }),
+        contentType: "application/json",
+        status: 409
+      });
+    });
+
+    await page
+      .getByRole("button", {
+        name: /Забронювати четвер, 10 січня 2030 р., 10:00/
+      })
+      .click();
+    await page.getByLabel("Назва").fill("Конфліктна зустріч");
+    await page
+      .getByLabel("Завершення")
+      .selectOption("2030-01-10T09:00:00.000Z");
+    await page
+      .getByRole("dialog", { name: "Нове бронювання" })
+      .getByRole("button", { name: "Забронювати" })
+      .click();
+
+    const alert = page
+      .getByRole("dialog", { name: "Нове бронювання" })
+      .getByRole("alert");
+    await expect(alert).toHaveText(
+      "Цей слот щойно зайняли. Ми оновили розклад. Оберіть інший час."
+    );
+    await expect(alert).toBeFocused();
+    await expect(page.getByLabel("Назва")).toHaveValue("Конфліктна зустріч");
+    await expect(page.getByLabel("Завершення")).toHaveValue(
+      "2030-01-10T09:00:00.000Z"
+    );
+    await expect(
+      page.getByRole("dialog", { name: "Нове бронювання" })
+    ).toBeVisible();
   });
 
   test("recovers the selected week after a schedule request fails", async ({
@@ -259,6 +356,34 @@ test.describe("read-only weekly calendar", () => {
         .first()
         .evaluate((element) => element.getBoundingClientRect().height >= 44)
     ).toBe(true);
+
+    const mobileSlot = page.getByRole("button", {
+      name: /Забронювати четвер, 10 січня 2030 р., 11:00/
+    });
+    await mobileSlot.click();
+    const mobileDialog = page.getByRole("dialog", {
+      name: "Нове бронювання"
+    });
+    await expect(mobileDialog).toBeVisible();
+    expect(
+      await mobileDialog.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        return (
+          bounds.left === 0 &&
+          bounds.top === 0 &&
+          bounds.width === window.innerWidth &&
+          bounds.height === window.innerHeight
+        );
+      })
+    ).toBe(true);
+    expect(
+      await page.locator("html").evaluate((element) => {
+        return element.scrollWidth <= element.clientWidth;
+      })
+    ).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(mobileDialog).toHaveCount(0);
+    await expect(mobileSlot).toBeFocused();
 
     await scrollRegion.evaluate((element) => {
       element.scrollLeft = 0;

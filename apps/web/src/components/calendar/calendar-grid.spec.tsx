@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ScheduleResponse } from "../../lib/api/contracts";
 import { buildCalendarLayout } from "../../lib/calendar/schedule";
@@ -36,6 +37,85 @@ afterEach(() => {
 });
 
 describe("CalendarGrid", () => {
+  it("activates only future free office-grid slots with full context", async () => {
+    const onSelectSlot = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <CalendarGrid
+        layout={layout(
+          [
+            {
+              id: "booking-blocked",
+              title: "Зайнято",
+              startAt: "2026-07-27T07:30:00.000Z",
+              endAt: "2026-07-27T08:30:00.000Z",
+              organizer: { id: "user-1", name: "Олена" },
+              isOwn: false
+            }
+          ],
+          "Europe/Kyiv",
+          new Date("2026-07-27T06:15:00.000Z")
+        )}
+        onSelectSlot={onSelectSlot}
+      />
+    );
+
+    const first = screen.getByRole("button", {
+      name: /Забронювати понеділок, 27 липня 2026 р., 09:30/
+    });
+    expect(
+      screen.queryByRole("button", {
+        name: /понеділок, 27 липня 2026 р., 09:00/
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: /понеділок, 27 липня 2026 р., 10:30/
+      })
+    ).not.toBeInTheDocument();
+
+    await user.click(first);
+
+    expect(onSelectSlot).toHaveBeenCalledWith(
+      {
+        slotId: "2026-07-27T06:30:00.000Z",
+        startAt: "2026-07-27T06:30:00.000Z",
+        startLabel: "09:30",
+        localDate: "2026-07-27",
+        fullDateLabel: "понеділок, 27 липня 2026 р."
+      },
+      first
+    );
+  });
+
+  it("moves between bookable slots with arrow keys", async () => {
+    const user = userEvent.setup();
+    render(
+      <CalendarGrid
+        layout={layout([], "Europe/Kyiv", new Date("2026-07-27T06:15:00.000Z"))}
+        onSelectSlot={vi.fn()}
+      />
+    );
+
+    const first = screen.getByRole("button", {
+      name: /понеділок, 27 липня 2026 р., 09:30/
+    });
+    const below = screen.getByRole("button", {
+      name: /понеділок, 27 липня 2026 р., 10:00/
+    });
+    const right = screen.getByRole("button", {
+      name: /вівторок, 28 липня 2026 р., 10:00/
+    });
+
+    first.focus();
+    await user.keyboard("{ArrowDown}");
+    expect(below).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    expect(right).toHaveFocus();
+    expect(first).toHaveAttribute("tabindex", "-1");
+    expect(right).toHaveAttribute("tabindex", "0");
+  });
+
   it("owns one accessible horizontal scroll region for header and body", () => {
     render(<CalendarGrid layout={layout()} />);
 

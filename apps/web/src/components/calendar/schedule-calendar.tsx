@@ -2,10 +2,12 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getCurrentLocalWeekStart } from "@mrb/time/calendar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { RoomsResponse, ScheduleResponse } from "../../lib/api/contracts";
+import type { CreateBookingResponse } from "../../lib/api/contracts";
 import { BrowserApiError } from "../../lib/api/errors";
+import { formatTime } from "../../lib/calendar/booking";
 import {
   buildCalendarLayout,
   createScheduleRequest,
@@ -16,7 +18,8 @@ import {
   persistBrowserTimezoneCookie
 } from "../../lib/calendar/timezone";
 import { RoomNotFoundState } from "../rooms/room-not-found-state";
-import { CalendarGrid } from "./calendar-grid";
+import { BookingSheet } from "../bookings/booking-sheet";
+import { CalendarGrid, type BookingSlotSelection } from "./calendar-grid";
 import styles from "./calendar.module.css";
 import { TimezoneBanner } from "./timezone-banner";
 import { WeekToolbar } from "./week-toolbar";
@@ -71,6 +74,11 @@ function ResolvedScheduleCalendar({
   const pathname = usePathname();
   const router = useRouter();
   const now = useCalendarNow();
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<BookingSlotSelection | null>(
+    null
+  );
+  const [successMessage, setSuccessMessage] = useState<string>();
   const weekStart = initialWeekStart ?? getCurrentLocalWeekStart(timezone, now);
   const request = useMemo(
     () => createScheduleRequest(room.id, weekStart, timezone),
@@ -125,6 +133,29 @@ function ResolvedScheduleCalendar({
     [pathname, router]
   );
 
+  const closeBookingSheet = useCallback(() => {
+    setSelectedSlot(null);
+    queueMicrotask(() => openerRef.current?.focus());
+  }, []);
+
+  const bookingCreated = useCallback(
+    (created: CreateBookingResponse) => {
+      setSelectedSlot(null);
+      setSuccessMessage(
+        `Бронювання створено: ${room.name}, ` +
+          `${formatTime(created.booking.startAt, timezone)}–` +
+          `${formatTime(created.booking.endAt, timezone)}.`
+      );
+      void query.refetch();
+      queueMicrotask(() => {
+        document
+          .querySelector<HTMLElement>('[data-testid="calendar-scroll-region"]')
+          ?.focus();
+      });
+    },
+    [query, room.name, timezone]
+  );
+
   if (query.isPending && query.data === undefined) {
     return <CalendarSkeleton />;
   }
@@ -165,10 +196,38 @@ function ResolvedScheduleCalendar({
             data-testid="calendar-stage"
             data-updating={isUpdating ? "true" : undefined}
           >
-            <CalendarGrid layout={layout} />
+            <CalendarGrid
+              layout={layout}
+              onSelectSlot={(selection, trigger) => {
+                openerRef.current = trigger;
+                setSuccessMessage(undefined);
+                setSelectedSlot(selection);
+              }}
+            />
           </div>
         </div>
       )}
+
+      {successMessage ? (
+        <div className={styles.successToast} role="status">
+          {successMessage}
+        </div>
+      ) : null}
+
+      {selectedSlot !== null && query.data !== undefined && layout !== null ? (
+        <BookingSheet
+          bookings={query.data.response.bookings}
+          initialSelection={selectedSlot}
+          layout={layout}
+          onClose={closeBookingSheet}
+          onConflict={async () => {
+            await query.refetch();
+          }}
+          onCreated={bookingCreated}
+          room={room}
+          timezone={timezone}
+        />
+      ) : null}
     </section>
   );
 }

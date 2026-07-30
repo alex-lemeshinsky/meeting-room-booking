@@ -2,15 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { csrfTokenFromCookie } from "../../lib/auth/csrf";
 import styles from "../../app/(protected)/protected.module.css";
-
-function csrfTokenFromCookie() {
-  const cookie = document.cookie
-    .split("; ")
-    .find((entry) => entry.startsWith("mrb_csrf="));
-
-  return cookie ? decodeURIComponent(cookie.slice("mrb_csrf=".length)) : "";
-}
 
 export function LogoutButton() {
   const router = useRouter();

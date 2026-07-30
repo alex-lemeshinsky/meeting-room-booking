@@ -55,7 +55,7 @@ function scheduleResponse(weekStart = "2026-07-27"): ScheduleResponse {
   };
 }
 
-function apiSuccess(body: ScheduleResponse) {
+function apiSuccess(body: unknown) {
   return {
     ok: true,
     json: async () => body
@@ -116,6 +116,62 @@ afterEach(() => {
 });
 
 describe("ScheduleCalendar", () => {
+  it("creates from a free slot, refreshes the grid, and announces success", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-29T07:15:00.000Z"));
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    const createdBooking = {
+      id: "booking-created",
+      title: "Командне планування",
+      startAt: "2026-07-30T06:00:00.000Z",
+      endAt: "2026-07-30T06:30:00.000Z",
+      organizer: { id: "user-1", name: "Олена" },
+      isOwn: true
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiSuccess(scheduleResponse()))
+      .mockResolvedValueOnce(
+        apiSuccess({
+          booking: {
+            id: createdBooking.id,
+            roomId: room.id,
+            title: createdBooking.title,
+            startAt: createdBooking.startAt,
+            endAt: createdBooking.endAt
+          }
+        })
+      )
+      .mockResolvedValueOnce(
+        apiSuccess({
+          ...scheduleResponse(),
+          bookings: [createdBooking]
+        })
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    renderSchedule("2026-07-27");
+
+    const slot = await screen.findByRole("button", {
+      name: /Забронювати четвер, 30 липня 2026 р., 09:00/
+    });
+    await user.click(slot);
+    await user.type(screen.getByLabelText("Назва"), createdBooking.title);
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    expect(
+      await screen.findByText("Бронювання створено: Дніпро, 09:00–09:30.")
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("dialog", { name: "Нове бронювання" })
+    ).not.toBeInTheDocument();
+    expect(await screen.findByText(createdBooking.title)).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByTestId("calendar-scroll-region")).toHaveFocus()
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it("server-renders stable calendar skeleton geometry before timezone detection", () => {
     const queryClient = new QueryClient();
 

@@ -1,7 +1,13 @@
 "use client";
 
-import { Fragment, type CSSProperties } from "react";
-import { useEffect, useRef } from "react";
+import {
+  Fragment,
+  type CSSProperties,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import type { CalendarLayout } from "../../lib/calendar/schedule";
 import styles from "./calendar.module.css";
 
@@ -10,6 +16,18 @@ const EDGE_LABEL_HEIGHT_PX = 40;
 
 interface CalendarGridProps {
   layout: CalendarLayout;
+  onSelectSlot?: (
+    selection: BookingSlotSelection,
+    trigger: HTMLButtonElement
+  ) => void;
+}
+
+export interface BookingSlotSelection {
+  slotId: string;
+  startAt: string;
+  startLabel: string;
+  localDate: string;
+  fullDateLabel: string;
 }
 
 function endsAtHour(minuteOfDay: number): boolean {
@@ -24,9 +42,13 @@ function elapsedState(elapsedPercent: number): "none" | "partial" | "full" {
   return elapsedPercent >= 100 ? "full" : "partial";
 }
 
-export function CalendarGrid({ layout }: CalendarGridProps) {
+export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
   const currentDayHeaderRef = useRef<HTMLTimeElement>(null);
   const didRevealCurrentDay = useRef(false);
+  const firstBookableSlotId = layout.days
+    .flatMap((day) => day.slots)
+    .find((slot) => slot.bookingStartAt !== undefined)?.id;
+  const [activeSlotId, setActiveSlotId] = useState(firstBookableSlotId);
   const hasCompactBookings = layout.bookings.some(
     (booking) => booking.heightInRows < 1
   );
@@ -49,6 +71,56 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
     });
     didRevealCurrentDay.current = true;
   }, [layout.days]);
+
+  useEffect(() => {
+    const hasActiveSlot = layout.days.some((day) =>
+      day.slots.some(
+        (slot) => slot.id === activeSlotId && slot.bookingStartAt !== undefined
+      )
+    );
+    if (!hasActiveSlot) {
+      setActiveSlotId(firstBookableSlotId);
+    }
+  }, [activeSlotId, firstBookableSlotId, layout.days]);
+
+  function moveSlotFocus(
+    event: KeyboardEvent<HTMLButtonElement>,
+    dayIndex: number,
+    rowIndex: number
+  ) {
+    let dayDelta = 0;
+    let rowDelta = 0;
+    if (event.key === "ArrowDown") rowDelta = 1;
+    else if (event.key === "ArrowLeft") dayDelta = -1;
+    else if (event.key === "ArrowRight") dayDelta = 1;
+    else if (event.key === "ArrowUp") rowDelta = -1;
+    else return;
+
+    event.preventDefault();
+    let nextDay = dayIndex + dayDelta;
+    let nextRow = rowIndex + rowDelta;
+
+    while (
+      nextDay >= 0 &&
+      nextDay < layout.days.length &&
+      nextRow >= 0 &&
+      nextRow < layout.rows.length
+    ) {
+      const target = document.querySelector<HTMLButtonElement>(
+        `[data-booking-slot="true"][data-day-index="${nextDay}"]` +
+          `[data-row-index="${nextRow}"]`
+      );
+      if (target !== null) {
+        setActiveSlotId(target.dataset.slotId);
+        target.focus();
+        return;
+      }
+
+      nextDay += dayDelta;
+      nextRow += rowDelta;
+      if (dayDelta !== 0) return;
+    }
+  }
 
   return (
     <section
@@ -127,7 +199,7 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
         </div>
 
         <div className={styles.dayColumns}>
-          {layout.days.map((day) => {
+          {layout.days.map((day, dayIndex) => {
             const bookings = layout.bookings.filter(
               (booking) => booking.localDate === day.localDate
             );
@@ -235,6 +307,39 @@ export function CalendarGrid({ layout }: CalendarGridProps) {
                           <small className={styles.offsetLabel}>
                             {slot.offsetLabel}
                           </small>
+                        )}
+                        {slot.bookingStartAt === undefined ||
+                        slot.bookingStartLabel === undefined ||
+                        onSelectSlot === undefined ? null : (
+                          <button
+                            aria-label={
+                              `Забронювати ${day.fullDateLabel}, ` +
+                              slot.bookingStartLabel
+                            }
+                            className={styles.slotAction}
+                            data-booking-slot="true"
+                            data-day-index={dayIndex}
+                            data-row-index={slot.rowIndex}
+                            data-slot-id={slot.id}
+                            onClick={(event) =>
+                              onSelectSlot(
+                                {
+                                  slotId: slot.id,
+                                  startAt: slot.bookingStartAt!,
+                                  startLabel: slot.bookingStartLabel!,
+                                  localDate: day.localDate,
+                                  fullDateLabel: day.fullDateLabel
+                                },
+                                event.currentTarget
+                              )
+                            }
+                            onFocus={() => setActiveSlotId(slot.id)}
+                            onKeyDown={(event) =>
+                              moveSlotFocus(event, dayIndex, slot.rowIndex)
+                            }
+                            tabIndex={activeSlotId === slot.id ? 0 : -1}
+                            type="button"
+                          />
                         )}
                       </div>
                     );

@@ -37,6 +37,59 @@ describe("schedule request", () => {
 });
 
 describe("calendar layout", () => {
+  it("marks only future, free Kyiv-grid starts as bookable", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse([
+        {
+          id: "booking-blocked",
+          title: "Зайнято",
+          startAt: "2026-07-27T07:30:00.000Z",
+          endAt: "2026-07-27T08:30:00.000Z",
+          organizer: { id: "user-1", name: "Олена" },
+          isOwn: false
+        }
+      ]),
+      weekStart: "2026-07-27",
+      timezone: "Europe/Kyiv",
+      now: new Date("2026-07-27T06:15:00.000Z")
+    });
+    const monday = layout.days[0];
+
+    expect(
+      monday?.slots.map((slot) => [slot.instant, slot.bookingStartAt])
+    ).toEqual([
+      ["2026-07-27T06:00:00.000Z", undefined],
+      ["2026-07-27T06:30:00.000Z", "2026-07-27T06:30:00.000Z"],
+      ["2026-07-27T07:00:00.000Z", "2026-07-27T07:00:00.000Z"],
+      ["2026-07-27T07:30:00.000Z", undefined],
+      ["2026-07-27T08:00:00.000Z", undefined],
+      ["2026-07-27T08:30:00.000Z", "2026-07-27T08:30:00.000Z"],
+      ...(monday?.slots.slice(6) ?? []).map((slot) => [
+        slot.instant,
+        slot.instant
+      ])
+    ]);
+  });
+
+  it("projects a Kyiv-grid start into a partially offset local slot", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse(),
+      weekStart: "2026-07-27",
+      timezone: "Asia/Kathmandu",
+      now: new Date("2026-07-27T05:00:00.000Z")
+    });
+    const monday = layout.days[0];
+
+    expect(
+      monday?.slots.find((slot) => slot.minuteOfDay === 690)
+    ).toMatchObject({
+      instant: "2026-07-27T05:45:00.000Z",
+      officeStartPercent: 50,
+      bookingStartAt: "2026-07-27T06:00:00.000Z",
+      bookingStartLabel: "11:45"
+    });
+  });
+
   it("builds seven complete columns over the compact Kyiv office range", () => {
     const layout = buildCalendarLayout({
       response: scheduleResponse(),

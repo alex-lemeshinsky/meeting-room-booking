@@ -24,6 +24,8 @@ export interface ScheduleRequest {
 }
 
 export interface CalendarLayoutSlot extends CalendarSlot {
+  bookingStartAt?: string;
+  bookingStartLabel?: string;
   elapsedPercent: number;
   isOffice: boolean;
   officeStartPercent: number;
@@ -168,9 +170,21 @@ export function buildCalendarLayout({
         }
 
         const officeCoverage = getOfficeCoverage(slot, officeIntervals);
+        const bookingStartAt = getBookingStartAt(
+          slot,
+          officeIntervals,
+          response.bookings,
+          now
+        );
         return {
           ...slot,
           ...officeCoverage,
+          ...(bookingStartAt === undefined
+            ? {}
+            : {
+                bookingStartAt,
+                bookingStartLabel: formatInstantTime(bookingStartAt, timezone)
+              }),
           elapsedPercent: getElapsedCoverage(slot, day.isToday, now),
           isOffice:
             officeCoverage.officeEndPercent > officeCoverage.officeStartPercent,
@@ -187,6 +201,56 @@ export function buildCalendarLayout({
     bookings: buildBookingFragments(response.bookings, days, timezone),
     now: buildNowIndicator(days, now)
   };
+}
+
+function formatInstantTime(instant: string, timezone: string): string {
+  return new Intl.DateTimeFormat("uk-UA", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: timezone
+  }).format(new Date(instant));
+}
+
+function getBookingStartAt(
+  slot: CalendarSlot,
+  officeIntervals: Array<{ start: string; end: string }>,
+  bookings: ScheduleResponse["bookings"],
+  now: Date
+): string | undefined {
+  const slotStart = Date.parse(slot.instant);
+  const slotEnd = slotStart + SLOT_DURATION_MS;
+
+  for (const interval of officeIntervals) {
+    const officeStart = Date.parse(interval.start);
+    const officeEnd = Date.parse(interval.end);
+    const gridOffset = Math.max(
+      0,
+      Math.ceil((slotStart - officeStart) / SLOT_DURATION_MS)
+    );
+    const candidateStart = officeStart + gridOffset * SLOT_DURATION_MS;
+    const candidateEnd = candidateStart + SLOT_DURATION_MS;
+
+    if (
+      candidateStart < slotStart ||
+      candidateStart >= slotEnd ||
+      candidateEnd > officeEnd ||
+      candidateStart <= now.getTime()
+    ) {
+      continue;
+    }
+
+    const overlaps = bookings.some(
+      (booking) =>
+        Date.parse(booking.startAt) < candidateEnd &&
+        Date.parse(booking.endAt) > candidateStart
+    );
+    if (!overlaps) {
+      return new Date(candidateStart).toISOString();
+    }
+  }
+
+  return undefined;
 }
 
 function buildCalendarRows(

@@ -15,4 +15,10 @@ export type RoomsResponse =
 export type ScheduleResponse =
   operations["getRoomSchedule"]["responses"][200]["content"]["application/json"];
 
+export type CreateBookingBody =
+  operations["createBooking"]["requestBody"]["content"]["application/json"];
+
+export type CreateBookingResponse =
+  operations["createBooking"]["responses"][201]["content"]["application/json"];
+
 export type ApiErrorBody = components["schemas"]["ApiErrorDto"];
