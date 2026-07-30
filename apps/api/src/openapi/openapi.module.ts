@@ -9,6 +9,7 @@ import { CookieService } from "../auth/session/cookie.service.js";
 import { SessionService } from "../auth/session/session.service.js";
 import { BookingsController } from "../bookings/bookings.controller.js";
 import { BookingsService } from "../bookings/bookings.service.js";
+import { MyBookingsController } from "../bookings/my-bookings.controller.js";
 import { HealthController } from "../health/health.controller.js";
 import { HealthService } from "../health/health.service.js";
 import { RoomsController } from "../rooms/rooms.controller.js";
@@ -22,6 +23,7 @@ const allowRequest = { canActivate: () => true };
     HealthController,
     AuthController,
     BookingsController,
+    MyBookingsController,
     RoomsController
   ],
   providers: [

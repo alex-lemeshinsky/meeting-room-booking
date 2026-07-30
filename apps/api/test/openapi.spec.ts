@@ -261,6 +261,111 @@ describe("OpenAPI document", () => {
       /passwordHash|tokenHash|csrfTokenHash|sessionSecret|csrfSecret/
     );
   });
+
+  it("publishes the authenticated CSRF-protected booking cancellation command", () => {
+    const document = createOpenApiDocument(app);
+    const operation =
+      document.paths["/api/v1/bookings/{bookingId}/cancel"]?.post;
+
+    expect(operation?.operationId).toBe("cancelBooking");
+    expect(operation?.security).toContainEqual({ cookie: [] });
+    expect(operation?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          in: "path",
+          name: "bookingId",
+          required: true,
+          schema: expect.objectContaining({ type: "string", format: "uuid" })
+        }),
+        {
+          in: "header",
+          name: "X-CSRF-Token",
+          required: true,
+          schema: { type: "string" }
+        }
+      ])
+    );
+    expect(operation?.responses?.[200]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/CancelBookingResponseDto" }
+        }
+      }
+    });
+    expectErrorResponses(
+      operation?.responses,
+      [400, 401, 403, 404, 409, 415, 500]
+    );
+    expect(document.components?.schemas?.CancelledBookingDto).toMatchObject({
+      required: ["id", "status", "cancelledAt"],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        status: { type: "string", enum: ["CANCELLED"] },
+        cancelledAt: { type: "string", format: "date-time" }
+      }
+    });
+  });
+
+  it("publishes the authenticated My Bookings query and public row states", () => {
+    const document = createOpenApiDocument(app);
+    const operation = document.paths["/api/v1/my-bookings"]?.get;
+
+    expect(operation?.operationId).toBe("listMyBookings");
+    expect(operation?.security).toContainEqual({ cookie: [] });
+    expect(operation?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          in: "query",
+          name: "section",
+          required: true,
+          schema: expect.objectContaining({
+            type: "string",
+            enum: ["upcoming", "history"]
+          })
+        }),
+        expect.objectContaining({
+          in: "query",
+          name: "cursor",
+          required: false,
+          schema: expect.objectContaining({ type: "string" })
+        })
+      ])
+    );
+    expect(operation?.responses?.[200]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/MyBookingsResponseDto" }
+        }
+      }
+    });
+    expectErrorResponses(operation?.responses, [400, 401, 500]);
+    expect(document.components?.schemas?.MyBookingDto).toMatchObject({
+      required: ["id", "room", "title", "startAt", "endAt", "state"],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        room: { $ref: "#/components/schemas/MyBookingRoomDto" },
+        startAt: { type: "string", format: "date-time" },
+        endAt: { type: "string", format: "date-time" },
+        state: {
+          type: "string",
+          enum: ["ACTIVE", "UPCOMING", "COMPLETED", "CANCELLED"]
+        }
+      }
+    });
+    expect(document.components?.schemas?.MyBookingsResponseDto).toMatchObject({
+      required: ["bookings", "nextCursor"],
+      properties: {
+        bookings: {
+          type: "array",
+          items: { $ref: "#/components/schemas/MyBookingDto" }
+        },
+        nextCursor: {
+          type: "string",
+          nullable: true
+        }
+      }
+    });
+  });
 });
 
 function expectErrorResponses(

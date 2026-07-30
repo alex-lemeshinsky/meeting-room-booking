@@ -1,10 +1,23 @@
-import { Body, Controller, Inject, Post, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+  UseGuards
+} from "@nestjs/common";
 import {
   ApiBody,
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiHeader,
+  ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags
 } from "@nestjs/swagger";
@@ -17,6 +30,7 @@ import {
   CreateBookingDto,
   CreateBookingResponseDto
 } from "./dto/create-booking.dto.js";
+import { CancelBookingResponseDto } from "./dto/cancel-booking.dto.js";
 
 @ApiTags("bookings")
 @Controller("bookings")
@@ -48,5 +62,36 @@ export class BookingsController {
     @Req() request: AuthenticatedRequest
   ): Promise<CreateBookingResponseDto> {
     return this.bookings.create(request.auth.user.id, input);
+  }
+
+  @Post(":bookingId/cancel")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(SessionGuard, CsrfGuard)
+  @ApiOperation({ operationId: "cancelBooking" })
+  @ApiCookieAuth()
+  @ApiHeader({
+    name: "X-CSRF-Token",
+    required: true,
+    schema: { type: "string" }
+  })
+  @ApiParam({
+    name: "bookingId",
+    required: true,
+    schema: { type: "string", format: "uuid" }
+  })
+  @ApiOkResponse({ type: CancelBookingResponseDto })
+  @ApiResponse({ status: 400, type: ApiErrorDto })
+  @ApiResponse({ status: 401, type: ApiErrorDto })
+  @ApiResponse({ status: 403, type: ApiErrorDto })
+  @ApiResponse({ status: 404, type: ApiErrorDto })
+  @ApiResponse({ status: 409, type: ApiErrorDto })
+  @ApiResponse({ status: 415, type: ApiErrorDto })
+  @ApiResponse({ status: 500, type: ApiErrorDto })
+  cancel(
+    @Param("bookingId", new ParseUUIDPipe({ version: "4" }))
+    bookingId: string,
+    @Req() request: AuthenticatedRequest
+  ): Promise<CancelBookingResponseDto> {
+    return this.bookings.cancel(request.auth.user.id, bookingId);
   }
 }
