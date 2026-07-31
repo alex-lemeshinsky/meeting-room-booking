@@ -4,6 +4,8 @@ import { E2E_NOW_ISO } from "./e2e/support/e2e-clock";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
+  // Every spec uses the same deterministic seed database and may mutate it.
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
