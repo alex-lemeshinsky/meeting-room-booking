@@ -26,9 +26,15 @@ export async function getCurrentSession(): Promise<AuthResponse> {
   );
 }
 
-export async function getRooms(): Promise<RoomsResponse> {
+export async function getRooms(minCapacity?: number): Promise<RoomsResponse> {
+  const query = new URLSearchParams();
+  if (minCapacity !== undefined) {
+    query.set("minCapacity", String(minCapacity));
+  }
+  const suffix = query.size === 0 ? "" : `?${query.toString()}`;
+
   return serverApi<RoomsResponse>(
-    "/api/v1/rooms",
+    `/api/v1/rooms${suffix}`,
     await currentSessionSecret()
   );
 }

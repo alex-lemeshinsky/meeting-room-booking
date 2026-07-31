@@ -3,6 +3,7 @@ import type { RoomsResponse } from "../../lib/api/contracts";
 import styles from "../../app/(protected)/protected.module.css";
 
 interface RoomListProps {
+  isFiltered?: boolean;
   rooms: RoomsResponse["rooms"];
 }
 
@@ -10,15 +11,27 @@ function capacityLabel(capacity: number) {
   return capacity === 1 ? "1 місце" : `${capacity} місць`;
 }
 
-export function RoomList({ rooms }: RoomListProps) {
+export function RoomList({ isFiltered = false, rooms }: RoomListProps) {
   if (!rooms.length) {
     return (
       <section
         className={styles.emptyState}
         aria-labelledby="rooms-empty-title"
       >
-        <h2 id="rooms-empty-title">Кімнат поки немає</h2>
-        <p>Коли кімнати стануть доступними, вони з’являться тут.</p>
+        {isFiltered ? (
+          <>
+            <h2 id="rooms-empty-title">Кімнат із такою місткістю немає</h2>
+            <p>Зменште мінімальну місткість або скиньте фільтр.</p>
+            <Link className={styles.roomFilterReset} href="/rooms">
+              Скинути фільтр
+            </Link>
+          </>
+        ) : (
+          <>
+            <h2 id="rooms-empty-title">Кімнат поки немає</h2>
+            <p>Коли кімнати стануть доступними, вони з’являться тут.</p>
+          </>
+        )}
       </section>
     );
   }

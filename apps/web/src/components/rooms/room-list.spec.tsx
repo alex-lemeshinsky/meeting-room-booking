@@ -14,6 +14,19 @@ describe("RoomList", () => {
     ).toBeVisible();
   });
 
+  it("shows a recoverable empty state when a filter has no matches", () => {
+    render(<RoomList isFiltered rooms={[]} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Кімнат із такою місткістю немає"
+      })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Скинути фільтр" })
+    ).toHaveAttribute("href", "/rooms");
+  });
+
   it("links each room card to its accessible schedule route", () => {
     render(
       <RoomList
