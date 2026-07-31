@@ -98,9 +98,19 @@ describe("OpenAPI document", () => {
       document.paths["/api/v1/auth/logout"]?.post?.responses,
       [401, 403, 415, 500]
     );
-    expectErrorResponses(
-      document.paths["/api/v1/rooms"]?.get?.responses,
-      [401, 500]
+    const listRooms = document.paths["/api/v1/rooms"]?.get;
+    expectErrorResponses(listRooms?.responses, [400, 401, 500]);
+    expect(listRooms?.parameters).toContainEqual(
+      expect.objectContaining({
+        in: "query",
+        name: "minCapacity",
+        required: false,
+        schema: expect.objectContaining({
+          type: "integer",
+          minimum: 1,
+          maximum: Number.MAX_SAFE_INTEGER
+        })
+      })
     );
     expect(document.components?.securitySchemes?.cookie).toMatchObject({
       in: "cookie",

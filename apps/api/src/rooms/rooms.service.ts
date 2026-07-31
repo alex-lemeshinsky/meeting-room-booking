@@ -12,8 +12,11 @@ export class RoomsService {
     @Inject(DatabaseService) private readonly database: DatabaseService
   ) {}
 
-  async list(): Promise<RoomDto[]> {
+  async list(minCapacity?: number): Promise<RoomDto[]> {
     return this.database.room.findMany({
+      ...(minCapacity === undefined
+        ? {}
+        : { where: { capacity: { gte: minCapacity } } }),
       orderBy: [{ floor: "asc" }, { name: "asc" }],
       select: { id: true, name: true, floor: true, capacity: true }
     });

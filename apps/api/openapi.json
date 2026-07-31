@@ -621,7 +621,18 @@
     "/api/v1/rooms": {
       "get": {
         "operationId": "listRooms",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "minCapacity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -629,6 +640,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RoomListResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
                 }
               }
             }
@@ -1106,6 +1127,17 @@
           "bookings",
           "nextCursor"
         ]
+      },
+      "RoomListQueryDto": {
+        "type": "object",
+        "properties": {
+          "minCapacity": {
+            "type": "integer",
+            "example": 8,
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
       },
       "ScheduleParamsDto": {
         "type": "object",

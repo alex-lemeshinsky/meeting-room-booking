@@ -29,13 +29,9 @@ describe("GET /api/v1/rooms", () => {
   it("requires a session and returns seeded public rooms in floor/name order", async () => {
     const server = context.app.getHttpServer();
     await request(server).get("/api/v1/rooms").expect(401);
+    await request(server).get("/api/v1/rooms?minCapacity=10").expect(401);
 
-    const authenticatedAgent = request.agent(server);
-    await authenticatedAgent
-      .post("/api/v1/auth/login")
-      .set("Origin", "http://127.0.0.1:3000")
-      .send({ email: "olena@example.com", password: "Rooms123!" })
-      .expect(200);
+    const authenticatedAgent = await loginAsOlena(server);
 
     const response = await authenticatedAgent.get("/api/v1/rooms").expect(200);
 
@@ -52,6 +48,52 @@ describe("GET /api/v1/rooms", () => {
       floor: expect.any(Number),
       capacity: expect.any(Number)
     });
+  });
+
+  it("filters rooms by minimum capacity while preserving stable order", async () => {
+    const authenticatedAgent = await loginAsOlena(context.app.getHttpServer());
+
+    const response = await authenticatedAgent
+      .get("/api/v1/rooms?minCapacity=10")
+      .expect(200);
+
+    expect(
+      response.body.rooms.map((room: { capacity: number }) => room.capacity)
+    ).toEqual([10, 12, 16]);
+    expect(
+      response.body.rooms.map((room: { name: string }) => room.name)
+    ).toEqual(["Обрій", "Поділ", "Софія"]);
+  });
+
+  it("returns an empty room list when no capacity qualifies", async () => {
+    const authenticatedAgent = await loginAsOlena(context.app.getHttpServer());
+
+    await authenticatedAgent
+      .get("/api/v1/rooms?minCapacity=17")
+      .expect(200)
+      .expect({ rooms: [] });
+  });
+
+  it.each([
+    "minCapacity=",
+    "minCapacity=0",
+    "minCapacity=-1",
+    "minCapacity=1.5",
+    "minCapacity=six",
+    "minCapacity=1&minCapacity=2"
+  ])("rejects invalid capacity query %s", async (query) => {
+    const authenticatedAgent = await loginAsOlena(context.app.getHttpServer());
+
+    const response = await authenticatedAgent
+      .get(`/api/v1/rooms?${query}`)
+      .expect(400);
+
+    expect(response.body.error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      message: "Request validation failed",
+      fields: { minCapacity: expect.any(Array) }
+    });
+    expect(response.body.error.requestId).toEqual(expect.any(String));
   });
 
   it("reruns the seed without changing identities, duplicating bookings, or replacing password hashes", async () => {
@@ -536,3 +578,15 @@ describe("GET /api/v1/rooms", () => {
     });
   }
 });
+
+async function loginAsOlena(
+  server: Parameters<typeof request.agent>[0]
+): Promise<ReturnType<typeof request.agent>> {
+  const authenticatedAgent = request.agent(server);
+  await authenticatedAgent
+    .post("/api/v1/auth/login")
+    .set("Origin", "http://127.0.0.1:3000")
+    .send({ email: "olena@example.com", password: "Rooms123!" })
+    .expect(200);
+  return authenticatedAgent;
+}

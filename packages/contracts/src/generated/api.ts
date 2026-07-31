@@ -305,6 +305,10 @@ export interface components {
             bookings: components["schemas"]["MyBookingDto"][];
             nextCursor: string | null;
         };
+        RoomListQueryDto: {
+            /** @example 8 */
+            minCapacity?: number;
+        };
         ScheduleParamsDto: {
             /** Format: uuid */
             roomId: string;
@@ -836,7 +840,9 @@ export interface operations {
     };
     listRooms: {
         parameters: {
-            query?: never;
+            query?: {
+                minCapacity?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -849,6 +855,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoomListResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
                 };
             };
             401: {

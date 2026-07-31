@@ -20,6 +20,10 @@ import {
 import { SessionGuard } from "../auth/guards/session.guard.js";
 import type { AuthenticatedRequest } from "../auth/auth.types.js";
 import { ApiErrorDto } from "../common/http/api-error.dto.js";
+import {
+  parseMinimumCapacity,
+  RoomListQueryDto
+} from "./room-list-query.dto.js";
 import { RoomListResponseDto } from "./room.dto.js";
 import {
   ScheduleParamsDto,
@@ -30,7 +34,7 @@ import { ScheduleResponseDto } from "./schedule.dto.js";
 import { RoomsService } from "./rooms.service.js";
 
 @ApiTags("rooms")
-@ApiExtraModels(ScheduleParamsDto, ScheduleQueryDto)
+@ApiExtraModels(RoomListQueryDto, ScheduleParamsDto, ScheduleQueryDto)
 @Controller("rooms")
 @UseGuards(SessionGuard)
 export class RoomsController {
@@ -39,11 +43,23 @@ export class RoomsController {
   @Get()
   @ApiOperation({ operationId: "listRooms" })
   @ApiCookieAuth()
+  @ApiQuery({
+    name: "minCapacity",
+    required: false,
+    schema: {
+      type: "integer",
+      minimum: 1,
+      maximum: Number.MAX_SAFE_INTEGER
+    }
+  })
   @ApiOkResponse({ type: RoomListResponseDto })
+  @ApiResponse({ status: 400, type: ApiErrorDto })
   @ApiResponse({ status: 401, type: ApiErrorDto })
   @ApiResponse({ status: 500, type: ApiErrorDto })
-  async list(): Promise<RoomListResponseDto> {
-    return { rooms: await this.rooms.list() };
+  async list(@Query() query: RoomListQueryDto): Promise<RoomListResponseDto> {
+    return {
+      rooms: await this.rooms.list(parseMinimumCapacity(query.minCapacity))
+    };
   }
 
   @Get(":roomId/schedule")
