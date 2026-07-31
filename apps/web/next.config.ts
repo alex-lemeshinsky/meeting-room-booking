@@ -10,6 +10,8 @@ const workspaceRoot = path.resolve(
 
 const config: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
+  output: "standalone",
+  outputFileTracingRoot: workspaceRoot,
   turbopack: {
     root: workspaceRoot
   },

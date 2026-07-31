@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "next build",
-    "dev": "next dev",
+    "build": "pnpm run build:time && next build",
+    "build:time": "pnpm --filter @mrb/time build",
+    "dev": "pnpm run build:time && next dev",
     "lint": "eslint src",
-    "start": "next start",
-    "test:unit": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "start": "pnpm run build:time && next start",
+    "test:unit": "pnpm run build:time && vitest run",
+    "typecheck": "pnpm run build:time && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@mrb/contracts": "workspace:*",

@@ -3,14 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nest build",
-    "dev": "tsx watch src/main.ts",
+    "build": "pnpm run build:time && nest build",
+    "build:time": "pnpm --filter @mrb/time build",
+    "dev": "pnpm run build:time && tsx watch src/main.ts",
     "lint": "eslint src test",
-    "openapi:generate": "tsx scripts/generate-openapi.ts",
-    "start": "node dist/main.js",
-    "test:unit": "vitest run --exclude '**/*.integration-spec.ts'",
-    "test:integration": "vitest run --maxWorkers=1 integration-spec.ts",
-    "typecheck": "prisma generate --schema ../../prisma/schema.prisma && tsc -p tsconfig.json --noEmit"
+    "openapi:generate": "pnpm run build:time && tsx scripts/generate-openapi.ts",
+    "start": "pnpm run build:time && node dist/main.js",
+    "test:unit": "pnpm run build:time && vitest run --exclude '**/*.integration-spec.ts'",
+    "test:integration": "pnpm run build:time && vitest run --maxWorkers=1 integration-spec.ts",
+    "typecheck": "pnpm run build:time && prisma generate --schema ../../prisma/schema.prisma && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@mrb/time": "workspace:*",
