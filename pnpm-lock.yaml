@@ -19,6 +19,9 @@ importers:
       "@prisma/adapter-pg":
         specifier: 7.9.0
         version: 7.9.0
+      dotenv:
+        specifier: 17.4.2
+        version: 17.4.2
       eslint:
         specifier: ^10.8.0
         version: 10.8.0(jiti@2.7.0)(supports-color@10.2.2)

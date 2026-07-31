@@ -1,0 +1,107 @@
+name: meeting-room-booking
+
+services:
+  db:
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-meeting_room}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-meeting_room}
+      POSTGRES_USER: ${POSTGRES_USER:-meeting_room}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  migrate:
+    build:
+      context: .
+      target: tools
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: &database-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-meeting_room}:${POSTGRES_PASSWORD:-meeting_room}@db:5432/${POSTGRES_DB:-meeting_room}?schema=public
+    image: ${COMPOSE_PROJECT_NAME:-meeting-room-booking}-tools
+    restart: "no"
+
+  seed:
+    command:
+      ["node", "apps/api/node_modules/tsx/dist/cli.mjs", "prisma/seed.ts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment: *database-environment
+    image: ${COMPOSE_PROJECT_NAME:-meeting-room-booking}-tools
+    pull_policy: never
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      target: api
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    environment:
+      <<: *database-environment
+      APP_ORIGIN: http://localhost:3000
+      PORT: 3001
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_INTERNAL_URL: http://api:3001
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/login').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  proxy:
+    image: nginx:1.29-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  postgres_data:
