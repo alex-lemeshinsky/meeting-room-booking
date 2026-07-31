@@ -111,6 +111,35 @@ describe("MyBookingsPage", () => {
     );
   });
 
+  it("selects and focuses adjacent tabs with standard keyboard controls", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiSuccess(emptyResponse()))
+    );
+    const user = userEvent.setup();
+    renderPage(emptyResponse());
+    const upcoming = screen.getByRole("tab", { name: "Майбутні (0)" });
+    const history = screen.getByRole("tab", { name: "Історія" });
+
+    upcoming.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(history).toHaveFocus();
+    expect(history).toHaveAttribute("aria-selected", "true");
+    expect(upcoming).toHaveAttribute("tabindex", "-1");
+
+    await user.keyboard("{Home}");
+    expect(upcoming).toHaveFocus();
+    expect(upcoming).toHaveAttribute("aria-selected", "true");
+
+    await user.keyboard("{End}");
+    expect(history).toHaveFocus();
+    expect(history).toHaveAttribute("aria-selected", "true");
+
+    await user.keyboard("{ArrowRight}");
+    expect(upcoming).toHaveFocus();
+    expect(upcoming).toHaveAttribute("aria-selected", "true");
+  });
+
   it("distinguishes upcoming and history empty states", async () => {
     vi.stubGlobal(
       "fetch",
@@ -260,11 +289,13 @@ describe("MyBookingsPage", () => {
     });
 
     await user.click(trigger);
+    expect(document.body.style.overflow).toBe("hidden");
     await user.keyboard("{Escape}");
 
     expect(
       screen.queryByRole("dialog", { name: "Скасувати бронювання" })
     ).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
     expect(trigger).toHaveFocus();
   });
 });

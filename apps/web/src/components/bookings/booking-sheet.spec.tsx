@@ -43,8 +43,16 @@ describe("BookingSheet", () => {
   it("opens with calendar context and focuses the title", () => {
     renderSheet();
 
+    const dialog = screen.getByRole("dialog", { name: "Нове бронювання" });
+    expect(dialog).toBeVisible();
+    expect(dialog).toHaveAttribute(
+      "aria-describedby",
+      "booking-sheet-description"
+    );
     expect(
-      screen.getByRole("dialog", { name: "Нове бронювання" })
+      screen.getByText(
+        "Час показано у вашому часовому поясі. Робочі години перевіряються за часом офісу."
+      )
     ).toBeVisible();
     expect(screen.getByDisplayValue("Арсенал")).toBeDisabled();
     expect(screen.getByLabelText("Дата")).toHaveValue("2026-07-27");
@@ -73,6 +81,15 @@ describe("BookingSheet", () => {
         )
       )
     ).toBeVisible();
+  });
+
+  it("locks background scrolling until the sheet unmounts", () => {
+    const rendered = renderSheet();
+
+    expect(document.body.style.overflow).toBe("hidden");
+
+    rendered.unmount();
+    expect(document.body.style.overflow).toBe("");
   });
 
   it("submits the generated booking contract with the CSRF token", async () => {
@@ -186,6 +203,20 @@ describe("BookingSheet", () => {
     expect(title).toHaveFocus();
   });
 
+  it("shows an inline error and focuses the blank required title", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    const title = screen.getByLabelText("Назва");
+    expect(title).toHaveFocus();
+    expect(title).toHaveAttribute("aria-invalid", "true");
+    expect(document.getElementById("booking-title-error")).toHaveTextContent(
+      "Введіть назву бронювання"
+    );
+  });
+
   it("closes on Escape", async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
@@ -194,6 +225,44 @@ describe("BookingSheet", () => {
     await user.keyboard("{Escape}");
 
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("does not close on Escape while creation is pending", async () => {
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    let resolveCreation: ((response: Response) => void) | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveCreation = resolve;
+          })
+      )
+    );
+    const onClose = vi.fn();
+    const onCreated = vi.fn();
+    const user = userEvent.setup();
+    renderSheet({ onClose, onCreated });
+
+    await user.type(screen.getByLabelText("Назва"), "Планування");
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+    expect(screen.getByRole("button", { name: "Бронюємо…" })).toBeDisabled();
+
+    await user.keyboard("{Escape}");
+    expect(onClose).not.toHaveBeenCalled();
+
+    resolveCreation?.(
+      apiSuccess({
+        booking: {
+          id: "booking-pending",
+          roomId: room.id,
+          title: "Планування",
+          startAt: selection.startAt,
+          endAt: "2026-07-27T07:00:00.000Z"
+        }
+      })
+    );
+    await waitFor(() => expect(onCreated).toHaveBeenCalledOnce());
   });
 });
 

@@ -120,7 +120,7 @@
 }
 
 .main {
-  width: min(100%, 75rem);
+  width: 100%;
   min-width: 0;
   margin: 0 auto;
   padding: var(--space-8) var(--space-6);
@@ -128,7 +128,9 @@
 
 .roomsPage {
   display: grid;
+  width: min(100%, 75rem);
   min-width: 0;
+  margin: 0 auto;
   gap: var(--space-6);
 }
 
@@ -304,7 +306,9 @@
 
   .primaryNavigation a {
     display: grid;
-    min-width: 7rem;
+    min-width: 0;
+    flex: 1;
     place-items: center;
+    text-align: center;
   }
 }

@@ -28,10 +28,10 @@ describe("ProtectedNavigation", () => {
       within(navigation).getByRole("link", { name: "Кімнати" })
     ).toHaveAttribute("href", "/rooms");
     expect(
-      within(navigation).getByRole("link", { name: "Мої" })
+      within(navigation).getByRole("link", { name: "Мої бронювання" })
     ).toHaveAttribute("href", "/my-bookings");
     expect(
-      within(navigation).getByRole("link", { name: "Мої" })
+      within(navigation).getByRole("link", { name: "Мої бронювання" })
     ).toHaveAttribute("aria-current", "page");
   });
 });

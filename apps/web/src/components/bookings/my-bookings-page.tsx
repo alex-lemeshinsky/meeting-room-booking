@@ -6,7 +6,13 @@ import {
   useQueryClient
 } from "@tanstack/react-query";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import type { MyBookingsResponse } from "../../lib/api/contracts";
 import { fetchMyBookings } from "../../lib/api/bookings";
 import {
@@ -40,6 +46,8 @@ export function MyBookingsPage({
 }: MyBookingsPageProps) {
   const queryClient = useQueryClient();
   const upcomingPanelRef = useRef<HTMLElement>(null);
+  const upcomingTabRef = useRef<HTMLButtonElement>(null);
+  const historyTabRef = useRef<HTMLButtonElement>(null);
   const [section, setSection] = useState<Section>("upcoming");
   const [timezone, setTimezone] = useState<string | null>(
     initialTimezone ?? null
@@ -93,6 +101,32 @@ export function MyBookingsPage({
     queueMicrotask(() => trigger?.focus());
   }
 
+  function selectSection(nextSection: Section, moveFocus = false) {
+    setSection(nextSection);
+    if (moveFocus) {
+      const target =
+        nextSection === "upcoming"
+          ? upcomingTabRef.current
+          : historyTabRef.current;
+      target?.focus();
+    }
+  }
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    let nextSection: Section | undefined;
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      nextSection = section === "upcoming" ? "history" : "upcoming";
+    } else if (event.key === "Home") {
+      nextSection = "upcoming";
+    } else if (event.key === "End") {
+      nextSection = "history";
+    }
+    if (nextSection === undefined) return;
+
+    event.preventDefault();
+    selectSection(nextSection, true);
+  }
+
   const upcomingCount = upcoming.data.bookings.length;
   const upcomingTabLabel = `Майбутні (${upcomingCount})`;
 
@@ -113,8 +147,11 @@ export function MyBookingsPage({
           aria-controls="upcoming-bookings-panel"
           aria-selected={section === "upcoming"}
           id="upcoming-bookings-tab"
-          onClick={() => setSection("upcoming")}
+          onClick={() => selectSection("upcoming")}
+          onKeyDown={handleTabKeyDown}
+          ref={upcomingTabRef}
           role="tab"
+          tabIndex={section === "upcoming" ? 0 : -1}
           type="button"
         >
           {upcomingTabLabel}
@@ -123,8 +160,11 @@ export function MyBookingsPage({
           aria-controls="history-bookings-panel"
           aria-selected={section === "history"}
           id="history-bookings-tab"
-          onClick={() => setSection("history")}
+          onClick={() => selectSection("history")}
+          onKeyDown={handleTabKeyDown}
+          ref={historyTabRef}
           role="tab"
+          tabIndex={section === "history" ? 0 : -1}
           type="button"
         >
           Історія

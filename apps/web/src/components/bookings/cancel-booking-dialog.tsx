@@ -5,6 +5,7 @@ import type { MyBookingsResponse } from "../../lib/api/contracts";
 import { cancelBooking } from "../../lib/api/bookings";
 import { BrowserApiError } from "../../lib/api/errors";
 import { formatMyBookingInterval } from "../../lib/bookings/my-bookings";
+import { containTabFocus, lockDocumentScroll } from "../../lib/ui/overlay";
 import styles from "./my-bookings.module.css";
 
 type MyBooking = MyBookingsResponse["bookings"][number];
@@ -31,6 +32,8 @@ export function CancelBookingDialog({
     safeActionRef.current?.focus();
   }, []);
 
+  useEffect(() => lockDocumentScroll(document), []);
+
   useEffect(() => {
     if (requestError !== undefined) errorRef.current?.focus();
   }, [requestError]);
@@ -50,35 +53,13 @@ export function CancelBookingDialog({
     }
   }
 
-  function keepFocusInside(event: KeyboardEvent<HTMLElement>) {
+  function handleDialogKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Escape") {
       event.preventDefault();
       if (!isPending) onClose();
       return;
     }
-    if (event.key !== "Tab") return;
-
-    const focusable = Array.from(
-      event.currentTarget.querySelectorAll<HTMLElement>("button:not(:disabled)")
-    );
-    const first = focusable[0];
-    const last = focusable.at(-1);
-    if (first === undefined || last === undefined) return;
-
-    const activeElement = document.activeElement;
-    if (
-      activeElement instanceof HTMLElement &&
-      !focusable.includes(activeElement)
-    ) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    } else if (event.shiftKey && activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
+    containTabFocus(event);
   }
 
   return (
@@ -87,7 +68,7 @@ export function CancelBookingDialog({
         aria-labelledby="cancel-booking-title"
         aria-modal="true"
         className={styles.dialog}
-        onKeyDown={keepFocusInside}
+        onKeyDown={handleDialogKeyDown}
         role="dialog"
       >
         <div>

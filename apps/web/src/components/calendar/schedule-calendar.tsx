@@ -196,6 +196,14 @@ function ResolvedScheduleCalendar({
             data-testid="calendar-stage"
             data-updating={isUpdating ? "true" : undefined}
           >
+            <p
+              aria-hidden="true"
+              className={styles.scrollCue}
+              data-testid="calendar-scroll-cue"
+            >
+              Прокрутіть, щоб побачити інші дні
+              <span>→</span>
+            </p>
             <CalendarGrid
               layout={layout}
               onSelectSlot={(selection, trigger) => {

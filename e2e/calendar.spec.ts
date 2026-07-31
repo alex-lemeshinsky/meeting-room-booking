@@ -59,6 +59,12 @@ test.describe("weekly calendar", () => {
     await loginAsSeededUser(page);
     const currentWeek = await openCurrentDniproSchedule(page);
     await expect(page.getByTestId("calendar-scroll-region")).toBeVisible();
+    expect(
+      await page.locator("main > section").evaluate((section) => {
+        return section.getBoundingClientRect().width / window.innerWidth;
+      })
+    ).toBeGreaterThanOrEqual(0.9);
+    await expect(page.getByTestId("calendar-scroll-cue")).toBeHidden();
     const nextWeek = shiftLocalWeekStart(currentWeek, DISPLAY_TIMEZONE, 1);
     const previousWeek = shiftLocalWeekStart(currentWeek, DISPLAY_TIMEZONE, -1);
     const booking = page.locator(
@@ -127,7 +133,7 @@ test.describe("weekly calendar", () => {
           width: Math.round(bounds.width)
         };
       })
-    ).toEqual({ right: 1440, viewportWidth: 1440, width: 480 });
+    ).toEqual({ right: 1440, viewportWidth: 1440, width: 384 });
     await expect(page.getByLabel("Кімната")).toHaveValue("Дніпро");
     await expect(page.getByLabel("Дата")).toHaveValue("2030-01-10");
     await expect(page.getByLabel("Початок")).toHaveValue(
@@ -269,6 +275,12 @@ test.describe("weekly calendar", () => {
 
     await expect(dayHeaders).toHaveCount(7);
     await expect(currentDayHeader).toHaveCount(1);
+    await expect(page.getByTestId("calendar-scroll-cue")).toBeInViewport();
+    expect(
+      await dayHeaders.evaluateAll((headers) =>
+        headers.every((header) => header.getBoundingClientRect().width >= 112)
+      )
+    ).toBe(true);
     expect(
       await page.locator("html").evaluate((element) => {
         return element.scrollWidth <= element.clientWidth;
@@ -366,6 +378,9 @@ test.describe("weekly calendar", () => {
     });
     await expect(mobileDialog).toBeVisible();
     expect(
+      await page.locator("body").evaluate((element) => element.style.overflow)
+    ).toBe("hidden");
+    expect(
       await mobileDialog.evaluate((element) => {
         const bounds = element.getBoundingClientRect();
         return (
@@ -383,6 +398,9 @@ test.describe("weekly calendar", () => {
     ).toBe(true);
     await page.keyboard.press("Escape");
     await expect(mobileDialog).toHaveCount(0);
+    expect(
+      await page.locator("body").evaluate((element) => element.style.overflow)
+    ).toBe("");
     await expect(mobileSlot).toBeFocused();
 
     await mobileSlot.click();

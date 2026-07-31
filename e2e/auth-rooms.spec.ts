@@ -15,6 +15,19 @@ test.describe.serial("authentication and rooms", () => {
     await expect(page.getByRole("status")).toHaveText(
       "Сесія завершилася. Увійдіть знову."
     );
+    const authPanel = await page.locator("main > section").evaluate((panel) => {
+      const style = getComputedStyle(panel);
+      return {
+        background: style.backgroundColor,
+        borderRadius: style.borderRadius,
+        padding: style.padding
+      };
+    });
+    expect(authPanel).toEqual({
+      background: "rgb(255, 255, 255)",
+      borderRadius: "12px",
+      padding: "32px"
+    });
 
     await page.getByRole("link", { name: "Створити обліковий запис" }).click();
     await page.getByLabel("Ім’я").fill("Тестова користувачка");
@@ -37,6 +50,9 @@ test.describe.serial("authentication and rooms", () => {
         .getByRole("list", { name: "Переговорні кімнати" })
         .getByRole("listitem")
     ).toHaveCount(6);
+    await expect(
+      page.getByRole("link", { name: "Мої бронювання" })
+    ).toBeVisible();
 
     await page.reload();
     await expect(page).toHaveURL(/\/rooms/);
@@ -86,10 +102,26 @@ test.describe.serial("authentication and rooms", () => {
         .getByRole("list", { name: "Переговорні кімнати" })
         .getByRole("listitem")
     ).toHaveCount(6);
+    const mobileMetrics = await page
+      .getByRole("navigation", { name: "Основна навігація" })
+      .evaluate((navigation) => {
+        const rect = navigation.getBoundingClientRect();
+        return {
+          bottom: rect.bottom,
+          viewportHeight: window.innerHeight,
+          pageOverflow:
+            document.documentElement.scrollWidth > window.innerWidth,
+          targets: Array.from(navigation.querySelectorAll("a")).map(
+            (link) => link.getBoundingClientRect().height
+          )
+        };
+      });
+    expect(mobileMetrics.pageOverflow).toBe(false);
     expect(
-      await page
-        .locator("html")
-        .evaluate((element) => element.scrollWidth <= element.clientWidth)
+      mobileMetrics.targets.every((targetHeight) => targetHeight >= 44)
     ).toBe(true);
+    expect(
+      Math.abs(mobileMetrics.bottom - mobileMetrics.viewportHeight)
+    ).toBeLessThanOrEqual(1);
   });
 });

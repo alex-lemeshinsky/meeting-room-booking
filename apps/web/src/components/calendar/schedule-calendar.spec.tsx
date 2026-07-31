@@ -155,6 +155,9 @@ describe("ScheduleCalendar", () => {
     const slot = await screen.findByRole("button", {
       name: /Забронювати четвер, 30 липня 2026 р., 09:00/
     });
+    const scrollCue = screen.getByTestId("calendar-scroll-cue");
+    expect(scrollCue).toHaveTextContent("Прокрутіть, щоб побачити інші дні");
+    expect(scrollCue).toHaveAttribute("aria-hidden", "true");
     await user.click(slot);
     await user.type(screen.getByLabelText("Назва"), createdBooking.title);
     await user.click(screen.getByRole("button", { name: "Забронювати" }));

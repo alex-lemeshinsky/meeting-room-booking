@@ -3,7 +3,6 @@
 import {
   type ChangeEvent,
   type FormEvent,
-  type KeyboardEvent,
   useEffect,
   useMemo,
   useRef,
@@ -23,6 +22,7 @@ import {
   type BookingTimeOption
 } from "../../lib/calendar/booking";
 import type { CalendarLayout } from "../../lib/calendar/schedule";
+import { containTabFocus, lockDocumentScroll } from "../../lib/ui/overlay";
 import type { BookingSlotSelection } from "../calendar/calendar-grid";
 import styles from "./booking-sheet.module.css";
 
@@ -109,6 +109,8 @@ export function BookingSheet({
     titleRef.current?.focus();
   }, []);
 
+  useEffect(() => lockDocumentScroll(document), []);
+
   useEffect(() => {
     if (requestError !== undefined && shouldFocusRequestError.current) {
       shouldFocusRequestError.current = false;
@@ -118,11 +120,11 @@ export function BookingSheet({
 
   useEffect(() => {
     function closeOnEscape(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape" && !isPending) onClose();
     }
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
+  }, [isPending, onClose]);
 
   function changeDate(event: ChangeEvent<HTMLSelectElement>) {
     const nextDate = event.target.value;
@@ -200,26 +202,6 @@ export function BookingSheet({
     }
   }
 
-  function keepFocusInside(event: KeyboardEvent<HTMLElement>) {
-    if (event.key !== "Tab") return;
-    const focusable = Array.from(
-      event.currentTarget.querySelectorAll<HTMLElement>(
-        "button:not(:disabled), input:not(:disabled), select:not(:disabled)"
-      )
-    );
-    const first = focusable[0];
-    const last = focusable.at(-1);
-    if (first === undefined || last === undefined) return;
-
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
   function clearErrors() {
     setFieldErrors({});
     setRequestError(undefined);
@@ -228,16 +210,21 @@ export function BookingSheet({
   return (
     <div className={styles.backdrop}>
       <aside
+        aria-describedby="booking-sheet-description"
         aria-labelledby="booking-sheet-title"
         aria-modal="true"
         className={styles.sheet}
-        onKeyDown={keepFocusInside}
+        onKeyDown={containTabFocus}
         role="dialog"
       >
         <header className={styles.header}>
           <div>
             <p className={styles.eyebrow}>Нове бронювання</p>
             <h2 id="booking-sheet-title">Нове бронювання</h2>
+            <p className={styles.description} id="booking-sheet-description">
+              Час показано у вашому часовому поясі. Робочі години перевіряються
+              за часом офісу.
+            </p>
           </div>
           <button
             aria-label="Закрити форму бронювання"
@@ -249,7 +236,7 @@ export function BookingSheet({
           </button>
         </header>
 
-        <form className={styles.form} onSubmit={submit}>
+        <form className={styles.form} noValidate onSubmit={submit}>
           <div className={styles.field}>
             <label htmlFor="booking-room">Кімната</label>
             <input disabled id="booking-room" value={room.name} />

@@ -182,6 +182,20 @@
   outline-offset: 2px;
 }
 
+.scrollCue {
+  display: none;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+  text-align: end;
+}
+
+.scrollCue span {
+  margin-left: var(--space-2);
+  color: var(--color-action-primary);
+  font: var(--type-subheading);
+}
+
 .gridHeader {
   position: sticky;
   top: 0;
@@ -514,6 +528,14 @@
 }
 
 @media (max-width: 40rem) {
+  .gridShell {
+    max-height: 60dvh;
+  }
+
+  .scrollCue {
+    display: block;
+  }
+
   .updatingStatus,
   .successToast {
     bottom: calc(5rem + env(safe-area-inset-bottom));

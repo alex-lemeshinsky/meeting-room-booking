@@ -6,7 +6,7 @@ import styles from "../../app/(protected)/protected.module.css";
 
 const destinations = [
   { href: "/rooms", label: "Кімнати" },
-  { href: "/my-bookings", label: "Мої" }
+  { href: "/my-bookings", label: "Мої бронювання" }
 ] as const;
 
 export function ProtectedNavigation() {

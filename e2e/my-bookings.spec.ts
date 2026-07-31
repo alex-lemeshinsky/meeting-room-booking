@@ -26,11 +26,25 @@ test.describe.serial("My Bookings", () => {
       ).toISOString()
     });
 
-    await page.getByRole("link", { name: "Мої" }).click();
+    await page.getByRole("link", { name: "Мої бронювання" }).click();
     await expect(page).toHaveURL(/\/my-bookings$/);
     await expect(
       page.getByRole("heading", { level: 1, name: "Мої бронювання" })
     ).toBeVisible();
+    expect(
+      await page.locator("main > section").evaluate((section) => {
+        return section.getBoundingClientRect().width;
+      })
+    ).toBeLessThanOrEqual(1200);
+    const upcomingTab = page.getByRole("tab", { name: /Майбутні/ });
+    const historyTab = page.getByRole("tab", { name: "Історія" });
+    await upcomingTab.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(historyTab).toBeFocused();
+    await expect(historyTab).toHaveAttribute("aria-selected", "true");
+    await page.keyboard.press("ArrowLeft");
+    await expect(upcomingTab).toBeFocused();
+    await expect(upcomingTab).toHaveAttribute("aria-selected", "true");
     const calendarLink = page.getByRole("link", {
       name: `Відкрити бронювання «${title}» в календарі`
     });
@@ -48,7 +62,7 @@ test.describe.serial("My Bookings", () => {
       page.getByRole("heading", { name: "Розклад кімнати Арсенал" })
     ).toBeVisible();
 
-    await page.getByRole("link", { name: "Мої" }).click();
+    await page.getByRole("link", { name: "Мої бронювання" }).click();
     const trigger = page.getByRole("button", {
       name: `Скасувати бронювання «${title}»`
     });
@@ -96,7 +110,7 @@ test.describe.serial("My Bookings", () => {
           testInfo.retry * 30 * 60 * 1_000
       ).toISOString()
     });
-    await page.getByRole("link", { name: "Мої" }).click();
+    await page.getByRole("link", { name: "Мої бронювання" }).click();
 
     expect(
       await page
@@ -138,6 +152,12 @@ test.describe.serial("My Bookings", () => {
     const dialog = page.getByRole("dialog", {
       name: "Скасувати бронювання"
     });
+    await expect(
+      dialog.getByRole("button", { name: "Залишити бронювання" })
+    ).toBeFocused();
+    expect(
+      await page.locator("body").evaluate((element) => element.style.overflow)
+    ).toBe("hidden");
     expect(
       await dialog.evaluate((element) => {
         const bounds = element.getBoundingClientRect();
@@ -158,6 +178,9 @@ test.describe.serial("My Bookings", () => {
 
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
+    expect(
+      await page.locator("body").evaluate((element) => element.style.overflow)
+    ).toBe("");
     await expect(trigger).toBeFocused();
     await expect(
       page.getByRole("link", {
@@ -173,6 +196,9 @@ test.describe.serial("My Bookings", () => {
       .click();
     const successToast = page.getByRole("status");
     await expect(successToast).toHaveText(`Бронювання «${title}» скасовано.`);
+    await expect(
+      page.getByRole("tabpanel", { name: /Майбутні/ })
+    ).toBeFocused();
     expect(
       await successToast.evaluate((element) => {
         const navigation = document.querySelector(
