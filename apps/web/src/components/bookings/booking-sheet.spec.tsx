@@ -159,6 +159,41 @@ describe("BookingSheet", () => {
     expect(onConflict).toHaveBeenCalledOnce();
   });
 
+  it("keeps the form open and focused when email verification is required", async () => {
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiError("EMAIL_NOT_VERIFIED"))
+    );
+    const onConflict = vi.fn().mockResolvedValue(undefined);
+    const onCreated = vi.fn();
+    const user = userEvent.setup();
+    renderSheet({ onConflict, onCreated });
+
+    await user.type(screen.getByLabelText("Назва"), "Важлива зустріч");
+    await user.selectOptions(
+      screen.getByLabelText("Завершення"),
+      "2026-07-27T07:30:00.000Z"
+    );
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "Підтвердьте email за посиланням із журналу API, щоб створювати бронювання."
+    );
+    expect(alert).toHaveFocus();
+    expect(
+      screen.getByRole("dialog", { name: "Нове бронювання" })
+    ).toBeVisible();
+    expect(screen.getByLabelText("Назва")).toHaveValue("Важлива зустріч");
+    expect(screen.getByLabelText("Завершення")).toHaveValue(
+      "2026-07-27T07:30:00.000Z"
+    );
+    expect(screen.getByRole("button", { name: "Забронювати" })).toBeEnabled();
+    expect(onConflict).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+  });
+
   it("keeps the selected date after a refreshed schedule makes it unavailable", () => {
     const refreshedLayout = buildCalendarLayout({
       response,

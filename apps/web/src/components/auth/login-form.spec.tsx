@@ -48,8 +48,10 @@ describe("LoginForm", () => {
     render(<LoginForm registered />);
 
     expect(
-      screen.getByText("Обліковий запис створено. Тепер увійдіть.")
-    ).toBeVisible();
+      screen.getByText(
+        "Обліковий запис створено. Посилання для підтвердження email доступне в журналі API для локальної розробки. Ви вже можете увійти й переглядати розклад."
+      )
+    ).toHaveAttribute("role", "status");
   });
 
   it("shows one generic message and keeps the email for invalid credentials", async () => {

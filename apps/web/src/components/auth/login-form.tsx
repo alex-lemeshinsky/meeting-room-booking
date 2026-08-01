@@ -97,8 +97,10 @@ export function LoginForm({
   return (
     <form className={styles.form} noValidate onSubmit={submit}>
       {registered ? (
-        <p className={styles.success}>
-          Обліковий запис створено. Тепер увійдіть.
+        <p className={styles.success} role="status">
+          Обліковий запис створено. Посилання для підтвердження email доступне в
+          журналі API для локальної розробки. Ви вже можете увійти й переглядати
+          розклад.
         </p>
       ) : null}
       {sessionEnded ? (

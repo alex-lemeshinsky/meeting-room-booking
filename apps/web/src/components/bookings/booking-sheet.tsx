@@ -171,7 +171,12 @@ export function BookingSheet({
       onCreated(created);
     } catch (error) {
       if (error instanceof BrowserApiError) {
-        if (error.code === "BOOKING_CONFLICT") {
+        if (error.code === "EMAIL_NOT_VERIFIED") {
+          shouldFocusRequestError.current = true;
+          setRequestError(
+            "Підтвердьте email за посиланням із журналу API, щоб створювати бронювання."
+          );
+        } else if (error.code === "BOOKING_CONFLICT") {
           shouldFocusRequestError.current = true;
           setRequestError(
             "Цей слот щойно зайняли. Ми оновили розклад. Оберіть інший час."
