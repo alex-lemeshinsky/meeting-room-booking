@@ -1,10 +1,12 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import { E2E_NOW_ISO } from "../../../e2e/support/e2e-clock.js";
 import { STAGE7_EMAIL_VERIFICATION_FIXTURES } from "../../../e2e/support/email-verification-fixtures.js";
 import { hashVerificationToken } from "../src/auth/email-verification/verification-token.js";
 import { Argon2PasswordHasher } from "../src/auth/password/argon2-password-hasher.js";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 
-const fixtureExpiry = new Date("2030-01-10T10:00:00.000Z");
+const fixtureExpiry = new Date(E2E_NOW_ISO);
+fixtureExpiry.setUTCDate(fixtureExpiry.getUTCDate() + 1);
 
 export async function seedE2eEmailVerificationFixtures(
   databaseUrl: string

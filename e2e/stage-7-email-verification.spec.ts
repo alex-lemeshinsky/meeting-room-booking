@@ -18,7 +18,7 @@ test.describe.serial("Stage 7 email verification", () => {
   test("confirms a desktop token only after the explicit action and rejects reuse", async ({
     page
   }) => {
-    const consoleErrors = collectUnexpectedConsoleErrors(page, [409]);
+    const diagnostics = collectBrowserDiagnostics(page);
     let verificationPosts = 0;
     let urlWhenPosted: string | undefined;
     page.on("request", (request) => {
@@ -51,14 +51,30 @@ test.describe.serial("Stage 7 email verification", () => {
     );
 
     await page.goto(`/verify-email?token=${STAGE7_DESKTOP_TOKEN}`);
+    const reuseResponsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "POST" &&
+        url.pathname === "/api/v1/auth/verify-email"
+      );
+    });
     await page.getByRole("button", { name: "Підтвердити email" }).click();
+    expect((await reuseResponsePromise).status()).toBe(409);
     await expect(page).toHaveURL("/verify-email");
     const usedAlert = page
       .getByRole("alert")
       .filter({ hasText: "Це посилання вже використано." });
     await expect(usedAlert).toContainText("Це посилання вже використано.");
     await expect(usedAlert).toBeFocused();
-    expect(consoleErrors).toEqual([]);
+    await expect
+      .poll(() => diagnostics.consoleErrors)
+      .toEqual([
+        {
+          source: "/api/v1/auth/verify-email",
+          text: "Failed to load resource: the server responded with a status of 409 (Conflict)"
+        }
+      ]);
+    expect(diagnostics.pageErrors).toEqual([]);
   });
 
   test("allows mobile reads, blocks booking until verification, then creates it", async ({
@@ -66,7 +82,7 @@ test.describe.serial("Stage 7 email verification", () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.clock.setFixedTime(E2E_NOW_ISO);
-    const consoleErrors = collectUnexpectedConsoleErrors(page, [403]);
+    const diagnostics = collectBrowserDiagnostics(page);
 
     await login(
       page,
@@ -103,7 +119,15 @@ test.describe.serial("Stage 7 email verification", () => {
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Назва").fill(MOBILE_BOOKING_TITLE);
     await dialog.getByLabel("Завершення").selectOption(MOBILE_BOOKING_END);
+    const deniedBookingResponsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "POST" &&
+        url.pathname === "/api/v1/bookings"
+      );
+    });
     await dialog.getByRole("button", { name: "Забронювати" }).click();
+    expect((await deniedBookingResponsePromise).status()).toBe(403);
 
     const alert = dialog.getByRole("alert");
     await expect(alert).toHaveText(VERIFICATION_ERROR);
@@ -150,24 +174,40 @@ test.describe.serial("Stage 7 email verification", () => {
     await expect(retryDialog).toHaveCount(0);
     await expect(page.getByText(MOBILE_BOOKING_TITLE)).toBeVisible();
     await assertDocumentContained(page);
-    expect(consoleErrors).toEqual([]);
+    await expect
+      .poll(() => diagnostics.consoleErrors)
+      .toEqual([
+        {
+          source: "/api/v1/bookings",
+          text: "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+        }
+      ]);
+    expect(diagnostics.pageErrors).toEqual([]);
   });
 });
 
-function collectUnexpectedConsoleErrors(
-  page: Page,
-  expectedHttpStatuses: number[]
-): string[] {
-  const messages: string[] = [];
+interface BrowserDiagnostics {
+  consoleErrors: { source: string; text: string }[];
+  pageErrors: string[];
+}
+
+function collectBrowserDiagnostics(page: Page): BrowserDiagnostics {
+  const diagnostics: BrowserDiagnostics = {
+    consoleErrors: [],
+    pageErrors: []
+  };
   page.on("console", (message) => {
     if (message.type() !== "error") return;
-
-    const isExpectedHttpFailure = expectedHttpStatuses.some((status) =>
-      message.text().includes(`status of ${status}`)
-    );
-    if (!isExpectedHttpFailure) messages.push(message.text());
+    const sourceUrl = message.location().url;
+    diagnostics.consoleErrors.push({
+      source: sourceUrl ? new URL(sourceUrl).pathname : "",
+      text: message.text()
+    });
   });
-  return messages;
+  page.on("pageerror", (error) => {
+    diagnostics.pageErrors.push(error.message);
+  });
+  return diagnostics;
 }
 
 async function login(

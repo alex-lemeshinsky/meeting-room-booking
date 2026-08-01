@@ -1,12 +1,14 @@
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { URL } from "node:url";
+import { chromium } from "@playwright/test";
 
 const projectName = `mrb-stage6-smoke-${process.pid}`;
 const baseUrl = "http://127.0.0.1:3000";
 const appOrigin = "http://localhost:3000";
 const expectedCapacities = [12, 16];
 const verificationProbe = "P".repeat(43);
+const genericLogProbe = "compose-generic-route-log-probe";
 const composeArgs = ["compose", "--project-name", projectName];
 
 function run(command, args, options = {}) {
@@ -136,28 +138,58 @@ async function printDiagnostics() {
   }
 }
 
+async function assertVerificationRoutePrivacy() {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const response = await page.goto(
+      `${baseUrl}/verify-email?token=${verificationProbe}`,
+      { waitUntil: "networkidle" }
+    );
+    if (!response?.ok()) {
+      throw new Error(
+        `verification page probe returned ${response?.status() ?? "no response"}`
+      );
+    }
+
+    const referrerPolicy = response.headers()["referrer-policy"];
+    if (referrerPolicy !== "no-referrer") {
+      throw new Error(
+        `verification page must return Referrer-Policy: no-referrer; received ${JSON.stringify(referrerPolicy ?? null)}`
+      );
+    }
+  } finally {
+    await browser.close();
+  }
+
+  const genericPage = await globalThis.fetch(
+    `${baseUrl}/login?probe=${genericLogProbe}`
+  );
+  if (!genericPage.ok) {
+    throw new Error(`generic page probe returned ${genericPage.status}`);
+  }
+
+  const proxyLogs = await run(
+    "docker",
+    [...composeArgs, "logs", "--no-color", "proxy"],
+    { capture: true }
+  );
+  const proxyOutput = proxyLogs.stdout + proxyLogs.stderr;
+  if (proxyOutput.includes(verificationProbe)) {
+    throw new Error("proxy logs exposed the verification token query");
+  }
+  if (!proxyOutput.includes(genericLogProbe)) {
+    throw new Error("proxy logs omitted the generic route probe");
+  }
+}
+
 async function main() {
   let attemptedStartup = false;
   try {
     attemptedStartup = true;
     await compose("up", "--build", "--wait");
     await waitForReady();
-    const verificationPage = await globalThis.fetch(
-      `${baseUrl}/verify-email?token=${verificationProbe}`
-    );
-    if (!verificationPage.ok) {
-      throw new Error(
-        `verification page probe returned ${verificationPage.status}`
-      );
-    }
-    const proxyLogs = await run(
-      "docker",
-      [...composeArgs, "logs", "--no-color", "proxy"],
-      { capture: true }
-    );
-    if ((proxyLogs.stdout + proxyLogs.stderr).includes(verificationProbe)) {
-      throw new Error("proxy logs exposed the verification token query");
-    }
+    await assertVerificationRoutePrivacy();
     await assertFilteredRooms(await login());
 
     await compose("restart", "db");
