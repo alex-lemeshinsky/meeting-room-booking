@@ -36,9 +36,30 @@ describe("OpenAPI document", () => {
     expect(document.paths["/api/v1/auth/login"]?.post).toBeDefined();
     expect(document.paths["/api/v1/auth/logout"]?.post).toBeDefined();
     expect(document.paths["/api/v1/auth/session"]?.get).toBeDefined();
+    expect(document.paths["/api/v1/auth/verify-email"]?.post).toBeDefined();
     expect(document.paths["/api/v1/rooms"]?.get).toBeDefined();
     expect(document.components?.schemas?.RegisterDto).toBeDefined();
     expect(document.components?.schemas?.AuthResponseDto).toBeDefined();
+    expect(document.components?.schemas?.VerifyEmailDto).toMatchObject({
+      required: ["token"],
+      properties: {
+        token: {
+          type: "string",
+          minLength: 43,
+          maxLength: 43,
+          pattern: "^[A-Za-z0-9_-]{43}$"
+        }
+      }
+    });
+    expect(document.components?.schemas?.VerifyEmailDto).not.toHaveProperty(
+      "properties.token.example"
+    );
+    expect(document.components?.schemas?.VerifyEmailResponseDto).toMatchObject({
+      required: ["verified"],
+      properties: {
+        verified: { type: "boolean", enum: [true] }
+      }
+    });
     expect(document.components?.schemas?.RoomDto).toBeDefined();
     expect(document.components?.schemas?.ApiErrorDto).toMatchObject({
       required: ["error"],
@@ -80,6 +101,27 @@ describe("OpenAPI document", () => {
     });
     expect(document.paths["/api/v1/auth/session"]?.get?.operationId).toBe(
       "getSession"
+    );
+    const verifyEmail = document.paths["/api/v1/auth/verify-email"]?.post;
+    expect(verifyEmail?.operationId).toBe("verifyEmail");
+    expect(verifyEmail?.requestBody).toMatchObject({
+      required: true,
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/VerifyEmailDto" }
+        }
+      }
+    });
+    expect(verifyEmail?.responses?.[200]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/VerifyEmailResponseDto" }
+        }
+      }
+    });
+    expectErrorResponses(
+      verifyEmail?.responses,
+      [400, 403, 409, 410, 415, 500]
     );
     expect(document.paths["/api/v1/rooms"]?.get?.operationId).toBe("listRooms");
     expectErrorResponses(

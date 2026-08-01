@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AuthController } from "../auth/auth.controller.js";
 import { AuthService } from "../auth/auth.service.js";
+import { EmailVerificationService } from "../auth/email-verification/email-verification.service.js";
 import { CsrfGuard } from "../auth/guards/csrf.guard.js";
 import { PreAuthMutationGuard } from "../auth/guards/pre-auth-mutation.guard.js";
 import { SessionGuard } from "../auth/guards/session.guard.js";
@@ -32,6 +33,7 @@ const allowRequest = { canActivate: () => true };
       useValue: { getOrThrow: () => "http://localhost:3000" }
     },
     { provide: AuthService, useValue: inertProvider },
+    { provide: EmailVerificationService, useValue: inertProvider },
     { provide: BookingsService, useValue: inertProvider },
     { provide: CookieService, useValue: inertProvider },
     { provide: HealthService, useValue: inertProvider },

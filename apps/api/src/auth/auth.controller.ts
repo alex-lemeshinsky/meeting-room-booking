@@ -27,6 +27,9 @@ import type { AuthenticatedRequest } from "./auth.types.js";
 import { AuthResponseDto } from "./dto/auth-response.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
 import { RegisterDto } from "./dto/register.dto.js";
+import { VerifyEmailDto } from "./dto/verify-email.dto.js";
+import { VerifyEmailResponseDto } from "./dto/verify-email-response.dto.js";
+import { EmailVerificationService } from "./email-verification/email-verification.service.js";
 import { CsrfGuard } from "./guards/csrf.guard.js";
 import { PreAuthMutationGuard } from "./guards/pre-auth-mutation.guard.js";
 import { SessionGuard } from "./guards/session.guard.js";
@@ -39,7 +42,9 @@ export class AuthController {
   constructor(
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(CookieService) private readonly cookies: CookieService,
-    @Inject(SessionService) private readonly sessions: SessionService
+    @Inject(SessionService) private readonly sessions: SessionService,
+    @Inject(EmailVerificationService)
+    private readonly emailVerification: EmailVerificationService
   ) {}
 
   @Post("register")
@@ -55,6 +60,22 @@ export class AuthController {
   @ApiResponse({ status: 500, type: ApiErrorDto })
   register(@Body() input: RegisterDto): Promise<AuthResponseDto> {
     return this.auth.register(input);
+  }
+
+  @Post("verify-email")
+  @HttpCode(200)
+  @UseGuards(PreAuthMutationGuard)
+  @ApiOperation({ operationId: "verifyEmail" })
+  @ApiBody({ type: VerifyEmailDto })
+  @ApiOkResponse({ type: VerifyEmailResponseDto })
+  @ApiResponse({ status: 400, type: ApiErrorDto })
+  @ApiResponse({ status: 403, type: ApiErrorDto })
+  @ApiResponse({ status: 409, type: ApiErrorDto })
+  @ApiResponse({ status: 410, type: ApiErrorDto })
+  @ApiResponse({ status: 415, type: ApiErrorDto })
+  @ApiResponse({ status: 500, type: ApiErrorDto })
+  verifyEmail(@Body() input: VerifyEmailDto): Promise<VerifyEmailResponseDto> {
+    return this.emailVerification.verify(input.token);
   }
 
   @Post("login")
