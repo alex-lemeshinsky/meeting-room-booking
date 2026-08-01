@@ -74,14 +74,14 @@ describe("POST /api/v1/bookings", () => {
     expect(missing.body.error).toMatchObject({ code: "ROOM_NOT_FOUND" });
   });
 
-  it("allows an unverified user to create a trimmed one-off booking", async () => {
+  it("allows a verified seeded user to create a trimmed one-off booking", async () => {
     const database = context.app.get(DatabaseService);
     await expect(
       database.user.findUniqueOrThrow({
         where: { id: OLENA_ID },
         select: { emailVerifiedAt: true }
       })
-    ).resolves.toEqual({ emailVerifiedAt: null });
+    ).resolves.toEqual({ emailVerifiedAt: expect.any(Date) });
 
     const response = await create(olena, {
       ...validPayload("2035-01-15T07:00:00.000Z"),
@@ -117,6 +117,39 @@ describe("POST /api/v1/bookings", () => {
       endAt: new Date("2035-01-15T07:30:00.000Z"),
       status: "ACTIVE"
     });
+  });
+
+  it("rejects a newly registered unverified user without creating a booking, then allows a verified retry", async () => {
+    const database = context.app.get(DatabaseService);
+    const email = "unverified-booker@example.com";
+    await request(context.app.getHttpServer())
+      .post("/api/v1/auth/register")
+      .set("Origin", APP_ORIGIN)
+      .send({ name: "Unverified Booker", email, password: "Rooms123!" })
+      .expect(201);
+    const user = await database.user.findUniqueOrThrow({
+      where: { emailNormalized: email },
+      select: { id: true, emailVerifiedAt: true }
+    });
+    expect(user.emailVerifiedAt).toBeNull();
+    const unverified = await login(context, email, "Rooms123!");
+    const payload = validPayload("2035-01-15T12:00:00.000Z");
+
+    const rejected = await create(unverified, payload).expect(403);
+    expect(rejected.body.error).toMatchObject({
+      code: "EMAIL_NOT_VERIFIED",
+      message: "Email verification is required"
+    });
+    await expect(
+      database.booking.count({ where: { userId: user.id } })
+    ).resolves.toBe(0);
+
+    await database.user.update({
+      where: { id: user.id },
+      data: { emailVerifiedAt: new Date("2035-01-15T06:00:00.000Z") }
+    });
+
+    await create(unverified, payload).expect(201);
   });
 
   it("maps an existing active overlap to BOOKING_CONFLICT", async () => {

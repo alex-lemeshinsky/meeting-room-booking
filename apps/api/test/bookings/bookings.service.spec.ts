@@ -65,6 +65,30 @@ describe("BookingsService", () => {
     expect(database.booking.create).not.toHaveBeenCalled();
   });
 
+  it("rejects an unverified owner before room lookup or booking insertion", async () => {
+    const database = databaseDouble({ emailVerifiedAt: null });
+    const service = new BookingsService(database, new FixedClock(NOW));
+
+    await expect(service.create(USER_ID, validInput())).rejects.toMatchObject({
+      status: 403,
+      code: "EMAIL_NOT_VERIFIED",
+      message: "Email verification is required"
+    });
+    expect(database.room.findUnique).not.toHaveBeenCalled();
+    expect(database.booking.create).not.toHaveBeenCalled();
+  });
+
+  it("fails loudly when the authenticated booking owner no longer exists", async () => {
+    const database = databaseDouble({ ownerExists: false });
+    const service = new BookingsService(database, new FixedClock(NOW));
+
+    await expect(service.create(USER_ID, validInput())).rejects.toThrow(
+      "Authenticated booking owner no longer exists"
+    );
+    expect(database.room.findUnique).not.toHaveBeenCalled();
+    expect(database.booking.create).not.toHaveBeenCalled();
+  });
+
   it("maps only the active-booking exclusion constraint to BOOKING_CONFLICT", async () => {
     const database = databaseDouble({
       createError: {
@@ -296,6 +320,8 @@ describe("BookingsService", () => {
 
 function databaseDouble(options?: {
   roomExists?: boolean;
+  ownerExists?: boolean;
+  emailVerifiedAt?: Date | null;
   createError?: unknown;
   cancellationBooking?: {
     id: string;
@@ -328,10 +354,32 @@ function databaseDouble(options?: {
       .fn()
       .mockResolvedValue(options?.roomExists === false ? null : { id: ROOM_ID })
   };
+  const user = {
+    findUnique: vi.fn().mockResolvedValue(
+      options?.ownerExists === false
+        ? null
+        : {
+            emailVerifiedAt:
+              options?.emailVerifiedAt === undefined
+                ? NOW
+                : options.emailVerifiedAt
+          }
+    )
+  };
 
-  return { booking, room } as unknown as DatabaseService & {
+  return { booking, room, user } as unknown as DatabaseService & {
     booking: typeof booking;
     room: typeof room;
+    user: typeof user;
+  };
+}
+
+function validInput() {
+  return {
+    roomId: ROOM_ID,
+    title: "Планування",
+    startAt: "2035-01-15T07:00:00.000Z",
+    endAt: "2035-01-15T07:30:00.000Z"
   };
 }
 

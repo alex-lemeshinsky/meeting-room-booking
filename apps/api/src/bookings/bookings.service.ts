@@ -74,6 +74,20 @@ export class BookingsService {
     input: CreateBookingInput
   ): Promise<CreateBookingResponse> {
     const booking = validateCreateBooking(input, this.clock.now());
+    const owner = await this.database.user.findUnique({
+      where: { id: userId },
+      select: { emailVerifiedAt: true }
+    });
+    if (owner === null) {
+      throw new Error("Authenticated booking owner no longer exists");
+    }
+    if (owner.emailVerifiedAt === null) {
+      throw new AppError(
+        403,
+        "EMAIL_NOT_VERIFIED",
+        "Email verification is required"
+      );
+    }
     const room = await this.database.room.findUnique({
       where: { id: input.roomId },
       select: { id: true }
@@ -82,7 +96,6 @@ export class BookingsService {
       throw new AppError(404, "ROOM_NOT_FOUND", "Room not found");
     }
 
-    // TODO(Stage 7): reject unverified users here with EMAIL_NOT_VERIFIED.
     try {
       const created = await this.database.booking.create({
         data: {
