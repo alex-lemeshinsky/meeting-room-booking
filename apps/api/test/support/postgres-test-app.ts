@@ -9,6 +9,10 @@ import {
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { AppModule } from "../../src/app.module.js";
+import {
+  EMAIL_VERIFICATION_TOKEN_GENERATOR,
+  type EmailVerificationTokenGenerator
+} from "../../src/auth/email-verification/verification-token.js";
 import { configureApp, createApp } from "../../src/bootstrap.js";
 
 export interface PostgresTestApp {
@@ -21,6 +25,7 @@ export interface PostgresTestApp {
 export interface PostgresTestAppOptions {
   seed?: boolean;
   clock?: Clock;
+  verificationTokenGenerator?: EmailVerificationTokenGenerator;
 }
 
 export function runPrismaCommand(args: string[], label: string): void {
@@ -53,13 +58,17 @@ export async function startPostgresTestApp(
       runPrismaCommand(["db", "seed"], "seed");
     }
 
-    if (options.clock) {
-      const module = await Test.createTestingModule({
-        imports: [AppModule]
-      })
-        .overrideProvider(CLOCK)
-        .useValue(options.clock)
-        .compile();
+    if (options.clock || options.verificationTokenGenerator) {
+      let builder = Test.createTestingModule({ imports: [AppModule] });
+      if (options.clock) {
+        builder = builder.overrideProvider(CLOCK).useValue(options.clock);
+      }
+      if (options.verificationTokenGenerator) {
+        builder = builder
+          .overrideProvider(EMAIL_VERIFICATION_TOKEN_GENERATOR)
+          .useValue(options.verificationTokenGenerator);
+      }
+      const module = await builder.compile();
       app = configureApp(module.createNestApplication({ bufferLogs: true }));
     } else {
       app = await createApp();

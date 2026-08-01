@@ -4,6 +4,10 @@ import {
   hashSecret
 } from "../../src/auth/session/session-crypto.js";
 import { SessionService } from "../../src/auth/session/session.service.js";
+import {
+  hashVerificationToken,
+  type EmailVerificationTokenGenerator
+} from "../../src/auth/email-verification/verification-token.js";
 import { FixedClock, type Clock } from "@mrb/time";
 import type { PostgresTestApp } from "../support/postgres-test-app.js";
 import { startPostgresTestApp } from "../support/postgres-test-app.js";
@@ -12,12 +16,18 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const APP_ORIGIN = "http://127.0.0.1:3000";
 const INITIAL_TIME = new Date("2026-07-27T12:00:00.000Z");
+const REGISTRATION_TIME = new Date("2026-08-01T09:00:00.000Z");
 
 describe("POST /api/v1/auth/register", () => {
   let context: PostgresTestApp;
+  let tokenGenerator: SequenceVerificationTokenGenerator;
 
   beforeAll(async () => {
-    context = await startPostgresTestApp();
+    tokenGenerator = new SequenceVerificationTokenGenerator();
+    context = await startPostgresTestApp({
+      clock: new FixedClock(REGISTRATION_TIME),
+      verificationTokenGenerator: tokenGenerator
+    });
   }, 120_000);
 
   afterAll(async () => context.stop());
@@ -49,6 +59,16 @@ describe("POST /api/v1/auth/register", () => {
     expect(user.name).toBe("Олена");
     expect(user.passwordHash).toMatch(/^\$argon2id\$/);
     expect(user.passwordHash).not.toContain("Rooms123!");
+    expect(user.emailVerifiedAt).toBeNull();
+    const rawToken = tokenGenerator.generated.at(-1);
+    expect(rawToken).toBeDefined();
+    const token = await database.emailVerificationToken.findUniqueOrThrow({
+      where: { tokenHash: hashVerificationToken(rawToken ?? "") }
+    });
+    expect(token.userId).toBe(user.id);
+    expect(token.expiresAt.toISOString()).toBe("2026-08-02T09:00:00.000Z");
+    expect(token.usedAt).toBeNull();
+    expect(JSON.stringify(token)).not.toContain(rawToken);
     expect(await database.session.count()).toBe(0);
   });
 
@@ -84,6 +104,37 @@ describe("POST /api/v1/auth/register", () => {
           fields: { email: ["Обліковий запис із цим email уже існує"] }
         });
       });
+  });
+
+  it("rolls back user creation when token persistence fails", async () => {
+    const database = context.app.get(DatabaseService);
+    const existingUser = await database.user.findUniqueOrThrow({
+      where: { emailNormalized: "olena@example.com" }
+    });
+    const collidingRawToken = tokenGenerator.peek();
+    await database.emailVerificationToken.create({
+      data: {
+        userId: existingUser.id,
+        tokenHash: hashVerificationToken(collidingRawToken),
+        expiresAt: new Date("2026-08-02T09:00:00.000Z")
+      }
+    });
+
+    await request(context.app.getHttpServer())
+      .post("/api/v1/auth/register")
+      .set("Origin", APP_ORIGIN)
+      .send({
+        name: "Відкочена Олена",
+        email: "rollback@example.com",
+        password: "Rooms123!"
+      })
+      .expect(500);
+
+    expect(
+      await database.user.findUnique({
+        where: { emailNormalized: "rollback@example.com" }
+      })
+    ).toBeNull();
   });
 });
 
@@ -442,5 +493,25 @@ async function settle<T>(
     return { status: "fulfilled", value: await promise };
   } catch (reason) {
     return { status: "rejected", reason };
+  }
+}
+
+class SequenceVerificationTokenGenerator implements EmailVerificationTokenGenerator {
+  readonly generated: string[] = [];
+  private index = 0;
+
+  generate(): string {
+    const token = this.tokenAt(this.index);
+    this.index += 1;
+    this.generated.push(token);
+    return token;
+  }
+
+  peek(): string {
+    return this.tokenAt(this.index);
+  }
+
+  private tokenAt(index: number): string {
+    return String.fromCharCode("A".charCodeAt(0) + index).repeat(43);
   }
 }

@@ -9,6 +9,11 @@ import { Argon2PasswordHasher } from "./password/argon2-password-hasher.js";
 import { PASSWORD_HASHER } from "./password/password-hasher.js";
 import { CookieService } from "./session/cookie.service.js";
 import { SessionService } from "./session/session.service.js";
+import { EmailVerificationService } from "./email-verification/email-verification.service.js";
+import {
+  EMAIL_VERIFICATION_TOKEN_GENERATOR,
+  NodeEmailVerificationTokenGenerator
+} from "./email-verification/verification-token.js";
 
 @Module({
   controllers: [AuthController],
@@ -21,6 +26,11 @@ import { SessionService } from "./session/session.service.js";
     CsrfGuard,
     SessionGuard,
     SessionService,
+    EmailVerificationService,
+    {
+      provide: EMAIL_VERIFICATION_TOKEN_GENERATOR,
+      useClass: NodeEmailVerificationTokenGenerator
+    },
     { provide: PASSWORD_HASHER, useClass: Argon2PasswordHasher }
   ]
 })

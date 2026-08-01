@@ -16,6 +16,8 @@ import {
   SessionService,
   type CreatedSession
 } from "./session/session.service.js";
+import { DatabaseService } from "../database/database.service.js";
+import { EmailVerificationService } from "./email-verification/email-verification.service.js";
 
 export interface LoginResult {
   user: PublicUser;
@@ -27,17 +29,32 @@ export class AuthService {
   constructor(
     @Inject(UsersService) private readonly users: UsersService,
     @Inject(PASSWORD_HASHER) private readonly passwords: PasswordHasher,
-    @Inject(SessionService) private readonly sessions: SessionService
+    @Inject(SessionService) private readonly sessions: SessionService,
+    @Inject(DatabaseService) private readonly database: DatabaseService,
+    @Inject(EmailVerificationService)
+    private readonly emailVerification: EmailVerificationService
   ) {}
 
   async register(input: RegisterDto): Promise<AuthResponseDto> {
-    const user = await this.users.createUser({
-      name: input.name,
-      emailNormalized: normalizeEmail(input.email),
-      passwordHash: await this.passwords.hash(input.password)
+    const passwordHash = await this.passwords.hash(input.password);
+    const result = await this.database.$transaction(async (transaction) => {
+      const user = await this.users.createUser(
+        {
+          name: input.name,
+          emailNormalized: normalizeEmail(input.email),
+          passwordHash
+        },
+        transaction
+      );
+      const verification = await this.emailVerification.issueForUser(
+        user.id,
+        transaction
+      );
+      return { user, rawToken: verification.rawToken };
     });
 
-    return { user: this.users.toPublicUser(user) };
+    this.emailVerification.logDevelopmentLink(result.rawToken);
+    return { user: this.users.toPublicUser(result.user) };
   }
 
   async login(input: LoginDto): Promise<LoginResult> {

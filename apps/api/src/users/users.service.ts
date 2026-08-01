@@ -15,6 +15,8 @@ export interface PublicUser {
   email: string;
 }
 
+type UserWriter = Pick<Prisma.TransactionClient, "user">;
+
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -29,9 +31,12 @@ export class UsersService {
     return this.database.user.findUnique({ where: { emailNormalized } });
   }
 
-  async createUser(input: CreateUserInput): Promise<User> {
+  async createUser(
+    input: CreateUserInput,
+    client: UserWriter = this.database
+  ): Promise<User> {
     try {
-      return await this.database.user.create({ data: input });
+      return await client.user.create({ data: input });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
