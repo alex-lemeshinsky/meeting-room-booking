@@ -67,11 +67,9 @@ describe("EmailVerificationCard", () => {
         "",
         "/verify-email"
       );
-      return (
-        new Promise<Response>((resolve) => {
-          resolveRequest = resolve;
-        })
-      );
+      return new Promise<Response>((resolve) => {
+        resolveRequest = resolve;
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();

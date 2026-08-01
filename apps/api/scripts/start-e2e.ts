@@ -4,6 +4,7 @@ import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer
 } from "@testcontainers/postgresql";
+import { seedE2eEmailVerificationFixtures } from "./e2e-email-verification-fixtures.js";
 import { E2eLifecycle, getE2eApiExitDiagnostic } from "./e2e-launcher.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
@@ -49,6 +50,7 @@ try {
 
       runPrisma(["migrate", "deploy"], "migration", commandOptions);
       runPrisma(["db", "seed"], "seed", commandOptions);
+      await seedE2eEmailVerificationFixtures(databaseUrl);
 
       const api = spawn(
         "pnpm",

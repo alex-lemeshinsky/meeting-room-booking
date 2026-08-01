@@ -6,6 +6,7 @@ const projectName = `mrb-stage6-smoke-${process.pid}`;
 const baseUrl = "http://127.0.0.1:3000";
 const appOrigin = "http://localhost:3000";
 const expectedCapacities = [12, 16];
+const verificationProbe = "P".repeat(43);
 const composeArgs = ["compose", "--project-name", projectName];
 
 function run(command, args, options = {}) {
@@ -117,6 +118,7 @@ async function assertFilteredRooms(cookies) {
 
 function redact(value) {
   return value
+    .replace(/([?&]token=)[^&\s]+/gi, "$1[REDACTED]")
     .replace(/(mrb_(?:session|csrf)=)[^;\s]+/gi, "$1[REDACTED]")
     .replace(/("?password"?\s*[:=]\s*)[^,\s}]+/gi, "$1[REDACTED]");
 }
@@ -140,6 +142,22 @@ async function main() {
     attemptedStartup = true;
     await compose("up", "--build", "--wait");
     await waitForReady();
+    const verificationPage = await globalThis.fetch(
+      `${baseUrl}/verify-email?token=${verificationProbe}`
+    );
+    if (!verificationPage.ok) {
+      throw new Error(
+        `verification page probe returned ${verificationPage.status}`
+      );
+    }
+    const proxyLogs = await run(
+      "docker",
+      [...composeArgs, "logs", "--no-color", "proxy"],
+      { capture: true }
+    );
+    if ((proxyLogs.stdout + proxyLogs.stderr).includes(verificationProbe)) {
+      throw new Error("proxy logs exposed the verification token query");
+    }
     await assertFilteredRooms(await login());
 
     await compose("restart", "db");

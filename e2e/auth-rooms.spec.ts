@@ -36,6 +36,9 @@ test.describe.serial("authentication and rooms", () => {
     await page.getByRole("button", { name: "Зареєструватися" }).click();
 
     await expect(page).toHaveURL(/\/login\?registered=1/);
+    await expect(page.getByRole("status")).toHaveText(
+      "Обліковий запис створено. Посилання для підтвердження email доступне в журналі API для локальної розробки. Ви вже можете увійти й переглядати розклад."
+    );
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Пароль").fill("Journey123!");
     await page.getByRole("button", { name: "Увійти" }).click();
