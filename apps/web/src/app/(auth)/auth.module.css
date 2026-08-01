@@ -79,7 +79,8 @@
 
 .input:focus-visible,
 .primaryAction:focus-visible,
-.switchPrompt a:focus-visible {
+.switchPrompt a:focus-visible,
+a.switchPrompt:focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
@@ -91,6 +92,8 @@
 
 .requestError,
 .success {
+  display: grid;
+  gap: var(--space-3);
   margin: 0;
   padding: var(--space-3);
   border-radius: var(--radius-card);
@@ -143,28 +146,13 @@
   outline-offset: 2px;
 }
 
-.resultAction {
-  display: inline-flex;
-  min-height: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  margin-top: var(--space-3);
-  padding: 0 var(--space-2);
-  color: currentColor;
-  font-weight: 650;
-}
-
-.resultAction:focus-visible {
-  outline: 3px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
 .switchPrompt {
   margin: 0;
   color: var(--color-text-secondary);
 }
 
-.switchPrompt a {
+.switchPrompt a,
+a.switchPrompt {
   display: inline-flex;
   min-width: 2.75rem;
   min-height: 2.75rem;

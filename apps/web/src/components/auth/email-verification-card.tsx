@@ -113,7 +113,7 @@ export function EmailVerificationCard() {
           Email підтверджено
         </h2>
         <p>Тепер ви можете створювати бронювання.</p>
-        <Link className={styles.resultAction} href="/login">
+        <Link className={styles.switchPrompt} href="/login">
           Увійти
         </Link>
       </div>
@@ -130,14 +130,14 @@ export function EmailVerificationCard() {
       <p>{errorMessages[state.code]}</p>
       {state.code === "unexpected" ? (
         <button
-          className={styles.resultAction}
+          className={styles.primaryAction}
           onClick={confirmEmail}
           type="button"
         >
           Спробувати ще раз
         </button>
       ) : (
-        <Link className={styles.resultAction} href="/login">
+        <Link className={styles.switchPrompt} href="/login">
           Увійти
         </Link>
       )}

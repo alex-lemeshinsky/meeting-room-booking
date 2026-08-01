@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import styles from "../../app/(auth)/auth.module.css";
 import { EmailVerificationCard } from "./email-verification-card";
 
 const validToken = "A".repeat(43);
@@ -34,7 +35,15 @@ describe("EmailVerificationCard", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it.each([null, "not-a-token"])(
+  it.each([
+    null,
+    "not-a-token",
+    "A".repeat(42),
+    "A".repeat(44),
+    `${"A".repeat(42)}+`,
+    `${"A".repeat(42)}/`,
+    `${"A".repeat(42)}=`
+  ])(
     "shows an invalid-link result for %s without a submit action",
     (invalidToken) => {
       token = invalidToken;
@@ -51,13 +60,19 @@ describe("EmailVerificationCard", () => {
 
   it("scrubs the URL before posting the token and shows pending state", async () => {
     let resolveRequest: ((response: Response) => void) | undefined;
-    const fetchMock = vi.fn().mockImplementation(
-      () =>
+    const replaceState = vi.spyOn(window.history, "replaceState");
+    const fetchMock = vi.fn().mockImplementation(() => {
+      expect(replaceState).toHaveBeenCalledWith(
+        window.history.state,
+        "",
+        "/verify-email"
+      );
+      return (
         new Promise<Response>((resolve) => {
           resolveRequest = resolve;
         })
-    );
-    const replaceState = vi.spyOn(window.history, "replaceState");
+      );
+    });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
     render(<EmailVerificationCard />);
@@ -74,6 +89,9 @@ describe("EmailVerificationCard", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: validToken })
     });
+    expect(replaceState.mock.invocationCallOrder[0]).toBeLessThan(
+      fetchMock.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY
+    );
     expect(
       screen.getByRole("button", { name: "Підтверджуємо…" })
     ).toBeDisabled();
@@ -125,6 +143,13 @@ describe("EmailVerificationCard", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(message);
     expect(alert).toHaveFocus();
+    expect(
+      screen.queryByRole("button", { name: "Спробувати ще раз" })
+    ).toBeNull();
+    expect(styles.switchPrompt).toBeDefined();
+    expect(screen.getByRole("link", { name: "Увійти" })).toHaveClass(
+      styles.switchPrompt ?? "switchPrompt"
+    );
   });
 
   it("reuses the scrubbed in-memory token only after an unexpected error", async () => {
