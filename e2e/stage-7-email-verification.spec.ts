@@ -15,6 +15,10 @@ const MOBILE_BOOKING_END = "2030-01-10T10:30:00.000Z";
 test.describe.serial("Stage 7 email verification", () => {
   test.use({ timezoneId: "Europe/Kyiv" });
 
+  test("disables retries for the stateful verification journey", () => {
+    expect(test.info().project.retries).toBe(0);
+  });
+
   test("confirms a desktop token only after the explicit action and rejects reuse", async ({
     page
   }) => {

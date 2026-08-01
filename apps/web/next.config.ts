@@ -10,10 +10,23 @@ const workspaceRoot = path.resolve(
 
 const config: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
+  logging: {
+    incomingRequests: {
+      ignore: [/^\/verify-email(?:\?|$)/]
+    }
+  },
   output: "standalone",
   outputFileTracingRoot: workspaceRoot,
   turbopack: {
     root: workspaceRoot
+  },
+  async headers() {
+    return [
+      {
+        source: "/verify-email",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }]
+      }
+    ];
   },
   async rewrites() {
     return [

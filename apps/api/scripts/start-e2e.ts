@@ -54,7 +54,7 @@ try {
 
       const api = spawn(
         "pnpm",
-        ["--filter", "@mrb/api", "exec", "tsx", "src/main.ts"],
+        ["--filter", "@mrb/api", "exec", "tsx", "scripts/e2e-main.ts"],
         commandOptions
       );
       lifecycle.attachApi(api);

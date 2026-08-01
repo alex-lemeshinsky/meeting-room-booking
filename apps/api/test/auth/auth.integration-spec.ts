@@ -21,6 +21,7 @@ const REGISTERED_EMAIL = "unverified@example.com";
 
 describe("POST /api/v1/auth/register", () => {
   let context: PostgresTestApp;
+  let registrationResponse: request.Response;
   let tokenGenerator: SequenceVerificationTokenGenerator;
   let registeredRawToken: string;
   let registeredUserId: string;
@@ -32,22 +33,35 @@ describe("POST /api/v1/auth/register", () => {
       clock: new FixedClock(REGISTRATION_TIME),
       verificationTokenGenerator: tokenGenerator
     });
+
+    registrationResponse = await request(context.app.getHttpServer())
+      .post("/api/v1/auth/register")
+      .set("Origin", APP_ORIGIN)
+      .send({
+        name: "  Олена  ",
+        email: " UNVERIFIED@example.com ",
+        password: "Rooms123!"
+      });
+    if (registrationResponse.status !== 201) {
+      throw new Error(
+        `Verification fixture registration failed with ${registrationResponse.status}`
+      );
+    }
+
+    const database = context.app.get(DatabaseService);
+    const user = await database.user.findUniqueOrThrow({
+      where: { emailNormalized: REGISTERED_EMAIL }
+    });
+    registeredUserId = user.id;
+    const rawToken = tokenGenerator.generated.at(-1);
+    if (!rawToken) throw new Error("Expected a generated verification token");
+    registeredRawToken = rawToken;
   }, 120_000);
 
   afterAll(async () => context.stop());
 
   it("creates a normalized user with an Argon2id password hash", async () => {
-    const response = await request(context.app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .set("Origin", "http://127.0.0.1:3000")
-      .send({
-        name: "  Олена  ",
-        email: " UNVERIFIED@example.com ",
-        password: "Rooms123!"
-      })
-      .expect(201);
-
-    expect(response.body).toEqual({
+    expect(registrationResponse.body).toEqual({
       user: {
         id: expect.any(String),
         name: "Олена",
@@ -59,23 +73,18 @@ describe("POST /api/v1/auth/register", () => {
     const user = await database.user.findUniqueOrThrow({
       where: { emailNormalized: REGISTERED_EMAIL }
     });
-    registeredUserId = user.id;
 
     expect(user.name).toBe("Олена");
     expect(user.passwordHash).toMatch(/^\$argon2id\$/);
     expect(user.passwordHash).not.toContain("Rooms123!");
     expect(user.emailVerifiedAt).toBeNull();
-    const rawToken = tokenGenerator.generated.at(-1);
-    expect(rawToken).toBeDefined();
-    if (!rawToken) throw new Error("Expected a generated verification token");
-    registeredRawToken = rawToken;
     const token = await database.emailVerificationToken.findUniqueOrThrow({
-      where: { tokenHash: hashVerificationToken(rawToken) }
+      where: { tokenHash: hashVerificationToken(registeredRawToken) }
     });
     expect(token.userId).toBe(user.id);
     expect(token.expiresAt.toISOString()).toBe("2026-08-02T09:00:00.000Z");
     expect(token.usedAt).toBeNull();
-    expect(JSON.stringify(token)).not.toContain(rawToken);
+    expect(JSON.stringify(token)).not.toContain(registeredRawToken);
     expect(await database.session.count()).toBe(0);
   });
 
@@ -209,12 +218,21 @@ describe("POST /api/v1/auth/register", () => {
   it("returns stable errors for invalid, expired, and reused tokens", async () => {
     const database = context.app.get(DatabaseService);
     const expiredRawToken = "E".repeat(43);
-    await database.emailVerificationToken.create({
-      data: {
-        userId: registeredUserId,
-        tokenHash: hashVerificationToken(expiredRawToken),
-        expiresAt: REGISTRATION_TIME
-      }
+    const usedRawToken = "U".repeat(43);
+    await database.emailVerificationToken.createMany({
+      data: [
+        {
+          userId: registeredUserId,
+          tokenHash: hashVerificationToken(expiredRawToken),
+          expiresAt: REGISTRATION_TIME
+        },
+        {
+          userId: registeredUserId,
+          tokenHash: hashVerificationToken(usedRawToken),
+          expiresAt: new Date("2026-08-02T09:00:00.000Z"),
+          usedAt: REGISTRATION_TIME
+        }
+      ]
     });
     const server = context.app.getHttpServer();
 
@@ -231,7 +249,7 @@ describe("POST /api/v1/auth/register", () => {
     const reused = await request(server)
       .post("/api/v1/auth/verify-email")
       .set("Origin", APP_ORIGIN)
-      .send({ token: registeredRawToken })
+      .send({ token: usedRawToken })
       .expect(409);
 
     expect(invalid.body.error).toMatchObject({

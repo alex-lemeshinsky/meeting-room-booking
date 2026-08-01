@@ -8,6 +8,17 @@ export default defineConfig({
   workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
+  projects: [
+    {
+      name: "default",
+      testIgnore: /stage-7-email-verification\.spec\.ts/
+    },
+    {
+      name: "stage-7-email-verification",
+      retries: 0,
+      testMatch: /stage-7-email-verification\.spec\.ts/
+    }
+  ],
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
   use: {
     baseURL: "http://127.0.0.1:3000",
