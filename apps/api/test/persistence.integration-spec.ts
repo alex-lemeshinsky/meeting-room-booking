@@ -20,10 +20,15 @@ describe("auth and rooms persistence", () => {
       SELECT table_name AS name
       FROM information_schema.tables
       WHERE table_schema = 'public'
-        AND table_name IN ('users', 'sessions', 'rooms')
+        AND table_name IN ('users', 'sessions', 'rooms', 'email_verification_tokens')
       ORDER BY table_name
     `;
 
-    expect(rows.map((row) => row.name)).toEqual(["rooms", "sessions", "users"]);
+    expect(rows.map((row) => row.name)).toEqual([
+      "email_verification_tokens",
+      "rooms",
+      "sessions",
+      "users"
+    ]);
   });
 });

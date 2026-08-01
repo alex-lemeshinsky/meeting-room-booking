@@ -23,6 +23,8 @@ const users = [
   }
 ] as const;
 
+const seedVerifiedAt = new Date("2026-07-27T00:00:00.000Z");
+
 const rooms = [
   ["10000000-0000-4000-8000-000000000001", "Арсенал", 1, 4],
   ["10000000-0000-4000-8000-000000000002", "Дніпро", 1, 6],
@@ -56,11 +58,16 @@ async function seed(): Promise<void> {
     });
     await database.user.upsert({
       where: { id: user.id },
-      update: { name: user.name, emailNormalized: user.emailNormalized },
+      update: {
+        name: user.name,
+        emailNormalized: user.emailNormalized,
+        emailVerifiedAt: seedVerifiedAt
+      },
       create: {
         id: user.id,
         name: user.name,
         emailNormalized: user.emailNormalized,
+        emailVerifiedAt: seedVerifiedAt,
         passwordHash:
           existing?.passwordHash ?? (await passwords.hash(user.password))
       }

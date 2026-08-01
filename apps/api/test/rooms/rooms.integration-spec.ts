@@ -8,6 +8,10 @@ import {
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+const OLENA_ID = "00000000-0000-4000-8000-000000000001";
+const ALEX_ID = "00000000-0000-4000-8000-000000000002";
+const seedVerifiedAt = new Date("2026-07-27T00:00:00.000Z");
+
 describe("GET /api/v1/rooms", () => {
   let context: PostgresTestApp;
   const scheduleRoomId = "10000000-0000-4000-8000-000000000002";
@@ -199,10 +203,20 @@ describe("GET /api/v1/rooms", () => {
     expect(bookingsAfter.some((booking) => booking.startAt > now)).toBe(true);
     await expect(
       database.user.findUniqueOrThrow({
-        where: { id: "00000000-0000-4000-8000-000000000001" },
+        where: { id: OLENA_ID },
         select: { passwordHash: true }
       })
     ).resolves.toEqual({ passwordHash: "existing-password-hash" });
+    await expect(
+      database.user.findMany({
+        where: { id: { in: [OLENA_ID, ALEX_ID] } },
+        orderBy: { id: "asc" },
+        select: { emailVerifiedAt: true }
+      })
+    ).resolves.toEqual([
+      { emailVerifiedAt: seedVerifiedAt },
+      { emailVerifiedAt: seedVerifiedAt }
+    ]);
   });
 
   describe("GET /api/v1/rooms/:roomId/schedule", () => {
