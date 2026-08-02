@@ -20,15 +20,50 @@ describe("auth and rooms persistence", () => {
       SELECT table_name AS name
       FROM information_schema.tables
       WHERE table_schema = 'public'
-        AND table_name IN ('users', 'sessions', 'rooms', 'email_verification_tokens')
+        AND table_name IN (
+          'users',
+          'sessions',
+          'rooms',
+          'email_verification_tokens',
+          'bookings',
+          'booking_series'
+        )
       ORDER BY table_name
     `;
 
     expect(rows.map((row) => row.name)).toEqual([
+      "booking_series",
+      "bookings",
       "email_verification_tokens",
       "rooms",
       "sessions",
       "users"
     ]);
+
+    const constraints = await database.$queryRaw<Array<{ name: string }>>`
+      SELECT conname AS name
+      FROM pg_constraint
+      WHERE conname IN (
+        'booking_series_duration_minutes_check',
+        'booking_series_occurrence_count_check',
+        'booking_series_office_timezone_check',
+        'bookings_series_occurrence_pair_check',
+        'bookings_series_occurrence_index_check',
+        'bookings_series_id_occurrence_index_key'
+      )
+      ORDER BY conname
+    `;
+
+    const constraintNames = constraints.map((constraint) => constraint.name);
+    expect(constraintNames).toEqual(
+      expect.arrayContaining([
+        "booking_series_duration_minutes_check",
+        "booking_series_occurrence_count_check",
+        "booking_series_office_timezone_check",
+        "bookings_series_occurrence_pair_check",
+        "bookings_series_occurrence_index_check",
+        "bookings_series_id_occurrence_index_key"
+      ])
+    );
   });
 });

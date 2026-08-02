@@ -12,6 +12,10 @@ enum BookingStatus {
   CANCELLED
 }
 
+enum RecurrenceRule {
+  WEEKLY
+}
+
 model User {
   id                 String                   @id @default(uuid()) @db.Uuid
   name               String
@@ -24,6 +28,7 @@ model User {
   sessions           Session[]
   verificationTokens EmailVerificationToken[]
   bookings           Booking[]
+  bookingSeries      BookingSeries[]
 
   @@map("users")
 }
@@ -59,31 +64,57 @@ model EmailVerificationToken {
 }
 
 model Room {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String
-  floor     Int
-  capacity  Int
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  bookings  Booking[]
+  id            String          @id @default(uuid()) @db.Uuid
+  name          String
+  floor         Int
+  capacity      Int
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  bookings      Booking[]
+  bookingSeries BookingSeries[]
 
   @@map("rooms")
 }
 
-model Booking {
-  id          String        @id @default(uuid()) @db.Uuid
-  roomId      String        @map("room_id") @db.Uuid
-  userId      String        @map("user_id") @db.Uuid
-  title       String        @db.VarChar(100)
-  startAt     DateTime      @map("start_at") @db.Timestamptz(3)
-  endAt       DateTime      @map("end_at") @db.Timestamptz(3)
-  status      BookingStatus @default(ACTIVE)
-  cancelledAt DateTime?     @map("cancelled_at") @db.Timestamptz(3)
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-  room        Room          @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+model BookingSeries {
+  id                  String         @id @default(uuid()) @db.Uuid
+  userId              String         @map("user_id") @db.Uuid
+  roomId              String         @map("room_id") @db.Uuid
+  title               String         @db.VarChar(100)
+  officeTimezone      String         @default("Europe/Kyiv") @map("office_timezone")
+  firstLocalDate      DateTime       @map("first_local_date") @db.Date
+  firstLocalStartTime DateTime       @map("first_local_start_time") @db.Time(0)
+  durationMinutes     Int            @map("duration_minutes")
+  occurrenceCount     Int            @map("occurrence_count")
+  rule                RecurrenceRule @default(WEEKLY)
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  user                User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  room                Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  bookings            Booking[]
 
+  @@index([userId, createdAt])
+  @@index([roomId, createdAt])
+  @@map("booking_series")
+}
+
+model Booking {
+  id              String         @id @default(uuid()) @db.Uuid
+  roomId          String         @map("room_id") @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  title           String         @db.VarChar(100)
+  startAt         DateTime       @map("start_at") @db.Timestamptz(3)
+  endAt           DateTime       @map("end_at") @db.Timestamptz(3)
+  status          BookingStatus  @default(ACTIVE)
+  cancelledAt     DateTime?      @map("cancelled_at") @db.Timestamptz(3)
+  seriesId        String?        @map("series_id") @db.Uuid
+  occurrenceIndex Int?           @map("occurrence_index")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  room            Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  series          BookingSeries? @relation(fields: [seriesId], references: [id], onDelete: Restrict)
+
+  @@unique([seriesId, occurrenceIndex], map: "bookings_series_id_occurrence_index_key")
   @@index([roomId, startAt])
   @@index([userId, startAt])
   @@map("bookings")
