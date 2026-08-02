@@ -79,6 +79,10 @@ describe("OpenAPI document", () => {
             items: { type: "string" }
           }
         },
+        details: {
+          type: "object",
+          additionalProperties: true
+        },
         requestId: { type: "string" }
       }
     });
@@ -312,6 +316,125 @@ describe("OpenAPI document", () => {
     expect(JSON.stringify(operation)).not.toMatch(
       /passwordHash|tokenHash|csrfTokenHash|sessionSecret|csrfSecret/
     );
+  });
+
+  it("publishes atomic recurring-series creation and typed conflict details", () => {
+    const document = createOpenApiDocument(app);
+    const operation = document.paths["/api/v1/booking-series"]?.post;
+
+    expect(operation?.operationId).toBe("createBookingSeries");
+    expect(operation?.security).toContainEqual({ cookie: [] });
+    expect(operation?.parameters).toContainEqual({
+      in: "header",
+      name: "X-CSRF-Token",
+      required: true,
+      schema: { type: "string" }
+    });
+    expect(operation?.requestBody).toMatchObject({
+      required: true,
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/CreateBookingSeriesDto" }
+        }
+      }
+    });
+    expect(operation?.responses?.[201]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/CreateBookingSeriesResponseDto"
+          }
+        }
+      }
+    });
+    expectErrorResponses(operation?.responses, [400, 401, 403, 404, 415, 500]);
+    expect(operation?.responses?.[409]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/BookingSeriesConflictErrorDto" }
+        }
+      }
+    });
+    expect(document.components?.schemas?.CreateBookingSeriesDto).toMatchObject({
+      required: ["roomId", "title", "startAt", "endAt", "occurrenceCount"],
+      properties: {
+        roomId: { type: "string", format: "uuid" },
+        title: { type: "string", minLength: 1, maxLength: 100 },
+        startAt: {
+          type: "string",
+          format: "date-time",
+          pattern: UTC_MILLISECOND_INSTANT_PATTERN
+        },
+        endAt: {
+          type: "string",
+          format: "date-time",
+          pattern: UTC_MILLISECOND_INSTANT_PATTERN
+        },
+        occurrenceCount: {
+          type: "integer",
+          minimum: 2,
+          maximum: 52
+        }
+      }
+    });
+    expect(document.components?.schemas?.CreatedBookingSeriesDto).toMatchObject(
+      {
+        required: [
+          "id",
+          "roomId",
+          "title",
+          "officeTimezone",
+          "occurrenceCount",
+          "rule"
+        ]
+      }
+    );
+    expect(
+      document.components?.schemas?.CreatedSeriesOccurrenceDto
+    ).toMatchObject({
+      required: ["id", "occurrenceIndex", "startAt", "endAt"],
+      properties: {
+        occurrenceIndex: { type: "integer", minimum: 0 },
+        startAt: { type: "string", format: "date-time" },
+        endAt: { type: "string", format: "date-time" }
+      }
+    });
+    expect(
+      document.components?.schemas?.CreateBookingSeriesResponseDto
+    ).toMatchObject({
+      required: ["series", "occurrences"],
+      properties: {
+        series: { $ref: "#/components/schemas/CreatedBookingSeriesDto" },
+        occurrences: {
+          type: "array",
+          items: { $ref: "#/components/schemas/CreatedSeriesOccurrenceDto" }
+        }
+      }
+    });
+    expect(
+      document.components?.schemas?.RecurrenceConflictDetailsDto
+    ).toMatchObject({
+      required: ["occurrenceNumber", "startAt", "endAt"],
+      properties: {
+        occurrenceNumber: { type: "integer", minimum: 1 },
+        startAt: { type: "string", format: "date-time" },
+        endAt: { type: "string", format: "date-time" }
+      }
+    });
+    expect(
+      document.components?.schemas?.BookingSeriesConflictErrorDetailsDto
+    ).toMatchObject({
+      required: ["code", "message", "details", "requestId"],
+      properties: {
+        details: {
+          $ref: "#/components/schemas/RecurrenceConflictDetailsDto"
+        },
+        requestId: { type: "string" }
+      }
+    });
+    expect(
+      document.components?.schemas?.BookingSeriesConflictErrorDetailsDto
+    ).not.toHaveProperty("properties.requestId.format");
   });
 
   it("publishes the authenticated CSRF-protected booking cancellation command", () => {

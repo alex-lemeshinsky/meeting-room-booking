@@ -710,6 +710,122 @@
         ]
       }
     },
+    "/api/v1/booking-series": {
+      "post": {
+        "operationId": "createBookingSeries",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingSeriesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateBookingSeriesResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingSeriesConflictErrorDto"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "recurrence"
+        ]
+      }
+    },
     "/api/v1/rooms": {
       "get": {
         "operationId": "listRooms",
@@ -971,6 +1087,10 @@
                 "type": "string"
               }
             }
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
           },
           "requestId": {
             "type": "string",
@@ -1246,6 +1366,200 @@
         "required": [
           "bookings",
           "nextCursor"
+        ]
+      },
+      "CreateBookingSeriesDto": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$",
+            "example": "2035-01-15T07:00:00.000Z"
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$",
+            "example": "2035-01-15T07:30:00.000Z"
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 52
+          }
+        },
+        "required": [
+          "roomId",
+          "title",
+          "startAt",
+          "endAt",
+          "occurrenceCount"
+        ]
+      },
+      "CreatedBookingSeriesDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "officeTimezone": {
+            "type": "string",
+            "enum": [
+              "Europe/Kyiv"
+            ]
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 52
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "WEEKLY"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "roomId",
+          "title",
+          "officeTimezone",
+          "occurrenceCount",
+          "rule"
+        ]
+      },
+      "CreatedSeriesOccurrenceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurrenceIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceIndex",
+          "startAt",
+          "endAt"
+        ]
+      },
+      "CreateBookingSeriesResponseDto": {
+        "type": "object",
+        "properties": {
+          "series": {
+            "$ref": "#/components/schemas/CreatedBookingSeriesDto"
+          },
+          "occurrences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatedSeriesOccurrenceDto"
+            }
+          }
+        },
+        "required": [
+          "series",
+          "occurrences"
+        ]
+      },
+      "RecurrenceConflictDetailsDto": {
+        "type": "object",
+        "properties": {
+          "occurrenceNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "occurrenceNumber",
+          "startAt",
+          "endAt"
+        ]
+      },
+      "BookingSeriesConflictErrorDetailsDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "BOOKING_CONFLICT"
+          },
+          "message": {
+            "type": "string",
+            "example": "This time is already booked"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "details": {
+            "$ref": "#/components/schemas/RecurrenceConflictDetailsDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "b6a3a1f7-07d8-4fd8-a0c5-ff1f5aa9b568"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "details",
+          "requestId"
+        ]
+      },
+      "BookingSeriesConflictErrorDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/BookingSeriesConflictErrorDetailsDto"
+          }
+        },
+        "required": [
+          "error"
         ]
       },
       "RoomListQueryDto": {

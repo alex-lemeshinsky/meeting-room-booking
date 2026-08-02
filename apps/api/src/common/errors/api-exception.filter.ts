@@ -11,6 +11,7 @@ import { AppError } from "./app-error.js";
 
 interface ErrorBody {
   code?: unknown;
+  details?: unknown;
   fields?: unknown;
   message?: unknown;
 }
@@ -28,6 +29,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
         code: error.code,
         message: error.message,
         ...(error.fields ? { fields: error.fields } : {}),
+        ...(error.details ? { details: error.details } : {}),
         requestId: requestId ?? "unknown"
       }
     });
@@ -57,13 +59,15 @@ function toApiError(exception: unknown): {
   code: string;
   message: string;
   fields?: Record<string, string[]>;
+  details?: Record<string, unknown>;
 } {
   if (exception instanceof AppError) {
     return {
       status: exception.status,
       code: exception.code,
       message: exception.message,
-      ...(exception.fields ? { fields: exception.fields } : {})
+      ...(exception.fields ? { fields: exception.fields } : {}),
+      ...(exception.details ? { details: exception.details } : {})
     };
   }
 
@@ -77,7 +81,8 @@ function toApiError(exception: unknown): {
         typeof details.message === "string"
           ? details.message
           : "Request could not be processed",
-      ...(isFields(details.fields) ? { fields: details.fields } : {})
+      ...(isFields(details.fields) ? { fields: details.fields } : {}),
+      ...(isDetails(details.details) ? { details: details.details } : {})
     };
   }
 
@@ -102,4 +107,8 @@ function isFields(value: unknown): value is Record<string, string[]> {
         messages.every((message) => typeof message === "string")
     )
   );
+}
+
+function isDetails(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

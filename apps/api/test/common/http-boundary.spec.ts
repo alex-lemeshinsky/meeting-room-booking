@@ -3,12 +3,22 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { configureApp, createApp } from "../../src/bootstrap.js";
+import { AppError } from "../../src/common/errors/app-error.js";
 
 @Controller("unexpected")
 class UnexpectedErrorController {
   @Get()
   fail(): never {
     throw new Error("private-stack-marker");
+  }
+
+  @Get("details")
+  details(): never {
+    throw new AppError(409, "BOOKING_CONFLICT", "Conflict", undefined, {
+      occurrenceNumber: 3,
+      startAt: "2035-02-19T07:00:00.000Z",
+      endAt: "2035-02-19T07:30:00.000Z"
+    });
   }
 }
 
@@ -95,6 +105,31 @@ describe("HTTP boundary", () => {
         "private-stack-marker"
       );
       expect(JSON.stringify(response.body)).not.toContain("stack");
+    } finally {
+      await errorApp.close();
+    }
+  });
+
+  it("passes typed optional application error details through the envelope", async () => {
+    const testingModule = await Test.createTestingModule({
+      imports: [UnexpectedErrorModule]
+    }).compile();
+    const errorApp = configureApp(testingModule.createNestApplication());
+
+    try {
+      await errorApp.init();
+      const response = await request(errorApp.getHttpServer())
+        .get("/api/v1/unexpected/details")
+        .expect(409);
+
+      expect(response.body.error).toMatchObject({
+        code: "BOOKING_CONFLICT",
+        details: {
+          occurrenceNumber: 3,
+          startAt: "2035-02-19T07:00:00.000Z",
+          endAt: "2035-02-19T07:30:00.000Z"
+        }
+      });
     } finally {
       await errorApp.close();
     }

@@ -3,7 +3,8 @@ export class AppError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
-    readonly fields?: Record<string, string[]>
+    readonly fields?: Record<string, string[]>,
+    readonly details?: Record<string, unknown>
   ) {
     super(message);
   }

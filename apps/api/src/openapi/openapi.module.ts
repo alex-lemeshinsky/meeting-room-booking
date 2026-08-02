@@ -13,6 +13,8 @@ import { BookingsService } from "../bookings/bookings.service.js";
 import { MyBookingsController } from "../bookings/my-bookings.controller.js";
 import { HealthController } from "../health/health.controller.js";
 import { HealthService } from "../health/health.service.js";
+import { RecurrenceController } from "../recurrence/recurrence.controller.js";
+import { RecurrenceService } from "../recurrence/recurrence.service.js";
 import { RoomsController } from "../rooms/rooms.controller.js";
 import { RoomsService } from "../rooms/rooms.service.js";
 
@@ -25,6 +27,7 @@ const allowRequest = { canActivate: () => true };
     AuthController,
     BookingsController,
     MyBookingsController,
+    RecurrenceController,
     RoomsController
   ],
   providers: [
@@ -37,6 +40,7 @@ const allowRequest = { canActivate: () => true };
     { provide: BookingsService, useValue: inertProvider },
     { provide: CookieService, useValue: inertProvider },
     { provide: HealthService, useValue: inertProvider },
+    { provide: RecurrenceService, useValue: inertProvider },
     { provide: RoomsService, useValue: inertProvider },
     { provide: SessionService, useValue: inertProvider },
     { provide: CsrfGuard, useValue: allowRequest },

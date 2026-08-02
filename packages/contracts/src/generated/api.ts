@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/booking-series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createBookingSeries"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/rooms": {
         parameters: {
             query?: never;
@@ -235,6 +251,9 @@ export interface components {
             message: string;
             fields?: {
                 [key: string]: string[];
+            };
+            details?: {
+                [key: string]: unknown;
             };
             /** @example b6a3a1f7-07d8-4fd8-a0c5-ff1f5aa9b568 */
             requestId: string;
@@ -327,6 +346,69 @@ export interface components {
         MyBookingsResponseDto: {
             bookings: components["schemas"]["MyBookingDto"][];
             nextCursor: string | null;
+        };
+        CreateBookingSeriesDto: {
+            /** Format: uuid */
+            roomId: string;
+            title: string;
+            /**
+             * Format: date-time
+             * @example 2035-01-15T07:00:00.000Z
+             */
+            startAt: string;
+            /**
+             * Format: date-time
+             * @example 2035-01-15T07:30:00.000Z
+             */
+            endAt: string;
+            occurrenceCount: number;
+        };
+        CreatedBookingSeriesDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            roomId: string;
+            title: string;
+            /** @enum {string} */
+            officeTimezone: "Europe/Kyiv";
+            occurrenceCount: number;
+            /** @enum {string} */
+            rule: "WEEKLY";
+        };
+        CreatedSeriesOccurrenceDto: {
+            /** Format: uuid */
+            id: string;
+            occurrenceIndex: number;
+            /** Format: date-time */
+            startAt: string;
+            /** Format: date-time */
+            endAt: string;
+        };
+        CreateBookingSeriesResponseDto: {
+            series: components["schemas"]["CreatedBookingSeriesDto"];
+            occurrences: components["schemas"]["CreatedSeriesOccurrenceDto"][];
+        };
+        RecurrenceConflictDetailsDto: {
+            occurrenceNumber: number;
+            /** Format: date-time */
+            startAt: string;
+            /** Format: date-time */
+            endAt: string;
+        };
+        BookingSeriesConflictErrorDetailsDto: {
+            /** @example BOOKING_CONFLICT */
+            code: string;
+            /** @example This time is already booked */
+            message: string;
+            fields?: {
+                [key: string]: string[];
+            };
+            details: components["schemas"]["RecurrenceConflictDetailsDto"];
+            /** @example b6a3a1f7-07d8-4fd8-a0c5-ff1f5aa9b568 */
+            requestId: string;
+        };
+        BookingSeriesConflictErrorDto: {
+            error: components["schemas"]["BookingSeriesConflictErrorDetailsDto"];
         };
         RoomListQueryDto: {
             /** @example 8 */
@@ -915,6 +997,87 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    createBookingSeries: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBookingSeriesDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateBookingSeriesResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingSeriesConflictErrorDto"];
+                };
+            };
+            415: {
                 headers: {
                     [name: string]: unknown;
                 };

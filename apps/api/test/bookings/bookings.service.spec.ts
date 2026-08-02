@@ -1,6 +1,9 @@
 import { FixedClock } from "@mrb/time";
 import { describe, expect, it, vi } from "vitest";
+import { AppError } from "../../src/common/errors/app-error.js";
 import type { DatabaseService } from "../../src/database/database.service.js";
+import { validateCreateBooking } from "../../src/bookings/booking-policy.js";
+import type { BookingWritePolicyService } from "../../src/bookings/booking-write-policy.service.js";
 import { BookingsService } from "../../src/bookings/bookings.service.js";
 
 const NOW = new Date("2035-01-15T06:00:00.000Z");
@@ -10,7 +13,8 @@ const ROOM_ID = "10000000-0000-4000-8000-000000000001";
 describe("BookingsService", () => {
   it("creates and maps a validated one-off booking", async () => {
     const database = databaseDouble();
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const policy = policyDouble();
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
 
     await expect(
       service.create(USER_ID, {
@@ -45,11 +49,29 @@ describe("BookingsService", () => {
         endAt: true
       }
     });
+    expect(policy.validateCandidate).toHaveBeenCalledOnce();
+    expect(policy.validateCandidate).toHaveBeenCalledWith(
+      {
+        roomId: ROOM_ID,
+        title: "  Планування спринту  ",
+        startAt: "2035-01-15T07:00:00.000Z",
+        endAt: "2035-01-15T07:30:00.000Z"
+      },
+      NOW
+    );
+    expect(policy.assertContext).toHaveBeenCalledOnce();
+    expect(policy.assertContext).toHaveBeenCalledWith(USER_ID, ROOM_ID);
+    expect(policy.validateCandidate.mock.invocationCallOrder[0]).toBeLessThan(
+      policy.assertContext.mock.invocationCallOrder[0]!
+    );
   });
 
   it("returns ROOM_NOT_FOUND before writing when the room does not exist", async () => {
     const database = databaseDouble({ roomExists: false });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const policy = policyDouble({
+      contextError: new AppError(404, "ROOM_NOT_FOUND", "Room not found")
+    });
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
 
     await expect(
       service.create(USER_ID, {
@@ -67,7 +89,14 @@ describe("BookingsService", () => {
 
   it("rejects an unverified owner before room lookup or booking insertion", async () => {
     const database = databaseDouble({ emailVerifiedAt: null });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const policy = policyDouble({
+      contextError: new AppError(
+        403,
+        "EMAIL_NOT_VERIFIED",
+        "Email verification is required"
+      )
+    });
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
 
     await expect(service.create(USER_ID, validInput())).rejects.toMatchObject({
       status: 403,
@@ -80,7 +109,10 @@ describe("BookingsService", () => {
 
   it("fails loudly when the authenticated booking owner no longer exists", async () => {
     const database = databaseDouble({ ownerExists: false });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const policy = policyDouble({
+      contextError: new Error("Authenticated booking owner no longer exists")
+    });
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
 
     await expect(service.create(USER_ID, validInput())).rejects.toThrow(
       "Authenticated booking owner no longer exists"
@@ -101,7 +133,8 @@ describe("BookingsService", () => {
         }
       }
     });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const policy = policyDouble({ activeOverlap: true });
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
 
     await expect(
       service.create(USER_ID, {
@@ -123,7 +156,11 @@ describe("BookingsService", () => {
   it("does not hide unrelated database failures", async () => {
     const failure = new Error("connection closed");
     const database = databaseDouble({ createError: failure });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const service = new BookingsService(
+      database,
+      new FixedClock(NOW),
+      policyDouble()
+    );
 
     await expect(
       service.create(USER_ID, {
@@ -144,7 +181,11 @@ describe("BookingsService", () => {
         endAt: new Date("2035-01-15T07:30:00.000Z")
       }
     });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const service = new BookingsService(
+      database,
+      new FixedClock(NOW),
+      policyDouble()
+    );
 
     await expect(
       service.cancel(USER_ID, "20000000-0000-4000-8000-000000000001")
@@ -213,7 +254,11 @@ describe("BookingsService", () => {
         cancellationBooking: booking,
         cancellationUpdated: false
       });
-      const service = new BookingsService(database, new FixedClock(NOW));
+      const service = new BookingsService(
+        database,
+        new FixedClock(NOW),
+        policyDouble()
+      );
 
       await expect(
         service.cancel(USER_ID, "20000000-0000-4000-8000-000000000001")
@@ -236,7 +281,11 @@ describe("BookingsService", () => {
         })
       ]
     });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const service = new BookingsService(
+      database,
+      new FixedClock(NOW),
+      policyDouble()
+    );
 
     await expect(
       service.listMine(USER_ID, { section: "upcoming" })
@@ -279,7 +328,11 @@ describe("BookingsService", () => {
       })
     );
     const database = databaseDouble({ listedBookings });
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const service = new BookingsService(
+      database,
+      new FixedClock(NOW),
+      policyDouble()
+    );
 
     const result = await service.listMine(USER_ID, { section: "history" });
 
@@ -303,7 +356,11 @@ describe("BookingsService", () => {
 
   it("rejects a malformed history cursor before querying the database", async () => {
     const database = databaseDouble();
-    const service = new BookingsService(database, new FixedClock(NOW));
+    const service = new BookingsService(
+      database,
+      new FixedClock(NOW),
+      policyDouble()
+    );
 
     await expect(
       service.listMine(USER_ID, {
@@ -380,6 +437,26 @@ function validInput() {
     title: "Планування",
     startAt: "2035-01-15T07:00:00.000Z",
     endAt: "2035-01-15T07:30:00.000Z"
+  };
+}
+
+function policyDouble(options?: {
+  contextError?: Error;
+  activeOverlap?: boolean;
+}) {
+  return {
+    assertContext:
+      options?.contextError === undefined
+        ? vi.fn().mockResolvedValue(undefined)
+        : vi.fn().mockRejectedValue(options.contextError),
+    validateCandidate: vi.fn(validateCreateBooking),
+    isActiveOverlapError: vi
+      .fn()
+      .mockReturnValue(options?.activeOverlap ?? false)
+  } as unknown as BookingWritePolicyService & {
+    assertContext: ReturnType<typeof vi.fn>;
+    validateCandidate: ReturnType<typeof vi.fn>;
+    isActiveOverlapError: ReturnType<typeof vi.fn>;
   };
 }
 

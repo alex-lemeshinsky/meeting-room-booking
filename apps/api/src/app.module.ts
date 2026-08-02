@@ -8,6 +8,7 @@ import { MyBookingsController } from "./bookings/my-bookings.controller.js";
 import { CommonModule } from "./common/common.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
+import { RecurrenceModule } from "./recurrence/recurrence.module.js";
 import { RoomsController } from "./rooms/rooms.controller.js";
 import { RoomsModule } from "./rooms/rooms.module.js";
 
@@ -23,6 +24,7 @@ import { RoomsModule } from "./rooms/rooms.module.js";
     HealthModule,
     AuthModule,
     BookingsModule,
+    RecurrenceModule,
     RoomsModule
   ]
 })

@@ -15,6 +15,13 @@ export class ApiErrorDetailsDto {
   fields?: Record<string, string[]>;
 
   @ApiProperty({
+    additionalProperties: true,
+    required: false,
+    type: Object
+  })
+  details?: Record<string, unknown>;
+
+  @ApiProperty({
     type: String,
     example: "b6a3a1f7-07d8-4fd8-a0c5-ff1f5aa9b568"
   })

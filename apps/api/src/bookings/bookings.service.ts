@@ -2,10 +2,8 @@ import { CLOCK, type Clock } from "@mrb/time";
 import { Inject, Injectable } from "@nestjs/common";
 import { AppError } from "../common/errors/app-error.js";
 import { DatabaseService } from "../database/database.service.js";
-import {
-  validateCreateBooking,
-  type CreateBookingPolicyInput
-} from "./booking-policy.js";
+import type { CreateBookingPolicyInput } from "./booking-policy.js";
+import { BookingWritePolicyService } from "./booking-write-policy.service.js";
 import {
   decodeHistoryCursor,
   encodeHistoryCursor,
@@ -66,35 +64,17 @@ const MY_BOOKING_SELECT = {
 export class BookingsService {
   constructor(
     @Inject(DatabaseService) private readonly database: DatabaseService,
-    @Inject(CLOCK) private readonly clock: Clock
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(BookingWritePolicyService)
+    private readonly writePolicy: BookingWritePolicyService
   ) {}
 
   async create(
     userId: string,
     input: CreateBookingInput
   ): Promise<CreateBookingResponse> {
-    const booking = validateCreateBooking(input, this.clock.now());
-    const owner = await this.database.user.findUnique({
-      where: { id: userId },
-      select: { emailVerifiedAt: true }
-    });
-    if (owner === null) {
-      throw new Error("Authenticated booking owner no longer exists");
-    }
-    if (owner.emailVerifiedAt === null) {
-      throw new AppError(
-        403,
-        "EMAIL_NOT_VERIFIED",
-        "Email verification is required"
-      );
-    }
-    const room = await this.database.room.findUnique({
-      where: { id: input.roomId },
-      select: { id: true }
-    });
-    if (room === null) {
-      throw new AppError(404, "ROOM_NOT_FOUND", "Room not found");
-    }
+    const booking = this.writePolicy.validateCandidate(input, this.clock.now());
+    await this.writePolicy.assertContext(userId, input.roomId);
 
     try {
       const created = await this.database.booking.create({
@@ -124,7 +104,7 @@ export class BookingsService {
         }
       };
     } catch (error) {
-      if (isActiveBookingExclusionError(error)) {
+      if (this.writePolicy.isActiveOverlapError(error)) {
         throw new AppError(
           409,
           "BOOKING_CONFLICT",
@@ -266,51 +246,4 @@ function invalidHistoryCursor(): AppError {
   return new AppError(400, "INVALID_CURSOR", "History cursor is invalid", {
     cursor: ["Cursor pagination is available only for history"]
   });
-}
-
-function isActiveBookingExclusionError(error: unknown): boolean {
-  return (
-    (hasNestedValue(error, "P2004") || hasNestedValue(error, "23P01")) &&
-    hasNestedText(error, "bookings_no_active_overlap")
-  );
-}
-
-function hasNestedValue(value: unknown, expected: string): boolean {
-  const visited = new Set<unknown>();
-
-  function visit(candidate: unknown): boolean {
-    if (candidate === expected) return true;
-    if (
-      typeof candidate !== "object" ||
-      candidate === null ||
-      visited.has(candidate)
-    ) {
-      return false;
-    }
-
-    visited.add(candidate);
-    return Object.values(candidate).some(visit);
-  }
-
-  return visit(value);
-}
-
-function hasNestedText(value: unknown, expected: string): boolean {
-  const visited = new Set<unknown>();
-
-  function visit(candidate: unknown): boolean {
-    if (typeof candidate === "string") return candidate.includes(expected);
-    if (
-      typeof candidate !== "object" ||
-      candidate === null ||
-      visited.has(candidate)
-    ) {
-      return false;
-    }
-
-    visited.add(candidate);
-    return Object.values(candidate).some(visit);
-  }
-
-  return visit(value);
 }
