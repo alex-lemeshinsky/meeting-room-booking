@@ -44,14 +44,17 @@ export function buildKyivWeeklySeries(
     occurrences: Array.from(
       { length: occurrenceCount },
       (_, occurrenceIndex) => {
-        const localStart = firstLocalStart.plus({ weeks: occurrenceIndex });
+        if (occurrenceIndex === 0) {
+          return buildOccurrence(occurrenceIndex, start, end);
+        }
+
+        const localDate = firstLocalStart
+          .startOf("day")
+          .plus({ weeks: occurrenceIndex });
+        const localStart = resolveKyivLocalDateTime(localDate, firstLocalStart);
         const localEnd = localStart.plus({ minutes: durationMinutes });
 
-        return {
-          occurrenceIndex,
-          startAt: requiredUtcIso(reconstructLocalDateTime(localStart)),
-          endAt: requiredUtcIso(reconstructLocalDateTime(localEnd))
-        };
+        return buildOccurrence(occurrenceIndex, localStart, localEnd);
       }
     )
   };
@@ -82,17 +85,59 @@ function assertOccurrenceCount(occurrenceCount: number): void {
   }
 }
 
-function reconstructLocalDateTime(value: DateTime): DateTime {
-  const expected = requiredLocalDateTime(value);
-  const result = DateTime.fromISO(expected, { zone: KYIV_TIMEZONE });
+function resolveKyivLocalDateTime(date: DateTime, time: DateTime): DateTime {
+  const expected = `${requiredIsoDate(date)}T${time.toFormat("HH:mm:ss.SSS")}`;
+  const reconstructed = DateTime.fromISO(expected, { zone: KYIV_TIMEZONE });
 
-  if (!result.isValid || requiredLocalDateTime(result) !== expected) {
+  if (
+    !reconstructed.isValid ||
+    requiredLocalDateTime(reconstructed) !== expected
+  ) {
     throw new RangeError(
       "weekly occurrence must be a valid Kyiv local date and time"
     );
   }
 
-  return result;
+  return reconstructed
+    .getPossibleOffsets()
+    .sort((left, right) => left.toMillis() - right.toMillis())[0]!;
+}
+
+function buildOccurrence(
+  occurrenceIndex: number,
+  start: DateTime,
+  end: DateTime
+): KyivWeeklyOccurrence {
+  assertReconstructedKyivLocalInstant(start);
+  assertReconstructedKyivLocalInstant(end);
+
+  if (end <= start) {
+    throw new RangeError("weekly occurrence end must be after its start");
+  }
+
+  return {
+    occurrenceIndex,
+    startAt: requiredUtcIso(start),
+    endAt: requiredUtcIso(end)
+  };
+}
+
+function assertReconstructedKyivLocalInstant(value: DateTime): void {
+  const localValue = value.setZone(KYIV_TIMEZONE);
+  const expected = requiredLocalDateTime(localValue);
+  const reconstructed = DateTime.fromISO(expected, { zone: KYIV_TIMEZONE });
+
+  if (
+    !reconstructed.isValid ||
+    requiredLocalDateTime(reconstructed) !== expected ||
+    !reconstructed
+      .getPossibleOffsets()
+      .some((candidate) => candidate.toMillis() === localValue.toMillis())
+  ) {
+    throw new RangeError(
+      "weekly occurrence must be a valid Kyiv local date and time"
+    );
+  }
 }
 
 function requiredIsoDate(value: DateTime): string {

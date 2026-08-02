@@ -64,6 +64,64 @@ describe("buildKyivWeeklySeries", () => {
     });
   });
 
+  it("rejects a future Kyiv wall time that falls in the spring DST gap", () => {
+    expect(() =>
+      buildKyivWeeklySeries(
+        "2026-03-22T01:30:00.000Z",
+        "2026-03-22T02:00:00.000Z",
+        2
+      )
+    ).toThrow(RangeError);
+  });
+
+  it("preserves the supplied first-fold interval and returns only ordered intervals", () => {
+    const projection = buildKyivWeeklySeries(
+      "2026-10-25T00:30:00.000Z",
+      "2026-10-25T01:00:00.000Z",
+      2
+    );
+
+    expect(projection.occurrences[0]).toEqual({
+      occurrenceIndex: 0,
+      startAt: "2026-10-25T00:30:00.000Z",
+      endAt: "2026-10-25T01:00:00.000Z"
+    });
+    expect(
+      projection.occurrences.every(
+        (occurrence) =>
+          Date.parse(occurrence.startAt) < Date.parse(occurrence.endAt)
+      )
+    ).toBe(true);
+  });
+
+  it("preserves the supplied second-fold interval", () => {
+    expect(
+      buildKyivWeeklySeries(
+        "2026-10-25T01:30:00.000Z",
+        "2026-10-25T02:00:00.000Z",
+        2
+      ).occurrences[0]
+    ).toEqual({
+      occurrenceIndex: 0,
+      startAt: "2026-10-25T01:30:00.000Z",
+      endAt: "2026-10-25T02:00:00.000Z"
+    });
+  });
+
+  it("uses the first UTC candidate for a future Kyiv autumn fold", () => {
+    expect(
+      buildKyivWeeklySeries(
+        "2026-09-27T00:30:00.000Z",
+        "2026-09-27T01:00:00.000Z",
+        5
+      ).occurrences[4]
+    ).toEqual({
+      occurrenceIndex: 4,
+      startAt: "2026-10-25T00:30:00.000Z",
+      endAt: "2026-10-25T01:00:00.000Z"
+    });
+  });
+
   it.each([
     {
       durationMinutes: 30,
