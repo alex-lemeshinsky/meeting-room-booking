@@ -1,8 +1,15 @@
-import { Controller, Get, Module, type INestApplication } from "@nestjs/common";
+import {
+  type ArgumentsHost,
+  Controller,
+  Get,
+  Module,
+  type INestApplication
+} from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { configureApp, createApp } from "../../src/bootstrap.js";
+import { ApiExceptionFilter } from "../../src/common/errors/api-exception.filter.js";
 import { AppError } from "../../src/common/errors/app-error.js";
 
 @Controller("unexpected")
@@ -10,15 +17,6 @@ class UnexpectedErrorController {
   @Get()
   fail(): never {
     throw new Error("private-stack-marker");
-  }
-
-  @Get("details")
-  details(): never {
-    throw new AppError(409, "BOOKING_CONFLICT", "Conflict", undefined, {
-      occurrenceNumber: 3,
-      startAt: "2035-02-19T07:00:00.000Z",
-      endAt: "2035-02-19T07:30:00.000Z"
-    });
   }
 }
 
@@ -110,28 +108,39 @@ describe("HTTP boundary", () => {
     }
   });
 
-  it("passes typed optional application error details through the envelope", async () => {
-    const testingModule = await Test.createTestingModule({
-      imports: [UnexpectedErrorModule]
-    }).compile();
-    const errorApp = configureApp(testingModule.createNestApplication());
+  it("passes typed optional application error details through the envelope", () => {
+    const json = vi.fn();
+    const status = vi.fn().mockReturnValue({ json });
+    const response = {
+      locals: { requestId: "request-details" },
+      status
+    };
+    const host = {
+      switchToHttp: () => ({ getResponse: () => response })
+    } as unknown as ArgumentsHost;
 
-    try {
-      await errorApp.init();
-      const response = await request(errorApp.getHttpServer())
-        .get("/api/v1/unexpected/details")
-        .expect(409);
+    new ApiExceptionFilter().catch(
+      new AppError(409, "BOOKING_CONFLICT", "Conflict", undefined, {
+        occurrenceNumber: 3,
+        startAt: "2035-02-19T07:00:00.000Z",
+        endAt: "2035-02-19T07:30:00.000Z"
+      }),
+      host
+    );
 
-      expect(response.body.error).toMatchObject({
+    expect(status).toHaveBeenCalledOnce();
+    expect(status).toHaveBeenCalledWith(409);
+    expect(json).toHaveBeenCalledWith({
+      error: {
         code: "BOOKING_CONFLICT",
+        message: "Conflict",
         details: {
           occurrenceNumber: 3,
           startAt: "2035-02-19T07:00:00.000Z",
           endAt: "2035-02-19T07:30:00.000Z"
-        }
-      });
-    } finally {
-      await errorApp.close();
-    }
+        },
+        requestId: "request-details"
+      }
+    });
   });
 });
