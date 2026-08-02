@@ -74,6 +74,9 @@ export class RoomsService {
         title: true,
         startAt: true,
         endAt: true,
+        seriesId: true,
+        occurrenceIndex: true,
+        series: { select: { occurrenceCount: true } },
         user: { select: { id: true, name: true } }
       }
     });
@@ -88,7 +91,10 @@ export class RoomsService {
         startAt: booking.startAt.toISOString(),
         endAt: booking.endAt.toISOString(),
         organizer: booking.user,
-        isOwn: booking.user.id === userId
+        isOwn: booking.user.id === userId,
+        seriesId: booking.seriesId,
+        occurrenceIndex: booking.occurrenceIndex,
+        occurrenceCount: booking.series?.occurrenceCount ?? null
       }))
     };
   }

@@ -52,6 +52,13 @@ const MY_BOOKING_SELECT = {
   endAt: true,
   status: true,
   cancelledAt: true,
+  seriesId: true,
+  occurrenceIndex: true,
+  series: {
+    select: {
+      occurrenceCount: true
+    }
+  },
   room: {
     select: {
       id: true,

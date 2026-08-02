@@ -234,7 +234,17 @@ describe("OpenAPI document", () => {
       }
     });
     expect(document.components?.schemas?.ScheduleBookingDto).toMatchObject({
-      required: ["id", "title", "startAt", "endAt", "organizer", "isOwn"],
+      required: [
+        "id",
+        "title",
+        "startAt",
+        "endAt",
+        "organizer",
+        "isOwn",
+        "seriesId",
+        "occurrenceIndex",
+        "occurrenceCount"
+      ],
       properties: {
         id: { type: "string", format: "uuid" },
         startAt: { type: "string", format: "date-time" },
@@ -242,7 +252,10 @@ describe("OpenAPI document", () => {
         organizer: {
           $ref: "#/components/schemas/ScheduleOrganizerDto"
         },
-        isOwn: { type: "boolean" }
+        isOwn: { type: "boolean" },
+        seriesId: { type: "string", format: "uuid", nullable: true },
+        occurrenceIndex: { type: "integer", nullable: true },
+        occurrenceCount: { type: "integer", nullable: true }
       }
     });
     expect(document.components?.schemas?.ScheduleResponseDto).toMatchObject({
@@ -481,6 +494,55 @@ describe("OpenAPI document", () => {
     });
   });
 
+  it("publishes the atomic whole-series cancellation command", () => {
+    const document = createOpenApiDocument(app);
+    const operation =
+      document.paths["/api/v1/booking-series/{seriesId}/cancel"]?.post;
+
+    expect(operation?.operationId).toBe("cancelBookingSeries");
+    expect(operation?.security).toContainEqual({ cookie: [] });
+    expect(operation?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          in: "path",
+          name: "seriesId",
+          required: true,
+          schema: expect.objectContaining({ type: "string", format: "uuid" })
+        }),
+        {
+          in: "header",
+          name: "X-CSRF-Token",
+          required: true,
+          schema: { type: "string" }
+        }
+      ])
+    );
+    expect(operation?.responses?.[200]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/CancelBookingSeriesResponseDto"
+          }
+        }
+      }
+    });
+    expectErrorResponses(
+      operation?.responses,
+      [400, 401, 403, 404, 409, 415, 500]
+    );
+    expect(
+      document.components?.schemas?.CancelledBookingSeriesDto
+    ).toMatchObject({
+      required: ["id", "status", "cancelledAt", "cancelledCount"],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        status: { type: "string", enum: ["CANCELLED"] },
+        cancelledAt: { type: "string", format: "date-time" },
+        cancelledCount: { type: "integer", minimum: 1 }
+      }
+    });
+  });
+
   it("publishes the authenticated My Bookings query and public row states", () => {
     const document = createOpenApiDocument(app);
     const operation = document.paths["/api/v1/my-bookings"]?.get;
@@ -515,7 +577,17 @@ describe("OpenAPI document", () => {
     });
     expectErrorResponses(operation?.responses, [400, 401, 500]);
     expect(document.components?.schemas?.MyBookingDto).toMatchObject({
-      required: ["id", "room", "title", "startAt", "endAt", "state"],
+      required: [
+        "id",
+        "room",
+        "title",
+        "startAt",
+        "endAt",
+        "state",
+        "seriesId",
+        "occurrenceIndex",
+        "occurrenceCount"
+      ],
       properties: {
         id: { type: "string", format: "uuid" },
         room: { $ref: "#/components/schemas/MyBookingRoomDto" },
@@ -524,7 +596,10 @@ describe("OpenAPI document", () => {
         state: {
           type: "string",
           enum: ["ACTIVE", "UPCOMING", "COMPLETED", "CANCELLED"]
-        }
+        },
+        seriesId: { type: "string", format: "uuid", nullable: true },
+        occurrenceIndex: { type: "integer", nullable: true },
+        occurrenceCount: { type: "integer", nullable: true }
       }
     });
     expect(document.components?.schemas?.MyBookingsResponseDto).toMatchObject({

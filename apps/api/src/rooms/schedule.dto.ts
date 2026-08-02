@@ -35,6 +35,15 @@ export class ScheduleBookingDto {
 
   @ApiProperty({ type: Boolean, example: true })
   isOwn!: boolean;
+
+  @ApiProperty({ type: String, format: "uuid", nullable: true })
+  seriesId!: string | null;
+
+  @ApiProperty({ type: "integer", nullable: true })
+  occurrenceIndex!: number | null;
+
+  @ApiProperty({ type: "integer", nullable: true })
+  occurrenceCount!: number | null;
 }
 
 export class ScheduleResponseDto {

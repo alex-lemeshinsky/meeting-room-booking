@@ -826,6 +826,121 @@
         ]
       }
     },
+    "/api/v1/booking-series/{seriesId}/cancel": {
+      "post": {
+        "operationId": "cancelBookingSeries",
+        "parameters": [
+          {
+            "name": "seriesId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelBookingSeriesResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "recurrence"
+        ]
+      }
+    },
     "/api/v1/rooms": {
       "get": {
         "operationId": "listRooms",
@@ -1338,6 +1453,19 @@
               "COMPLETED",
               "CANCELLED"
             ]
+          },
+          "seriesId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "occurrenceIndex": {
+            "type": "integer",
+            "nullable": true
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "nullable": true
           }
         },
         "required": [
@@ -1346,7 +1474,10 @@
           "title",
           "startAt",
           "endAt",
-          "state"
+          "state",
+          "seriesId",
+          "occurrenceIndex",
+          "occurrenceCount"
         ]
       },
       "MyBookingsResponseDto": {
@@ -1562,6 +1693,46 @@
           "error"
         ]
       },
+      "CancelledBookingSeriesDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CANCELLED"
+            ]
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelledCount": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "cancelledAt",
+          "cancelledCount"
+        ]
+      },
+      "CancelBookingSeriesResponseDto": {
+        "type": "object",
+        "properties": {
+          "series": {
+            "$ref": "#/components/schemas/CancelledBookingSeriesDto"
+          }
+        },
+        "required": [
+          "series"
+        ]
+      },
       "RoomListQueryDto": {
         "type": "object",
         "properties": {
@@ -1693,6 +1864,19 @@
           "isOwn": {
             "type": "boolean",
             "example": true
+          },
+          "seriesId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "occurrenceIndex": {
+            "type": "integer",
+            "nullable": true
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "nullable": true
           }
         },
         "required": [
@@ -1701,7 +1885,10 @@
           "startAt",
           "endAt",
           "organizer",
-          "isOwn"
+          "isOwn",
+          "seriesId",
+          "occurrenceIndex",
+          "occurrenceCount"
         ]
       },
       "ScheduleResponseDto": {

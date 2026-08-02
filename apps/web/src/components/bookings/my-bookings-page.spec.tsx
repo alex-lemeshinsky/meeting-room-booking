@@ -332,6 +332,9 @@ function booking(
     startAt: "2026-07-27T06:00:00.000Z",
     endAt: "2026-07-27T06:30:00.000Z",
     state: "UPCOMING",
+    seriesId: null,
+    occurrenceIndex: null,
+    occurrenceCount: null,
     ...overrides
   };
 }

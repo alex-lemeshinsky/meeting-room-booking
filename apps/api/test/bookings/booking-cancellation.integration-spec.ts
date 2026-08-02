@@ -27,6 +27,7 @@ describe("POST /api/v1/bookings/:bookingId/cancel", () => {
 
   beforeEach(async () => {
     await database.booking.deleteMany();
+    await database.bookingSeries.deleteMany();
   });
 
   afterAll(async () => context.stop());
@@ -148,6 +149,51 @@ describe("POST /api/v1/bookings/:bookingId/cancel", () => {
       })
     ).resolves.toBe(1);
     expect(created.body.booking.title).toBe("Після скасування");
+  });
+
+  it("cancels one selected occurrence without changing active siblings", async () => {
+    const series = await database.bookingSeries.create({
+      data: {
+        userId: OLENA_ID,
+        roomId: ROOM_ID,
+        title: "Single occurrence cancellation",
+        firstLocalDate: new Date("2035-01-15T00:00:00.000Z"),
+        firstLocalStartTime: new Date("1970-01-01T10:00:00.000Z"),
+        durationMinutes: 30,
+        occurrenceCount: 3,
+        bookings: {
+          create: [0, 1, 2].map((occurrenceIndex) => {
+            const startAt = new Date(
+              Date.parse("2035-01-15T10:00:00.000Z") +
+                occurrenceIndex * 60 * 60 * 1_000
+            );
+            return {
+              roomId: ROOM_ID,
+              userId: OLENA_ID,
+              title: `Series occurrence ${occurrenceIndex}`,
+              occurrenceIndex,
+              startAt,
+              endAt: new Date(startAt.getTime() + 30 * 60 * 1_000)
+            };
+          })
+        }
+      },
+      include: { bookings: { orderBy: { occurrenceIndex: "asc" } } }
+    });
+
+    await cancel(olena, series.bookings[1]!.id).expect(200);
+
+    await expect(
+      database.booking.findMany({
+        where: { seriesId: series.id },
+        orderBy: { occurrenceIndex: "asc" },
+        select: { status: true, cancelledAt: true }
+      })
+    ).resolves.toEqual([
+      { status: "ACTIVE", cancelledAt: null },
+      { status: "CANCELLED", cancelledAt: NOW },
+      { status: "ACTIVE", cancelledAt: null }
+    ]);
   });
 
   async function insertBooking(input: {

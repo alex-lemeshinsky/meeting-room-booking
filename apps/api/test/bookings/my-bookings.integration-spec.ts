@@ -10,6 +10,7 @@ const NOW = new Date("2035-01-15T12:00:00.000Z");
 const ROOM_ID = "10000000-0000-4000-8000-000000000001";
 const OLENA_ID = "00000000-0000-4000-8000-000000000001";
 const ALEX_ID = "00000000-0000-4000-8000-000000000002";
+const SERIES_ID = "40000000-0000-4000-8000-000000000001";
 
 describe("GET /api/v1/my-bookings", () => {
   let context: PostgresTestApp;
@@ -27,6 +28,7 @@ describe("GET /api/v1/my-bookings", () => {
 
   beforeEach(async () => {
     await database.booking.deleteMany();
+    await database.bookingSeries.deleteMany();
   });
 
   afterAll(async () => context.stop());
@@ -43,6 +45,7 @@ describe("GET /api/v1/my-bookings", () => {
   });
 
   it("lists only the user's unended active records in chronological order", async () => {
+    await insertSeries();
     await insertBooking({
       id: "20000000-0000-4000-8000-000000000001",
       userId: OLENA_ID,
@@ -55,7 +58,9 @@ describe("GET /api/v1/my-bookings", () => {
       userId: OLENA_ID,
       startAt: "2035-01-15T13:00:00.000Z",
       endAt: "2035-01-15T13:30:00.000Z",
-      title: "Майбутнє"
+      title: "Майбутнє",
+      seriesId: SERIES_ID,
+      occurrenceIndex: 1
     });
     await insertBooking({
       id: "20000000-0000-4000-8000-000000000003",
@@ -84,7 +89,10 @@ describe("GET /api/v1/my-bookings", () => {
           title: "Активне",
           startAt: "2035-01-15T11:30:00.000Z",
           endAt: "2035-01-15T12:30:00.000Z",
-          state: "ACTIVE"
+          state: "ACTIVE",
+          seriesId: null,
+          occurrenceIndex: null,
+          occurrenceCount: null
         },
         {
           id: "20000000-0000-4000-8000-000000000002",
@@ -92,7 +100,10 @@ describe("GET /api/v1/my-bookings", () => {
           title: "Майбутнє",
           startAt: "2035-01-15T13:00:00.000Z",
           endAt: "2035-01-15T13:30:00.000Z",
-          state: "UPCOMING"
+          state: "UPCOMING",
+          seriesId: SERIES_ID,
+          occurrenceIndex: 1,
+          occurrenceCount: 3
         }
       ],
       nextCursor: null
@@ -198,6 +209,8 @@ describe("GET /api/v1/my-bookings", () => {
     endAt: string;
     status?: "ACTIVE" | "CANCELLED";
     cancelledAt?: Date;
+    seriesId?: string;
+    occurrenceIndex?: number;
   }) {
     return database.booking.create({
       data: {
@@ -207,10 +220,31 @@ describe("GET /api/v1/my-bookings", () => {
         title: input.title,
         startAt: new Date(input.startAt),
         endAt: new Date(input.endAt),
+        ...(input.seriesId === undefined
+          ? {}
+          : {
+              seriesId: input.seriesId,
+              occurrenceIndex: input.occurrenceIndex
+            }),
         ...(input.status === undefined ? {} : { status: input.status }),
         ...(input.cancelledAt === undefined
           ? {}
           : { cancelledAt: input.cancelledAt })
+      }
+    });
+  }
+
+  function insertSeries() {
+    return database.bookingSeries.create({
+      data: {
+        id: SERIES_ID,
+        userId: OLENA_ID,
+        roomId: ROOM_ID,
+        title: "Щотижнева зустріч",
+        firstLocalDate: new Date("2035-01-08T00:00:00.000Z"),
+        firstLocalStartTime: new Date("1970-01-01T15:00:00.000Z"),
+        durationMinutes: 30,
+        occurrenceCount: 3
       }
     });
   }

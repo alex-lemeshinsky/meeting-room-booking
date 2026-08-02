@@ -277,7 +277,10 @@ describe("BookingsService", () => {
         persistedBooking({
           id: "20000000-0000-4000-8000-000000000011",
           startAt: "2035-01-15T07:00:00.000Z",
-          endAt: "2035-01-15T07:30:00.000Z"
+          endAt: "2035-01-15T07:30:00.000Z",
+          seriesId: "40000000-0000-4000-8000-000000000001",
+          occurrenceIndex: 1,
+          occurrenceCount: 3
         })
       ]
     });
@@ -293,11 +296,17 @@ describe("BookingsService", () => {
       bookings: [
         expect.objectContaining({
           id: "20000000-0000-4000-8000-000000000010",
-          state: "ACTIVE"
+          state: "ACTIVE",
+          seriesId: null,
+          occurrenceIndex: null,
+          occurrenceCount: null
         }),
         expect.objectContaining({
           id: "20000000-0000-4000-8000-000000000011",
-          state: "UPCOMING"
+          state: "UPCOMING",
+          seriesId: "40000000-0000-4000-8000-000000000001",
+          occurrenceIndex: 1,
+          occurrenceCount: 3
         })
       ],
       nextCursor: null
@@ -309,7 +318,11 @@ describe("BookingsService", () => {
         endAt: { gt: NOW }
       },
       orderBy: [{ startAt: "asc" }, { id: "asc" }],
-      select: expect.any(Object)
+      select: expect.objectContaining({
+        seriesId: true,
+        occurrenceIndex: true,
+        series: { select: { occurrenceCount: true } }
+      })
     });
   });
 
@@ -466,6 +479,9 @@ function persistedBooking(options: {
   endAt: string;
   status?: "ACTIVE" | "CANCELLED";
   cancelledAt?: string;
+  seriesId?: string;
+  occurrenceIndex?: number;
+  occurrenceCount?: number;
 }) {
   return {
     id: options.id,
@@ -475,6 +491,12 @@ function persistedBooking(options: {
     status: options.status ?? "ACTIVE",
     cancelledAt:
       options.cancelledAt === undefined ? null : new Date(options.cancelledAt),
+    seriesId: options.seriesId ?? null,
+    occurrenceIndex: options.occurrenceIndex ?? null,
+    series:
+      options.occurrenceCount === undefined
+        ? null
+        : { occurrenceCount: options.occurrenceCount },
     room: {
       id: ROOM_ID,
       name: "Дніпро"

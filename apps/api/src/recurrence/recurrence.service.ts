@@ -33,6 +33,15 @@ export interface CreateBookingSeriesResponse {
   }>;
 }
 
+export interface CancelBookingSeriesResponse {
+  series: {
+    id: string;
+    status: "CANCELLED";
+    cancelledAt: string;
+    cancelledCount: number;
+  };
+}
+
 interface ValidatedOccurrence extends ValidatedBooking {
   occurrenceIndex: number;
 }
@@ -158,6 +167,84 @@ export class RecurrenceService {
         occurrences
       };
     });
+  }
+
+  async cancel(
+    userId: string,
+    seriesId: string
+  ): Promise<CancelBookingSeriesResponse> {
+    const now = this.clock.now();
+    const series = await this.database.bookingSeries.findUnique({
+      where: { id: seriesId },
+      select: { userId: true }
+    });
+    assertSeriesOwner(series, userId);
+
+    return this.database.$transaction(async (transaction) => {
+      const result = await transaction.booking.updateMany({
+        where: {
+          seriesId,
+          userId,
+          status: "ACTIVE",
+          endAt: { gt: now }
+        },
+        data: { status: "CANCELLED", cancelledAt: now }
+      });
+
+      if (result.count > 0) {
+        return {
+          series: {
+            id: seriesId,
+            status: "CANCELLED",
+            cancelledAt: now.toISOString(),
+            cancelledCount: result.count
+          }
+        };
+      }
+
+      const currentSeries = await transaction.bookingSeries.findUnique({
+        where: { id: seriesId },
+        select: {
+          userId: true,
+          bookings: {
+            where: {
+              userId,
+              status: "ACTIVE",
+              endAt: { gt: now }
+            },
+            select: { id: true },
+            take: 1
+          }
+        }
+      });
+      assertSeriesOwner(currentSeries, userId);
+
+      throw new AppError(
+        409,
+        "SERIES_NOT_CANCELLABLE",
+        "Booking series has no cancellable occurrences"
+      );
+    });
+  }
+}
+
+function assertSeriesOwner(
+  series: { userId: string } | null,
+  userId: string
+): asserts series is { userId: string } {
+  if (series === null) {
+    throw new AppError(
+      404,
+      "BOOKING_SERIES_NOT_FOUND",
+      "Booking series not found"
+    );
+  }
+  if (series.userId !== userId) {
+    throw new AppError(
+      403,
+      "BOOKING_SERIES_FORBIDDEN",
+      "Only the booking series owner can cancel it"
+    );
   }
 }
 

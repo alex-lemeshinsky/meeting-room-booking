@@ -13,8 +13,26 @@ const room = {
   capacity: 10
 };
 
+type ScheduleBooking = ScheduleResponse["bookings"][number];
+type ScheduleBookingFixture = Omit<
+  ScheduleBooking,
+  "seriesId" | "occurrenceIndex" | "occurrenceCount"
+> &
+  Partial<
+    Pick<ScheduleBooking, "seriesId" | "occurrenceIndex" | "occurrenceCount">
+  >;
+
+function scheduleBooking(booking: ScheduleBookingFixture): ScheduleBooking {
+  return {
+    seriesId: null,
+    occurrenceIndex: null,
+    occurrenceCount: null,
+    ...booking
+  };
+}
+
 function layout(
-  bookings: ScheduleResponse["bookings"] = [],
+  bookings: ScheduleBookingFixture[] = [],
   timezone = "Europe/Kyiv",
   now = new Date("2026-07-29T07:15:00.000Z")
 ) {
@@ -23,7 +41,7 @@ function layout(
       room,
       from: "2026-07-26T21:00:00.000Z",
       to: "2026-08-02T21:00:00.000Z",
-      bookings
+      bookings: bookings.map(scheduleBooking)
     },
     weekStart: "2026-07-27",
     timezone,
@@ -480,14 +498,14 @@ describe("CalendarGrid", () => {
         from: "2026-10-26T07:00:00.000Z",
         to: "2026-11-02T08:00:00.000Z",
         bookings: [
-          {
+          scheduleBooking({
             id: "booking-fold-boundary",
             title: "Межа переходу",
             startAt: "2026-11-01T08:30:00.000Z",
             endAt: "2026-11-01T09:00:00.000Z",
             organizer: { id: "user-1", name: "Олена" },
             isOwn: true
-          }
+          })
         ]
       },
       weekStart: "2026-10-26",

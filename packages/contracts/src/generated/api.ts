@@ -180,6 +180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/booking-series/{seriesId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelBookingSeries"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/rooms": {
         parameters: {
             query?: never;
@@ -342,6 +358,10 @@ export interface components {
             endAt: string;
             /** @enum {string} */
             state: "ACTIVE" | "UPCOMING" | "COMPLETED" | "CANCELLED";
+            /** Format: uuid */
+            seriesId: string | null;
+            occurrenceIndex: number | null;
+            occurrenceCount: number | null;
         };
         MyBookingsResponseDto: {
             bookings: components["schemas"]["MyBookingDto"][];
@@ -410,6 +430,18 @@ export interface components {
         BookingSeriesConflictErrorDto: {
             error: components["schemas"]["BookingSeriesConflictErrorDetailsDto"];
         };
+        CancelledBookingSeriesDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "CANCELLED";
+            /** Format: date-time */
+            cancelledAt: string;
+            cancelledCount: number;
+        };
+        CancelBookingSeriesResponseDto: {
+            series: components["schemas"]["CancelledBookingSeriesDto"];
+        };
         RoomListQueryDto: {
             /** @example 8 */
             minCapacity?: number;
@@ -467,6 +499,10 @@ export interface components {
             organizer: components["schemas"]["ScheduleOrganizerDto"];
             /** @example true */
             isOwn: boolean;
+            /** Format: uuid */
+            seriesId: string | null;
+            occurrenceIndex: number | null;
+            occurrenceCount: number | null;
         };
         ScheduleResponseDto: {
             room: components["schemas"]["RoomDto"];
@@ -1075,6 +1111,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingSeriesConflictErrorDto"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    cancelBookingSeries: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path: {
+                seriesId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelBookingSeriesResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
                 };
             };
             415: {

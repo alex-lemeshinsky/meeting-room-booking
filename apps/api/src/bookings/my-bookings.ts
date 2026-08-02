@@ -10,6 +10,11 @@ export interface MyBookingRecord {
   endAt: Date;
   status: "ACTIVE" | "CANCELLED";
   cancelledAt: Date | null;
+  seriesId: string | null;
+  occurrenceIndex: number | null;
+  series: {
+    occurrenceCount: number;
+  } | null;
   room: {
     id: string;
     name: string;
@@ -26,6 +31,9 @@ export interface MyBooking {
   startAt: string;
   endAt: string;
   state: MyBookingState;
+  seriesId: string | null;
+  occurrenceIndex: number | null;
+  occurrenceCount: number | null;
 }
 
 interface HistoryCursor {
@@ -53,7 +61,10 @@ export function mapMyBooking(booking: MyBookingRecord, now: Date): MyBooking {
     title: booking.title,
     startAt: booking.startAt.toISOString(),
     endAt: booking.endAt.toISOString(),
-    state
+    state,
+    seriesId: booking.seriesId,
+    occurrenceIndex: booking.occurrenceIndex,
+    occurrenceCount: booking.series?.occurrenceCount ?? null
   };
 }
 

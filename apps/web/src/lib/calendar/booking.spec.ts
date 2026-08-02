@@ -73,6 +73,9 @@ function booking(
     startAt,
     endAt,
     organizer: { id: "user-1", name: "Олена" },
-    isOwn: false
+    isOwn: false,
+    seriesId: null,
+    occurrenceIndex: null,
+    occurrenceCount: null
   };
 }

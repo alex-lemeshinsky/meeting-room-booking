@@ -9,14 +9,28 @@ const room = {
   capacity: 10
 };
 
+type ScheduleBooking = ScheduleResponse["bookings"][number];
+type ScheduleBookingFixture = Omit<
+  ScheduleBooking,
+  "seriesId" | "occurrenceIndex" | "occurrenceCount"
+> &
+  Partial<
+    Pick<ScheduleBooking, "seriesId" | "occurrenceIndex" | "occurrenceCount">
+  >;
+
 function scheduleResponse(
-  bookings: ScheduleResponse["bookings"] = []
+  bookings: ScheduleBookingFixture[] = []
 ): ScheduleResponse {
   return {
     room,
     from: "2026-07-26T21:00:00.000Z",
     to: "2026-08-02T21:00:00.000Z",
-    bookings
+    bookings: bookings.map((booking) => ({
+      seriesId: null,
+      occurrenceIndex: null,
+      occurrenceCount: null,
+      ...booking
+    }))
   };
 }
 

@@ -212,6 +212,117 @@ describe("RecurrenceService", () => {
 
     await expect(service.create(USER_ID, validInput())).rejects.toBe(failure);
   });
+
+  it("atomically cancels every owned active occurrence that has not ended", async () => {
+    const database = databaseDouble({
+      cancellationOwnerId: USER_ID,
+      cancellationCount: 2
+    });
+    const clock = clockDouble();
+    const service = new RecurrenceService(database, clock, policyDouble());
+
+    await expect(service.cancel(USER_ID, SERIES_ID)).resolves.toEqual({
+      series: {
+        id: SERIES_ID,
+        status: "CANCELLED",
+        cancelledAt: NOW.toISOString(),
+        cancelledCount: 2
+      }
+    });
+
+    expect(clock.now).toHaveBeenCalledOnce();
+    expect(database.$transaction).toHaveBeenCalledOnce();
+    expect(database.transaction.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        seriesId: SERIES_ID,
+        userId: USER_ID,
+        status: "ACTIVE",
+        endAt: { gt: NOW }
+      },
+      data: { status: "CANCELLED", cancelledAt: NOW }
+    });
+  });
+
+  it.each([
+    {
+      name: "a missing series",
+      ownerId: null,
+      expected: { status: 404, code: "BOOKING_SERIES_NOT_FOUND" }
+    },
+    {
+      name: "another user's series",
+      ownerId: "00000000-0000-4000-8000-000000000099",
+      expected: { status: 403, code: "BOOKING_SERIES_FORBIDDEN" }
+    }
+  ])(
+    "rejects $name before opening a transaction",
+    async ({ ownerId, expected }) => {
+      const database = databaseDouble({ cancellationOwnerId: ownerId });
+      const service = new RecurrenceService(
+        database,
+        clockDouble(),
+        policyDouble()
+      );
+
+      await expect(service.cancel(USER_ID, SERIES_ID)).rejects.toMatchObject(
+        expected
+      );
+      expect(database.$transaction).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    {
+      name: "the series disappearing",
+      reloadedOwnerId: null,
+      expected: { status: 404, code: "BOOKING_SERIES_NOT_FOUND" }
+    },
+    {
+      name: "ownership changing",
+      reloadedOwnerId: "00000000-0000-4000-8000-000000000099",
+      expected: { status: 403, code: "BOOKING_SERIES_FORBIDDEN" }
+    },
+    {
+      name: "no cancellable occurrences remaining",
+      reloadedOwnerId: USER_ID,
+      expected: { status: 409, code: "SERIES_NOT_CANCELLABLE" }
+    }
+  ])(
+    "reclassifies a zero-row cancellation when $name",
+    async ({ reloadedOwnerId, expected }) => {
+      const database = databaseDouble({
+        cancellationOwnerId: USER_ID,
+        reloadedCancellationOwnerId: reloadedOwnerId,
+        cancellationCount: 0
+      });
+      const service = new RecurrenceService(
+        database,
+        clockDouble(),
+        policyDouble()
+      );
+
+      await expect(service.cancel(USER_ID, SERIES_ID)).rejects.toMatchObject(
+        expected
+      );
+      expect(
+        database.transaction.bookingSeries.findUnique
+      ).toHaveBeenCalledWith({
+        where: { id: SERIES_ID },
+        select: {
+          userId: true,
+          bookings: {
+            where: {
+              userId: USER_ID,
+              status: "ACTIVE",
+              endAt: { gt: NOW }
+            },
+            select: { id: true },
+            take: 1
+          }
+        }
+      });
+    }
+  );
 });
 
 function validInput() {
@@ -288,6 +399,9 @@ function policyDouble(options?: {
 function databaseDouble(options?: {
   conflictAtOccurrenceIndex?: number;
   overlap?: unknown;
+  cancellationOwnerId?: string | null;
+  reloadedCancellationOwnerId?: string | null;
+  cancellationCount?: number;
 }) {
   const bookingSeries = {
     create: vi.fn().mockResolvedValue({
@@ -297,7 +411,26 @@ function databaseDouble(options?: {
       officeTimezone: "Europe/Kyiv",
       occurrenceCount: 3,
       rule: "WEEKLY"
-    })
+    }),
+    findUnique: vi
+      .fn()
+      .mockResolvedValueOnce(
+        options?.cancellationOwnerId === undefined
+          ? null
+          : options.cancellationOwnerId === null
+            ? null
+            : { userId: options.cancellationOwnerId }
+      )
+      .mockResolvedValue(
+        options?.reloadedCancellationOwnerId === null
+          ? null
+          : {
+              userId:
+                options?.reloadedCancellationOwnerId ??
+                options?.cancellationOwnerId,
+              bookings: []
+            }
+      )
   };
   const booking = {
     create: vi
@@ -318,7 +451,10 @@ function databaseDouble(options?: {
             endAt: data.endAt
           });
         }
-      )
+      ),
+    updateMany: vi.fn().mockResolvedValue({
+      count: options?.cancellationCount ?? 0
+    })
   };
   const transaction = { bookingSeries, booking };
   const $transaction = vi.fn(
@@ -326,8 +462,13 @@ function databaseDouble(options?: {
       callback(transaction)
   );
 
-  return { $transaction, transaction } as unknown as DatabaseService & {
+  return {
+    $transaction,
+    bookingSeries,
+    transaction
+  } as unknown as DatabaseService & {
     $transaction: ReturnType<typeof vi.fn>;
+    bookingSeries: typeof bookingSeries;
     transaction: typeof transaction;
   };
 }

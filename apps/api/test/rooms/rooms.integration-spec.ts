@@ -15,6 +15,7 @@ const seedVerifiedAt = new Date("2026-07-27T00:00:00.000Z");
 describe("GET /api/v1/rooms", () => {
   let context: PostgresTestApp;
   const scheduleRoomId = "10000000-0000-4000-8000-000000000002";
+  const scheduleSeriesId = "40000000-0000-4000-8000-000000000001";
   const scheduleBookingIds = [
     "30000000-0000-4000-8000-000000000001",
     "30000000-0000-4000-8000-000000000002",
@@ -227,6 +228,18 @@ describe("GET /api/v1/rooms", () => {
       await database.booking.deleteMany({
         where: { id: { in: [...scheduleBookingIds] } }
       });
+      await database.bookingSeries.create({
+        data: {
+          id: scheduleSeriesId,
+          userId: ALEX_ID,
+          roomId: scheduleRoomId,
+          title: "Guest review series",
+          firstLocalDate: new Date("2035-01-01T00:00:00.000Z"),
+          firstLocalStartTime: new Date("1970-01-01T03:00:00.000Z"),
+          durationMinutes: 60,
+          occurrenceCount: 3
+        }
+      });
       await database.booking.createMany({
         data: [
           {
@@ -254,7 +267,9 @@ describe("GET /api/v1/rooms", () => {
             title: "Guest review",
             startAt: new Date("2035-01-01T01:00:00.000Z"),
             endAt: new Date("2035-01-01T02:00:00.000Z"),
-            status: "ACTIVE"
+            status: "ACTIVE",
+            seriesId: scheduleSeriesId,
+            occurrenceIndex: 1
           },
           {
             id: scheduleBookingIds[3],
@@ -296,9 +311,11 @@ describe("GET /api/v1/rooms", () => {
     });
 
     afterAll(async () => {
-      await context.app.get(DatabaseService).booking.deleteMany({
+      const database = context.app.get(DatabaseService);
+      await database.booking.deleteMany({
         where: { id: { in: [...scheduleBookingIds] } }
       });
+      await database.bookingSeries.delete({ where: { id: scheduleSeriesId } });
     });
 
     it("requires an authenticated session", async () => {
@@ -551,7 +568,10 @@ describe("GET /api/v1/rooms", () => {
               id: "00000000-0000-4000-8000-000000000001",
               name: "Олена"
             },
-            isOwn: false
+            isOwn: false,
+            seriesId: null,
+            occurrenceIndex: null,
+            occurrenceCount: null
           },
           {
             id: scheduleBookingIds[2],
@@ -562,7 +582,10 @@ describe("GET /api/v1/rooms", () => {
               id: "00000000-0000-4000-8000-000000000002",
               name: "Алекс"
             },
-            isOwn: true
+            isOwn: true,
+            seriesId: scheduleSeriesId,
+            occurrenceIndex: 1,
+            occurrenceCount: 3
           },
           {
             id: scheduleBookingIds[4],
@@ -573,7 +596,10 @@ describe("GET /api/v1/rooms", () => {
               id: "00000000-0000-4000-8000-000000000001",
               name: "Олена"
             },
-            isOwn: false
+            isOwn: false,
+            seriesId: null,
+            occurrenceIndex: null,
+            occurrenceCount: null
           }
         ]
       });

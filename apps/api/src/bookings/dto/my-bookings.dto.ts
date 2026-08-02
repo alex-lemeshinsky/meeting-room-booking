@@ -47,6 +47,15 @@ export class MyBookingDto {
 
   @ApiProperty({ type: String, enum: MY_BOOKING_STATES })
   state!: MyBookingState;
+
+  @ApiProperty({ type: String, format: "uuid", nullable: true })
+  seriesId!: string | null;
+
+  @ApiProperty({ type: "integer", nullable: true })
+  occurrenceIndex!: number | null;
+
+  @ApiProperty({ type: "integer", nullable: true })
+  occurrenceCount!: number | null;
 }
 
 export class MyBookingsResponseDto {
