@@ -9,3 +9,8 @@ export {
   type CalendarSlot
 } from "./calendar.js";
 export { CLOCK, FixedClock, SystemClock, type Clock } from "./clock.js";
+export {
+  buildKyivWeeklySeries,
+  type KyivWeeklyOccurrence,
+  type KyivWeeklySeriesProjection
+} from "./recurrence.js";
