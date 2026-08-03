@@ -42,4 +42,12 @@ export type CreateBookingSeriesResponse =
 export type CancelBookingSeriesResponse =
   operations["cancelBookingSeries"]["responses"][200]["content"]["application/json"];
 
+export type NotificationsResponse =
+  operations["listNotifications"]["responses"][200]["content"]["application/json"];
+
+export type MarkNotificationReadResponse =
+  operations["markNotificationRead"]["responses"][200]["content"]["application/json"];
+
+export type NotificationItem = components["schemas"]["NotificationItemDto"];
+
 export type ApiErrorBody = components["schemas"]["ApiErrorDto"];
