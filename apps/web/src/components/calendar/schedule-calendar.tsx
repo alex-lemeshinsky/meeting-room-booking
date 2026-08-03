@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { RoomsResponse, ScheduleResponse } from "../../lib/api/contracts";
 import { BrowserApiError } from "../../lib/api/errors";
 import { formatTime } from "../../lib/calendar/booking";
+import { formatOccurrenceCountLabel } from "../../lib/bookings/recurrence";
 import {
   buildCalendarLayout,
   createScheduleRequest,
@@ -145,7 +146,7 @@ function ResolvedScheduleCalendar({
       setSelectedSlot(null);
       if (result.kind === "series") {
         setSuccessMessage(
-          `Серію бронювань створено (${result.response.series.occurrenceCount} повторень): ${room.name}.`
+          `Серію бронювань створено (${formatOccurrenceCountLabel(result.response.series.occurrenceCount)}): ${room.name}.`
         );
       } else {
         setSuccessMessage(

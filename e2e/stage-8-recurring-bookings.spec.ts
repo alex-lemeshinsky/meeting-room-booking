@@ -47,7 +47,7 @@ test.describe.serial("Stage 8 recurring bookings", () => {
     await page.getByRole("button", { name: "Забронювати" }).click();
 
     await expect(
-      page.getByText("Серію бронювань створено (3 повторень): Арсенал.")
+      page.getByText("Серію бронювань створено (3 повторення): Арсенал.")
     ).toBeVisible();
 
     await expect(
