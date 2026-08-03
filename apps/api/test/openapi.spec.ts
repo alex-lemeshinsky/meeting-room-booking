@@ -1,4 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
+import { writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createOpenApiApp } from "../src/bootstrap.js";
 import { createOpenApiDocument } from "../src/openapi/openapi.js";
@@ -26,8 +28,12 @@ describe("OpenAPI document", () => {
 
   afterAll(async () => app.close());
 
-  it("publishes safe auth and room contracts for generated clients", () => {
+  it("publishes safe auth and room contracts for generated clients", async () => {
     const document = createOpenApiDocument(app);
+    await writeFile(
+      resolve(import.meta.dirname, "../openapi.json"),
+      `${JSON.stringify(document, null, 2)}\n`
+    );
     const serialized = JSON.stringify(document);
 
     expect(document.paths["/api/v1/health/live"]).toBeDefined();
@@ -615,6 +621,44 @@ describe("OpenAPI document", () => {
         }
       }
     });
+  });
+
+  it("publishes the notification REST endpoints and contracts", () => {
+    const document = createOpenApiDocument(app);
+    const listOp = document.paths["/api/v1/notifications"]?.get;
+    const markReadOp = document.paths["/api/v1/notifications/{id}/read"]?.patch;
+
+    expect(listOp?.operationId).toBe("listNotifications");
+    expect(listOp?.security).toContainEqual({ cookie: [] });
+    expect(listOp?.responses?.[200]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/NotificationsResponseDto" }
+        }
+      }
+    });
+    expectErrorResponses(listOp?.responses, [401, 500]);
+
+    expect(markReadOp?.operationId).toBe("markNotificationRead");
+    expect(markReadOp?.security).toContainEqual({ cookie: [] });
+    expect(markReadOp?.parameters).toContainEqual({
+      in: "header",
+      name: "X-CSRF-Token",
+      required: true,
+      schema: { type: "string" }
+    });
+    expect(markReadOp?.responses?.[200]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/MarkReadResponseDto" }
+        }
+      }
+    });
+    expectErrorResponses(markReadOp?.responses, [400, 401, 403, 404, 415, 500]);
+
+    expect(document.components?.schemas?.NotificationItemDto).toBeDefined();
+    expect(document.components?.schemas?.NotificationsResponseDto).toBeDefined();
+    expect(document.components?.schemas?.MarkReadResponseDto).toBeDefined();
   });
 });
 

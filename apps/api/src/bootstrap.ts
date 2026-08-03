@@ -19,7 +19,7 @@ async function createApplication(
 }
 
 export function configureApp(app: INestApplication): INestApplication {
-  app.setGlobalPrefix("api/v1");
+  app.setGlobalPrefix("api/v1", { exclude: ["events"] });
   app.use(cookieParser());
   const requestIds = new RequestIdMiddleware();
   app.use(requestIds.use);

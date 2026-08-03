@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { AuthController } from "../auth/auth.controller.js";
 import { AuthService } from "../auth/auth.service.js";
 import { EmailVerificationService } from "../auth/email-verification/email-verification.service.js";
@@ -13,6 +14,9 @@ import { BookingsService } from "../bookings/bookings.service.js";
 import { MyBookingsController } from "../bookings/my-bookings.controller.js";
 import { HealthController } from "../health/health.controller.js";
 import { HealthService } from "../health/health.service.js";
+import { NotificationSseController } from "../notifications/notification-sse.controller.js";
+import { NotificationsController } from "../notifications/notifications.controller.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
 import { RecurrenceController } from "../recurrence/recurrence.controller.js";
 import { RecurrenceService } from "../recurrence/recurrence.service.js";
 import { RoomsController } from "../rooms/rooms.controller.js";
@@ -28,7 +32,9 @@ const allowRequest = { canActivate: () => true };
     BookingsController,
     MyBookingsController,
     RecurrenceController,
-    RoomsController
+    RoomsController,
+    NotificationsController,
+    NotificationSseController
   ],
   providers: [
     {
@@ -40,6 +46,8 @@ const allowRequest = { canActivate: () => true };
     { provide: BookingsService, useValue: inertProvider },
     { provide: CookieService, useValue: inertProvider },
     { provide: HealthService, useValue: inertProvider },
+    { provide: NotificationsService, useValue: inertProvider },
+    { provide: EventEmitter2, useValue: inertProvider },
     { provide: RecurrenceService, useValue: inertProvider },
     { provide: RoomsService, useValue: inertProvider },
     { provide: SessionService, useValue: inertProvider },

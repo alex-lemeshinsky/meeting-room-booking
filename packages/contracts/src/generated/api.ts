@@ -228,6 +228,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["markNotificationRead"];
+        trace?: never;
+    };
+    "/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["notificationEventsStream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -517,6 +565,40 @@ export interface components {
              */
             to: string;
             bookings: components["schemas"]["ScheduleBookingDto"][];
+        };
+        NotificationItemDto: {
+            /** @example 123e4567-e89b-12d3-a456-426614174000 */
+            id: string;
+            /** @example NEXT_BOOKING_STARTS */
+            type: string;
+            /** @example «Стендап» у Берлін завершується за 10 хв — наступне бронювання починається одразу */
+            message: string;
+            /** @example Берлін */
+            roomName: string;
+            /** @example 123e4567-e89b-12d3-a456-426614174001 */
+            currentBookingId: string;
+            /** @example 123e4567-e89b-12d3-a456-426614174002 */
+            nextBookingId: string;
+            /** @example 2026-08-03T10:50:00.000Z */
+            scheduledFor: string;
+            /** @example 2026-08-03T10:50:01.000Z */
+            createdAt: string;
+            /** @example 2026-08-03T10:55:00.000Z */
+            readAt: Record<string, never> | null;
+        };
+        NotificationsResponseDto: {
+            notifications: components["schemas"]["NotificationItemDto"][];
+            /** @example 3 */
+            unreadCount: number;
+        };
+        NotificationReadSummaryDto: {
+            /** @example 123e4567-e89b-12d3-a456-426614174000 */
+            id: string;
+            /** @example 2026-08-03T10:55:00.000Z */
+            readAt: string;
+        };
+        MarkReadResponseDto: {
+            notification: components["schemas"]["NotificationReadSummaryDto"];
         };
     };
     responses: never;
@@ -1007,8 +1089,8 @@ export interface operations {
     listMyBookings: {
         parameters: {
             query: {
-                cursor?: string;
                 section: "upcoming" | "history";
+                cursor?: string;
             };
             header?: never;
             path?: never;
@@ -1258,8 +1340,8 @@ export interface operations {
     getRoomSchedule: {
         parameters: {
             query: {
-                to: string;
                 from: string;
+                to: string;
             };
             header?: never;
             path: {
@@ -1308,6 +1390,129 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiErrorDto"];
                 };
+            };
+        };
+    };
+    listNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    markNotificationRead: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkReadResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    notificationEventsStream: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
