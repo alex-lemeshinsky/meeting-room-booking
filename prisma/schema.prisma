@@ -29,6 +29,7 @@ model User {
   verificationTokens EmailVerificationToken[]
   bookings           Booking[]
   bookingSeries      BookingSeries[]
+  notifications      Notification[]
 
   @@map("users")
 }
@@ -98,24 +99,47 @@ model BookingSeries {
 }
 
 model Booking {
-  id              String         @id @default(uuid()) @db.Uuid
-  roomId          String         @map("room_id") @db.Uuid
-  userId          String         @map("user_id") @db.Uuid
-  title           String         @db.VarChar(100)
-  startAt         DateTime       @map("start_at") @db.Timestamptz(3)
-  endAt           DateTime       @map("end_at") @db.Timestamptz(3)
-  status          BookingStatus  @default(ACTIVE)
-  cancelledAt     DateTime?      @map("cancelled_at") @db.Timestamptz(3)
-  seriesId        String?        @map("series_id") @db.Uuid
-  occurrenceIndex Int?           @map("occurrence_index")
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
-  room            Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  user            User           @relation(fields: [userId], references: [id], onDelete: Restrict)
-  series          BookingSeries? @relation(fields: [seriesId], references: [id], onDelete: Restrict)
+  id                     String         @id @default(uuid()) @db.Uuid
+  roomId                 String         @map("room_id") @db.Uuid
+  userId                 String         @map("user_id") @db.Uuid
+  title                  String         @db.VarChar(100)
+  startAt                DateTime       @map("start_at") @db.Timestamptz(3)
+  endAt                  DateTime       @map("end_at") @db.Timestamptz(3)
+  status                 BookingStatus  @default(ACTIVE)
+  cancelledAt            DateTime?      @map("cancelled_at") @db.Timestamptz(3)
+  seriesId               String?        @map("series_id") @db.Uuid
+  occurrenceIndex        Int?           @map("occurrence_index")
+  createdAt              DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  room                   Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  user                   User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  series                 BookingSeries? @relation(fields: [seriesId], references: [id], onDelete: Restrict)
+  notificationsAsCurrent Notification[] @relation("NotificationCurrentBooking")
+  notificationsAsNext    Notification[] @relation("NotificationNextBooking")
 
   @@unique([seriesId, occurrenceIndex], map: "bookings_series_id_occurrence_index_key")
   @@index([roomId, startAt])
   @@index([userId, startAt])
   @@map("bookings")
+}
+
+model Notification {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  currentBookingId String    @map("current_booking_id") @db.Uuid
+  nextBookingId    String    @map("next_booking_id") @db.Uuid
+  type             String    @default("NEXT_BOOKING_STARTS")
+  message          String
+  roomName         String    @map("room_name")
+  scheduledFor     DateTime  @map("scheduled_for") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  readAt           DateTime? @map("read_at") @db.Timestamptz(3)
+
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentBooking Booking @relation("NotificationCurrentBooking", fields: [currentBookingId], references: [id], onDelete: Cascade)
+  nextBooking    Booking @relation("NotificationNextBooking", fields: [nextBookingId], references: [id], onDelete: Cascade)
+
+  @@unique([type, currentBookingId, nextBookingId], map: "notifications_type_booking_pair_key")
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
 }

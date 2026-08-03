@@ -26,7 +26,8 @@ describe("auth and rooms persistence", () => {
           'rooms',
           'email_verification_tokens',
           'bookings',
-          'booking_series'
+          'booking_series',
+          'notifications'
         )
       ORDER BY table_name
     `;
@@ -35,6 +36,7 @@ describe("auth and rooms persistence", () => {
       "booking_series",
       "bookings",
       "email_verification_tokens",
+      "notifications",
       "rooms",
       "sessions",
       "users"
@@ -49,7 +51,8 @@ describe("auth and rooms persistence", () => {
         'booking_series_office_timezone_check',
         'bookings_series_occurrence_pair_check',
         'bookings_series_occurrence_index_check',
-        'bookings_series_id_occurrence_index_key'
+        'bookings_series_id_occurrence_index_key',
+        'notifications_type_booking_pair_key'
       )
       ORDER BY conname
     `;
@@ -62,7 +65,8 @@ describe("auth and rooms persistence", () => {
         "booking_series_office_timezone_check",
         "bookings_series_occurrence_pair_check",
         "bookings_series_occurrence_index_check",
-        "bookings_series_id_occurrence_index_key"
+        "bookings_series_id_occurrence_index_key",
+        "notifications_type_booking_pair_key"
       ])
     );
   });
