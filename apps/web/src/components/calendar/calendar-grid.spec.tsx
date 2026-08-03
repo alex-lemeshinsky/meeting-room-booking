@@ -612,6 +612,8 @@ describe("CalendarGrid", () => {
     );
 
     expect(screen.getByText("↻")).toBeVisible();
-    expect(screen.getAllByText("Частина повторюваної серії")[0]).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Частина повторюваної серії")[0]
+    ).toBeInTheDocument();
   });
 });

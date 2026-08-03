@@ -441,7 +441,8 @@ export function BookingSheet({
                     messages={fieldErrors.occurrenceCount}
                   />
                   <p className={styles.helpText} id="booking-recurrence-help">
-                    Введіть число від 2 до 52. Поточне бронювання є 1-м повторенням.
+                    Введіть число від 2 до 52. Поточне бронювання є 1-м
+                    повторенням.
                   </p>
                 </div>
 

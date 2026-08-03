@@ -24,7 +24,9 @@ export function recurrenceSummary(
 ): RecurrenceSummary {
   const countLabel = formatOccurrenceCountLabel(occurrenceCount);
 
-  const dummyEnd = new Date(new Date(startAtIso).getTime() + 30 * 60 * 1000).toISOString();
+  const dummyEnd = new Date(
+    new Date(startAtIso).getTime() + 30 * 60 * 1000
+  ).toISOString();
   const series = buildKyivWeeklySeries(startAtIso, dummyEnd, occurrenceCount);
   const lastOccurrence = series.occurrences[series.occurrences.length - 1]!;
 

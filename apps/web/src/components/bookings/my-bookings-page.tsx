@@ -285,34 +285,36 @@ function BookingList({
                   >
                     <span aria-hidden="true">↻</span>
                     <span>
-                      Частина повторюваної серії ({(booking.occurrenceIndex ?? 0) + 1} з {booking.occurrenceCount})
+                      Частина повторюваної серії (
+                      {(booking.occurrenceIndex ?? 0) + 1} з{" "}
+                      {booking.occurrenceCount})
                     </span>
                   </span>
                 ) : null}
               </span>
-            <span className={styles.interval}>
-              {formatMyBookingInterval(booking, timezone)}
-            </span>
-            <span
-              className={styles.state}
-              data-state={booking.state.toLowerCase()}
-            >
-              {myBookingStateLabel(booking.state)}
-            </span>
-          </Link>
-          {onCancel ? (
-            <button
-              aria-label={`Скасувати бронювання «${booking.title}»`}
-              className={styles.cancelAction}
-              onClick={(event) => onCancel(booking, event.currentTarget)}
-              type="button"
-            >
-              Скасувати
-            </button>
-          ) : null}
-        </li>
-      );
-    })}
+              <span className={styles.interval}>
+                {formatMyBookingInterval(booking, timezone)}
+              </span>
+              <span
+                className={styles.state}
+                data-state={booking.state.toLowerCase()}
+              >
+                {myBookingStateLabel(booking.state)}
+              </span>
+            </Link>
+            {onCancel ? (
+              <button
+                aria-label={`Скасувати бронювання «${booking.title}»`}
+                className={styles.cancelAction}
+                onClick={(event) => onCancel(booking, event.currentTarget)}
+                type="button"
+              >
+                Скасувати
+              </button>
+            ) : null}
+          </li>
+        );
+      })}
     </ul>
   );
 }

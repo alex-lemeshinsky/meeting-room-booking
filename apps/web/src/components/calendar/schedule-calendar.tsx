@@ -5,7 +5,6 @@ import { getCurrentLocalWeekStart } from "@mrb/time/calendar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { RoomsResponse, ScheduleResponse } from "../../lib/api/contracts";
-import type { CreateBookingResponse } from "../../lib/api/contracts";
 import { BrowserApiError } from "../../lib/api/errors";
 import { formatTime } from "../../lib/calendar/booking";
 import {
@@ -18,7 +17,10 @@ import {
   persistBrowserTimezoneCookie
 } from "../../lib/calendar/timezone";
 import { RoomNotFoundState } from "../rooms/room-not-found-state";
-import { BookingSheet, type BookingCreationResult } from "../bookings/booking-sheet";
+import {
+  BookingSheet,
+  type BookingCreationResult
+} from "../bookings/booking-sheet";
 import { CalendarGrid, type BookingSlotSelection } from "./calendar-grid";
 import styles from "./calendar.module.css";
 import { TimezoneBanner } from "./timezone-banner";

@@ -359,7 +359,9 @@ describe("MyBookingsPage", () => {
       within(dialog).getByRole("button", { name: "Залишити бронювання" })
     ).toHaveFocus();
 
-    const singleBtn = within(dialog).getByRole("button", { name: "Лише цю подію" });
+    const singleBtn = within(dialog).getByRole("button", {
+      name: "Лише цю подію"
+    });
     const seriesBtn = within(dialog).getByRole("button", { name: "Усю серію" });
     expect(singleBtn).toBeEnabled();
     expect(seriesBtn).toBeEnabled();

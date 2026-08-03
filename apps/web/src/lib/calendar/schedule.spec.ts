@@ -605,7 +605,9 @@ describe("calendar layout", () => {
         seriesId: "series-100",
         occurrenceIndex: 1,
         occurrenceCount: 3,
-        accessibleLabel: expect.stringContaining("Частина повторюваної серії (2 з 3)")
+        accessibleLabel: expect.stringContaining(
+          "Частина повторюваної серії (2 з 3)"
+        )
       })
     );
   });

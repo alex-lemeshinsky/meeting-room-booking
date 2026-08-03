@@ -183,6 +183,69 @@ async function assertVerificationRoutePrivacy() {
   }
 }
 
+async function assertRecurringBookingSeries(cookies) {
+  const roomId = "10000000-0000-4000-8000-000000000001";
+  const startAt = "2030-06-10T07:00:00.000Z";
+  const endAt = "2030-06-10T07:30:00.000Z";
+
+  const csrfMatch = cookies.match(/mrb_csrf=([^;]+)/);
+  const csrfToken = csrfMatch ? csrfMatch[1] : "";
+
+  const createRes = await globalThis.fetch(`${baseUrl}/api/v1/booking-series`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: appOrigin,
+      cookie: cookies,
+      "x-csrf-token": csrfToken
+    },
+    body: JSON.stringify({
+      roomId,
+      title: "Smoke Test Series",
+      startAt,
+      endAt,
+      occurrenceCount: 2
+    })
+  });
+
+  if (!createRes.ok) {
+    throw new Error(`booking series creation returned ${createRes.status}`);
+  }
+
+  const seriesData = await createRes.json();
+  const seriesId = seriesData.series.id;
+  if (!seriesId || seriesData.occurrences.length !== 2) {
+    throw new Error(
+      "series creation response missing expected occurrence count or id"
+    );
+  }
+
+  const cancelRes = await globalThis.fetch(
+    `${baseUrl}/api/v1/booking-series/${seriesId}/cancel`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: appOrigin,
+        cookie: cookies,
+        "x-csrf-token": csrfToken
+      },
+      body: JSON.stringify({})
+    }
+  );
+
+  if (!cancelRes.ok) {
+    throw new Error(`booking series cancellation returned ${cancelRes.status}`);
+  }
+
+  const cancelData = await cancelRes.json();
+  if (cancelData.cancelledCount !== 2) {
+    throw new Error(
+      `expected 2 cancelled occurrences, received ${cancelData.cancelledCount}`
+    );
+  }
+}
+
 async function main() {
   let attemptedStartup = false;
   try {
@@ -190,11 +253,14 @@ async function main() {
     await compose("up", "--build", "--wait");
     await waitForReady();
     await assertVerificationRoutePrivacy();
-    await assertFilteredRooms(await login());
+    const sessionCookies = await login();
+    await assertFilteredRooms(sessionCookies);
+    await assertRecurringBookingSeries(sessionCookies);
 
     await compose("restart", "db");
     await waitForReady();
-    await assertFilteredRooms(await login());
+    await assertFilteredRooms(sessionCookies);
+    await assertRecurringBookingSeries(sessionCookies);
     console.log(
       "Compose smoke test passed, including database restart recovery."
     );

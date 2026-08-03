@@ -339,7 +339,11 @@ describe("BookingSheet", () => {
           rule: "WEEKLY"
         },
         occurrences: [
-          { occurrenceIndex: 0, startAt: selection.startAt, endAt: "2026-07-27T07:00:00.000Z" }
+          {
+            occurrenceIndex: 0,
+            startAt: selection.startAt,
+            endAt: "2026-07-27T07:00:00.000Z"
+          }
         ]
       })
     );
