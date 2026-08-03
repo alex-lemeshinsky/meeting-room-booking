@@ -18,7 +18,7 @@ import {
   persistBrowserTimezoneCookie
 } from "../../lib/calendar/timezone";
 import { RoomNotFoundState } from "../rooms/room-not-found-state";
-import { BookingSheet } from "../bookings/booking-sheet";
+import { BookingSheet, type BookingCreationResult } from "../bookings/booking-sheet";
 import { CalendarGrid, type BookingSlotSelection } from "./calendar-grid";
 import styles from "./calendar.module.css";
 import { TimezoneBanner } from "./timezone-banner";
@@ -139,13 +139,19 @@ function ResolvedScheduleCalendar({
   }, []);
 
   const bookingCreated = useCallback(
-    (created: CreateBookingResponse) => {
+    (result: BookingCreationResult) => {
       setSelectedSlot(null);
-      setSuccessMessage(
-        `Бронювання створено: ${room.name}, ` +
-          `${formatTime(created.booking.startAt, timezone)}–` +
-          `${formatTime(created.booking.endAt, timezone)}.`
-      );
+      if (result.kind === "series") {
+        setSuccessMessage(
+          `Серію бронювань створено (${result.response.series.occurrenceCount} повторень): ${room.name}.`
+        );
+      } else {
+        setSuccessMessage(
+          `Бронювання створено: ${room.name}, ` +
+            `${formatTime(result.response.booking.startAt, timezone)}–` +
+            `${formatTime(result.response.booking.endAt, timezone)}.`
+        );
+      }
       void query.refetch();
       queueMicrotask(() => {
         document

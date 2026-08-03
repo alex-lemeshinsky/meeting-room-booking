@@ -299,6 +299,134 @@ describe("BookingSheet", () => {
     );
     await waitFor(() => expect(onCreated).toHaveBeenCalledOnce());
   });
+
+  it("has recurrence off by default and shows controls when enabled", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    const checkbox = screen.getByLabelText("Повторювати щотижня");
+    expect(checkbox).not.toBeChecked();
+    expect(
+      screen.queryByLabelText("Кількість повторень")
+    ).not.toBeInTheDocument();
+
+    await user.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    const countInput = screen.getByLabelText("Кількість повторень");
+    expect(countInput).toHaveValue(2);
+    expect(countInput).toHaveAttribute("min", "2");
+    expect(countInput).toHaveAttribute("max", "52");
+    expect(
+      screen.getByText(
+        "Введіть число від 2 до 52. Поточне бронювання є 1-м повторенням."
+      )
+    ).toBeVisible();
+    expect(screen.getByText("2 повторення")).toBeVisible();
+  });
+
+  it("submits a recurring booking series to /api/v1/booking-series", async () => {
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    const fetchMock = vi.fn().mockResolvedValue(
+      apiSuccess({
+        series: {
+          id: "series-100",
+          userId: "user-1",
+          roomId: room.id,
+          title: "Щотижневий статус",
+          officeTimezone: "Europe/Kyiv",
+          occurrenceCount: 4,
+          rule: "WEEKLY"
+        },
+        occurrences: [
+          { occurrenceIndex: 0, startAt: selection.startAt, endAt: "2026-07-27T07:00:00.000Z" }
+        ]
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const onCreated = vi.fn();
+    const user = userEvent.setup();
+    renderSheet({ onCreated });
+
+    await user.type(screen.getByLabelText("Назва"), "Щотижневий статус");
+    await user.click(screen.getByLabelText("Повторювати щотижня"));
+
+    const countInput = screen.getByLabelText("Кількість повторень");
+    await user.clear(countInput);
+    await user.type(countInput, "4");
+
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalledOnce());
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/booking-series", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": "csrf-value"
+      },
+      body: JSON.stringify({
+        roomId: room.id,
+        title: "Щотижневий статус",
+        startAt: selection.startAt,
+        endAt: "2026-07-27T07:00:00.000Z",
+        occurrenceCount: 4
+      })
+    });
+  });
+
+  it("validates occurrence count locally before submitting", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.type(screen.getByLabelText("Назва"), "Щотижневий статус");
+    await user.click(screen.getByLabelText("Повторювати щотижня"));
+
+    const countInput = screen.getByLabelText("Кількість повторень");
+    await user.clear(countInput);
+    await user.type(countInput, "1");
+
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(countInput).toHaveFocus();
+    expect(
+      screen.getByText("Введіть кількість повторень від 2 до 52.")
+    ).toBeVisible();
+  });
+
+  it("reports conflicting occurrence number from details on conflict", async () => {
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({
+          error: {
+            code: "BOOKING_CONFLICT",
+            message: "Conflict",
+            details: { occurrenceNumber: 3 },
+            requestId: "req-1"
+          }
+        })
+      })
+    );
+    const onConflict = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderSheet({ onConflict });
+
+    await user.type(screen.getByLabelText("Назва"), "Щотижневий статус");
+    await user.click(screen.getByLabelText("Повторювати щотижня"));
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "Слот для 3-го повторення щойно зайняли. Ми оновили розклад. Оберіть інший час."
+    );
+    expect(onConflict).toHaveBeenCalledOnce();
+  });
 });
 
 function renderSheet(

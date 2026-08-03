@@ -10,10 +10,11 @@ import {
 } from "react";
 import type {
   CreateBookingResponse,
+  CreateBookingSeriesResponse,
   RoomsResponse,
   ScheduleResponse
 } from "../../lib/api/contracts";
-import { createBooking } from "../../lib/api/bookings";
+import { createBooking, createBookingSeries } from "../../lib/api/bookings";
 import { BrowserApiError } from "../../lib/api/errors";
 import {
   buildBookingEndOptions,
@@ -21,10 +22,15 @@ import {
   formatTime,
   type BookingTimeOption
 } from "../../lib/calendar/booking";
+import { recurrenceSummary } from "../../lib/bookings/recurrence";
 import type { CalendarLayout } from "../../lib/calendar/schedule";
 import { containTabFocus, lockDocumentScroll } from "../../lib/ui/overlay";
 import type { BookingSlotSelection } from "../calendar/calendar-grid";
 import styles from "./booking-sheet.module.css";
+
+export type BookingCreationResult =
+  | { kind: "booking"; response: CreateBookingResponse }
+  | { kind: "series"; response: CreateBookingSeriesResponse };
 
 interface BookingSheetProps {
   room: RoomsResponse["rooms"][number];
@@ -34,7 +40,7 @@ interface BookingSheetProps {
   initialSelection: BookingSlotSelection;
   onClose(): void;
   onConflict(): Promise<void>;
-  onCreated(response: CreateBookingResponse): void;
+  onCreated(result: BookingCreationResult): void;
 }
 
 export function BookingSheet({
@@ -50,6 +56,7 @@ export function BookingSheet({
   const titleRef = useRef<HTMLInputElement>(null);
   const startRef = useRef<HTMLSelectElement>(null);
   const endRef = useRef<HTMLSelectElement>(null);
+  const countRef = useRef<HTMLInputElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const shouldFocusRequestError = useRef(false);
   const [title, setTitle] = useState("");
@@ -62,6 +69,8 @@ export function BookingSheet({
     [bookings, initialSelection.startAt, timezone]
   );
   const [endAt, setEndAt] = useState(initialEnd);
+  const [recursWeekly, setRecursWeekly] = useState(false);
+  const [occurrenceCount, setOccurrenceCount] = useState(2);
   const [isPending, setIsPending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [requestError, setRequestError] = useState<string>();
@@ -79,6 +88,7 @@ export function BookingSheet({
       ? bookableDays
       : [selectedDay, ...bookableDays];
   }, [layout.days, localDate]);
+
   const startOptions = useMemo(() => {
     const day = layout.days.find(
       (candidate) => candidate.localDate === localDate
@@ -95,6 +105,7 @@ export function BookingSheet({
       formatTime(startAt, timezone)
     );
   }, [layout.days, localDate, startAt, timezone]);
+
   const endOptions = useMemo(
     () =>
       preserveSelectedOption(
@@ -104,6 +115,21 @@ export function BookingSheet({
       ),
     [bookings, endAt, startAt, timezone]
   );
+
+  const summaryInfo = useMemo(() => {
+    if (!recursWeekly) return null;
+    try {
+      const validCount =
+        Number.isInteger(occurrenceCount) &&
+        occurrenceCount >= 2 &&
+        occurrenceCount <= 52
+          ? occurrenceCount
+          : 2;
+      return recurrenceSummary(startAt, validCount, timezone);
+    } catch {
+      return null;
+    }
+  }, [recursWeekly, startAt, occurrenceCount, timezone]);
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -160,15 +186,39 @@ export function BookingSheet({
       return;
     }
 
+    if (
+      recursWeekly &&
+      (!Number.isInteger(occurrenceCount) ||
+        occurrenceCount < 2 ||
+        occurrenceCount > 52)
+    ) {
+      setFieldErrors({
+        occurrenceCount: ["Введіть кількість повторень від 2 до 52."]
+      });
+      countRef.current?.focus();
+      return;
+    }
+
     setIsPending(true);
     try {
-      const created = await createBooking({
-        roomId: room.id,
-        title,
-        startAt,
-        endAt
-      });
-      onCreated(created);
+      if (recursWeekly) {
+        const created = await createBookingSeries({
+          roomId: room.id,
+          title,
+          startAt,
+          endAt,
+          occurrenceCount
+        });
+        onCreated({ kind: "series", response: created });
+      } else {
+        const created = await createBooking({
+          roomId: room.id,
+          title,
+          startAt,
+          endAt
+        });
+        onCreated({ kind: "booking", response: created });
+      }
     } catch (error) {
       if (error instanceof BrowserApiError) {
         if (error.code === "EMAIL_NOT_VERIFIED") {
@@ -178,9 +228,16 @@ export function BookingSheet({
           );
         } else if (error.code === "BOOKING_CONFLICT") {
           shouldFocusRequestError.current = true;
-          setRequestError(
-            "Цей слот щойно зайняли. Ми оновили розклад. Оберіть інший час."
-          );
+          const occurrenceNumber = error.details?.occurrenceNumber;
+          if (typeof occurrenceNumber === "number") {
+            setRequestError(
+              `Слот для ${occurrenceNumber}-го повторення щойно зайняли. Ми оновили розклад. Оберіть інший час.`
+            );
+          } else {
+            setRequestError(
+              "Цей слот щойно зайняли. Ми оновили розклад. Оберіть інший час."
+            );
+          }
           await onConflict();
         } else {
           const localizedFields = localizedFieldErrors(
@@ -194,7 +251,8 @@ export function BookingSheet({
               localizedFields,
               titleRef.current,
               startRef.current,
-              endRef.current
+              endRef.current,
+              countRef.current
             )
           );
         }
@@ -328,6 +386,80 @@ export function BookingSheet({
             <FieldError id="booking-title-error" messages={fieldErrors.title} />
           </div>
 
+          <div className={styles.recurrenceSection}>
+            <label className={styles.checkboxLabel} htmlFor="booking-recurs">
+              <input
+                checked={recursWeekly}
+                id="booking-recurs"
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setRecursWeekly(checked);
+                  if (
+                    checked &&
+                    (!Number.isInteger(occurrenceCount) ||
+                      occurrenceCount < 2 ||
+                      occurrenceCount > 52)
+                  ) {
+                    setOccurrenceCount(2);
+                  }
+                  clearErrors();
+                }}
+                type="checkbox"
+              />
+              <span>Повторювати щотижня</span>
+            </label>
+
+            {recursWeekly ? (
+              <div className={styles.recurrenceFields}>
+                <div className={styles.field}>
+                  <label htmlFor="booking-occurrence-count">
+                    Кількість повторень
+                  </label>
+                  <input
+                    aria-describedby={
+                      fieldErrors.occurrenceCount
+                        ? "booking-occurrence-count-error"
+                        : "booking-recurrence-help"
+                    }
+                    aria-invalid={
+                      fieldErrors.occurrenceCount ? true : undefined
+                    }
+                    id="booking-occurrence-count"
+                    max={52}
+                    min={2}
+                    onChange={(event) => {
+                      const val = parseInt(event.target.value, 10);
+                      setOccurrenceCount(Number.isNaN(val) ? 0 : val);
+                      clearErrors();
+                    }}
+                    ref={countRef}
+                    type="number"
+                    value={occurrenceCount || ""}
+                  />
+                  <FieldError
+                    id="booking-occurrence-count-error"
+                    messages={fieldErrors.occurrenceCount}
+                  />
+                  <p className={styles.helpText} id="booking-recurrence-help">
+                    Введіть число від 2 до 52. Поточне бронювання є 1-м повторенням.
+                  </p>
+                </div>
+
+                {summaryInfo ? (
+                  <div className={styles.summary}>
+                    <p>
+                      <strong>Всього:</strong> {summaryInfo.countLabel}
+                    </p>
+                    <p>
+                      <strong>Останнє повторення:</strong>{" "}
+                      {summaryInfo.finalDateLabel}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
           <div className={styles.summary}>
             <p>
               <strong>Ваш час:</strong>{" "}
@@ -408,6 +540,9 @@ function localizedError(code: string): string {
         "Бронювання має бути в межах робочих годин офісу.",
       INVALID_BOOKING_DURATION: "Оберіть тривалість від 30 хвилин до 4 годин.",
       INVALID_BOOKING_TITLE: "Введіть назву від 1 до 100 символів.",
+      INVALID_OCCURRENCE_COUNT: "Введіть кількість повторень від 2 до 52.",
+      INVALID_RECURRENCE_OCCURRENCE:
+        "Повторюване бронювання містить недопустимий слот.",
       ROOM_NOT_FOUND: "Ця кімната більше не доступна."
     }[code] ?? "Не вдалося створити бронювання. Спробуйте ще раз."
   );
@@ -434,6 +569,9 @@ function localizedFieldErrors(
     },
     INVALID_BOOKING_TITLE: {
       title: ["Введіть назву від 1 до 100 символів."]
+    },
+    INVALID_OCCURRENCE_COUNT: {
+      occurrenceCount: ["Введіть кількість повторень від 2 до 52."]
     }
   }[code];
   if (known !== undefined) return known;
@@ -450,9 +588,11 @@ function focusFirstInvalidField(
   fields: Record<string, string[]>,
   title: HTMLInputElement | null,
   start: HTMLSelectElement | null,
-  end: HTMLSelectElement | null
+  end: HTMLSelectElement | null,
+  count: HTMLInputElement | null
 ) {
   if (fields.title) title?.focus();
   else if (fields.startAt) start?.focus();
   else if (fields.endAt) end?.focus();
+  else if (fields.occurrenceCount) count?.focus();
 }

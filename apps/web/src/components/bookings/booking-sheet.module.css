@@ -132,6 +132,46 @@
   color: var(--color-text-primary);
 }
 
+.recurrenceSection {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--color-text-primary);
+  font: var(--type-label);
+  cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-action-primary);
+  cursor: pointer;
+}
+
+.recurrenceFields {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.helpText {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+}
+
 .fieldError,
 .requestError {
   color: var(--color-danger);

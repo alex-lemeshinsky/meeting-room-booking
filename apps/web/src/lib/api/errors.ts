@@ -3,6 +3,7 @@ import type { ApiErrorBody } from "./contracts";
 export class BrowserApiError extends Error {
   readonly code: string;
   readonly fields: Record<string, string[]>;
+  readonly details: Record<string, unknown>;
   readonly requestId: string;
 
   constructor(error: ApiErrorBody["error"]) {
@@ -10,6 +11,7 @@ export class BrowserApiError extends Error {
     this.name = "BrowserApiError";
     this.code = error.code;
     this.fields = error.fields ?? {};
+    this.details = (error.details as Record<string, unknown> | undefined) ?? {};
     this.requestId = error.requestId;
   }
 }
@@ -29,8 +31,13 @@ export function isApiErrorBody(value: unknown): value is ApiErrorBody {
     typeof error.code === "string" &&
     typeof error.message === "string" &&
     typeof error.requestId === "string" &&
-    (!("fields" in error) || isFieldErrors(error.fields))
+    (!("fields" in error) || isFieldErrors(error.fields)) &&
+    (!("details" in error) || isDetailsObject(error.details))
   );
+}
+
+function isDetailsObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isFieldErrors(value: unknown): value is Record<string, string[]> {

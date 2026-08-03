@@ -2,8 +2,11 @@ import { csrfTokenFromCookie } from "../auth/csrf";
 import { browserApi } from "./browser";
 import type {
   CancelBookingResponse,
+  CancelBookingSeriesResponse,
   CreateBookingBody,
   CreateBookingResponse,
+  CreateBookingSeriesBody,
+  CreateBookingSeriesResponse,
   MyBookingsResponse
 } from "./contracts";
 
@@ -19,6 +22,37 @@ export function createBooking(
     },
     body: JSON.stringify(input)
   });
+}
+
+export function createBookingSeries(
+  input: CreateBookingSeriesBody
+): Promise<CreateBookingSeriesResponse> {
+  return browserApi<CreateBookingSeriesResponse>("/api/v1/booking-series", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": csrfTokenFromCookie()
+    },
+    body: JSON.stringify(input)
+  });
+}
+
+export function cancelBookingSeries(
+  seriesId: string
+): Promise<CancelBookingSeriesResponse> {
+  return browserApi<CancelBookingSeriesResponse>(
+    `/api/v1/booking-series/${encodeURIComponent(seriesId)}/cancel`,
+    {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfTokenFromCookie()
+      },
+      body: JSON.stringify({})
+    }
+  );
 }
 
 export function cancelBooking(
