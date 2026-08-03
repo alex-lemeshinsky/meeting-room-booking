@@ -62,6 +62,10 @@ export interface CalendarLayoutBooking {
   startOffsetPercent: number;
   heightInRows: number;
   accessibleLabel: string;
+  isRecurring: boolean;
+  seriesId?: string | undefined;
+  occurrenceIndex?: number | undefined;
+  occurrenceCount?: number | undefined;
 }
 
 export interface CalendarLayout {
@@ -410,6 +414,15 @@ function buildBookingFragments(
         ? "Моє"
         : `Організатор: ${booking.organizer.name}`;
 
+      const isRecurring =
+        booking.seriesId != null &&
+        booking.occurrenceIndex != null &&
+        booking.occurrenceCount != null;
+
+      const recurrenceLabel = isRecurring
+        ? `. Частина повторюваної серії (${(booking.occurrenceIndex ?? 0) + 1} з ${booking.occurrenceCount})`
+        : "";
+
       return [
         {
           bookingId: booking.id,
@@ -427,7 +440,15 @@ function buildBookingFragments(
           heightInRows: endPosition - startPosition,
           accessibleLabel:
             `${booking.title}. ${day.fullDateLabel}, ` +
-            `${startLabel}–${endLabel}. ${ownershipLabel}`
+            `${startLabel}–${endLabel}. ${ownershipLabel}${recurrenceLabel}`,
+          isRecurring,
+          ...(isRecurring
+            ? {
+                seriesId: booking.seriesId ?? undefined,
+                occurrenceIndex: booking.occurrenceIndex ?? undefined,
+                occurrenceCount: booking.occurrenceCount ?? undefined
+              }
+            : {})
         }
       ];
     });

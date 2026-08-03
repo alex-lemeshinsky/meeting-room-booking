@@ -591,4 +591,27 @@ describe("CalendarGrid", () => {
       gridRow: "2"
     });
   });
+
+  it("renders a repeat icon and accessible text for recurring series bookings", () => {
+    render(
+      <CalendarGrid
+        layout={layout([
+          {
+            id: "booking-recurring",
+            title: "Щотижнева зустріч",
+            startAt: "2026-07-29T07:00:00.000Z",
+            endAt: "2026-07-29T08:00:00.000Z",
+            organizer: { id: "user-1", name: "Олена" },
+            isOwn: true,
+            seriesId: "series-1",
+            occurrenceIndex: 0,
+            occurrenceCount: 5
+          }
+        ])}
+      />
+    );
+
+    expect(screen.getByText("↻")).toBeVisible();
+    expect(screen.getAllByText("Частина повторюваної серії")[0]).toBeInTheDocument();
+  });
 });

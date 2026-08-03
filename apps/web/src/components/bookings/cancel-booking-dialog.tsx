@@ -2,7 +2,7 @@
 
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { MyBookingsResponse } from "../../lib/api/contracts";
-import { cancelBooking } from "../../lib/api/bookings";
+import { cancelBooking, cancelBookingSeries } from "../../lib/api/bookings";
 import { BrowserApiError } from "../../lib/api/errors";
 import { formatMyBookingInterval } from "../../lib/bookings/my-bookings";
 import { containTabFocus, lockDocumentScroll } from "../../lib/ui/overlay";
@@ -25,8 +25,12 @@ export function CancelBookingDialog({
 }: CancelBookingDialogProps) {
   const safeActionRef = useRef<HTMLButtonElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
-  const [isPending, setIsPending] = useState(false);
+  const [pendingChoice, setPendingChoice] = useState<
+    "occurrence" | "series" | undefined
+  >();
   const [requestError, setRequestError] = useState<string>();
+  const isPending = pendingChoice !== undefined;
+  const isSeries = booking.seriesId != null;
 
   useEffect(() => {
     safeActionRef.current?.focus();
@@ -38,10 +42,10 @@ export function CancelBookingDialog({
     if (requestError !== undefined) errorRef.current?.focus();
   }, [requestError]);
 
-  async function confirmCancellation() {
+  async function handleCancelSingle() {
     if (isPending) return;
 
-    setIsPending(true);
+    setPendingChoice("occurrence");
     setRequestError(undefined);
     try {
       await cancelBooking(booking.id);
@@ -49,7 +53,22 @@ export function CancelBookingDialog({
     } catch (error) {
       setRequestError(localizedCancellationError(error));
     } finally {
-      setIsPending(false);
+      setPendingChoice(undefined);
+    }
+  }
+
+  async function handleCancelSeries() {
+    if (isPending || !booking.seriesId) return;
+
+    setPendingChoice("series");
+    setRequestError(undefined);
+    try {
+      await cancelBookingSeries(booking.seriesId);
+      await onCancelled();
+    } catch (error) {
+      setRequestError(localizedCancellationError(error));
+    } finally {
+      setPendingChoice(undefined);
     }
   }
 
@@ -80,7 +99,9 @@ export function CancelBookingDialog({
           {formatMyBookingInterval(booking, timezone)}
         </p>
         <p className={styles.dialogWarning}>
-          Бронювання залишиться в історії, але кімната знову стане доступною.
+          {isSeries
+            ? "Оберіть, чи скасувати лише цієї зустріч, чи всю повторювану серію."
+            : "Бронювання залишиться в історії, але кімната знову стане доступною."}
         </p>
 
         {requestError ? (
@@ -104,14 +125,39 @@ export function CancelBookingDialog({
           >
             Залишити бронювання
           </button>
-          <button
-            className={styles.dangerAction}
-            disabled={isPending}
-            onClick={() => void confirmCancellation()}
-            type="button"
-          >
-            {isPending ? "Скасовуємо…" : "Скасувати бронювання"}
-          </button>
+          {isSeries ? (
+            <>
+              <button
+                className={styles.dangerAction}
+                disabled={isPending}
+                onClick={() => void handleCancelSingle()}
+                type="button"
+              >
+                {pendingChoice === "occurrence"
+                  ? "Скасовуємо…"
+                  : "Лише цю подію"}
+              </button>
+              <button
+                className={styles.dangerAction}
+                disabled={isPending}
+                onClick={() => void handleCancelSeries()}
+                type="button"
+              >
+                {pendingChoice === "series" ? "Скасовуємо…" : "Усю серію"}
+              </button>
+            </>
+          ) : (
+            <button
+              className={styles.dangerAction}
+              disabled={isPending}
+              onClick={() => void handleCancelSingle()}
+              type="button"
+            >
+              {pendingChoice === "occurrence"
+                ? "Скасовуємо…"
+                : "Скасувати бронювання"}
+            </button>
+          )}
         </footer>
       </section>
     </div>
@@ -126,7 +172,12 @@ function localizedCancellationError(error: unknown): string {
           "Це бронювання вже завершилося і його не можна скасувати.",
         BOOKING_ALREADY_CANCELLED: "Це бронювання вже скасовано.",
         BOOKING_FORBIDDEN: "Ви можете скасовувати лише власні бронювання.",
-        BOOKING_NOT_FOUND: "Це бронювання більше не існує."
+        BOOKING_NOT_FOUND: "Це бронювання більше не існує.",
+        BOOKING_SERIES_FORBIDDEN:
+          "Ви можете скасовувати лише власні серії бронювань.",
+        BOOKING_SERIES_NOT_FOUND: "Ця серія бронювань більше не існує.",
+        SERIES_NOT_CANCELLABLE:
+          "У цієї серії немає активних майбутніх повторень для скасування."
       }[error.code] ?? "Не вдалося скасувати бронювання. Спробуйте ще раз."
     );
   }

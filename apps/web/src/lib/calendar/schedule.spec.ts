@@ -577,4 +577,36 @@ describe("calendar layout", () => {
       { id: "2026-11-01T09:00:00.000Z", elapsedPercent: 50 }
     ]);
   });
+
+  it("projects recurring series metadata and accessible label", () => {
+    const layout = buildCalendarLayout({
+      response: scheduleResponse([
+        {
+          id: "booking-recurring",
+          title: "Щотижневий статус",
+          startAt: "2026-07-29T07:00:00.000Z",
+          endAt: "2026-07-29T08:00:00.000Z",
+          organizer: { id: "user-1", name: "Олена" },
+          isOwn: true,
+          seriesId: "series-100",
+          occurrenceIndex: 1,
+          occurrenceCount: 3
+        }
+      ]),
+      weekStart: "2026-07-27",
+      timezone: "Europe/Kyiv",
+      now: new Date("2026-07-29T06:00:00.000Z")
+    });
+
+    expect(layout.bookings[0]).toEqual(
+      expect.objectContaining({
+        bookingId: "booking-recurring",
+        isRecurring: true,
+        seriesId: "series-100",
+        occurrenceIndex: 1,
+        occurrenceCount: 3,
+        accessibleLabel: expect.stringContaining("Частина повторюваної серії (2 з 3)")
+      })
+    );
+  });
 });

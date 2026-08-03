@@ -361,7 +361,23 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                       : styles.otherBooking;
                     const bookingContent = (
                       <span className={styles.bookingContent}>
-                        <strong title={booking.title}>{booking.title}</strong>
+                        <strong title={booking.title}>
+                          {booking.isRecurring ? (
+                            <span
+                              aria-hidden="true"
+                              style={{ marginRight: "4px" }}
+                              title={`Частина повторюваної серії (${(booking.occurrenceIndex ?? 0) + 1} з ${booking.occurrenceCount})`}
+                            >
+                              ↻
+                            </span>
+                          ) : null}
+                          {booking.title}
+                        </strong>
+                        {booking.isRecurring ? (
+                          <span className={styles.visuallyHidden}>
+                            Частина повторюваної серії
+                          </span>
+                        ) : null}
                         <span
                           className={
                             booking.isOwn ? styles.ownBookingLabel : undefined

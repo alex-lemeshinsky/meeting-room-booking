@@ -262,17 +262,34 @@ function BookingList({
 }) {
   return (
     <ul className={styles.list}>
-      {bookings.map((booking) => (
-        <li className={styles.row} key={booking.id}>
-          <Link
-            aria-label={`Відкрити бронювання «${booking.title}» в календарі`}
-            className={styles.rowLink}
-            href={bookingCalendarHref(booking, timezone)}
-          >
-            <span className={styles.rowMain}>
-              <strong>{booking.title}</strong>
-              <span>{booking.room.name}</span>
-            </span>
+      {bookings.map((booking) => {
+        const isSeries =
+          booking.seriesId != null &&
+          booking.occurrenceIndex != null &&
+          booking.occurrenceCount != null;
+
+        return (
+          <li className={styles.row} key={booking.id}>
+            <Link
+              aria-label={`Відкрити бронювання «${booking.title}» в календарі`}
+              className={styles.rowLink}
+              href={bookingCalendarHref(booking, timezone)}
+            >
+              <span className={styles.rowMain}>
+                <strong>{booking.title}</strong>
+                <span>{booking.room.name}</span>
+                {isSeries ? (
+                  <span
+                    className={styles.seriesBadge}
+                    title={`Частина повторюваної серії (${(booking.occurrenceIndex ?? 0) + 1} з ${booking.occurrenceCount})`}
+                  >
+                    <span aria-hidden="true">↻</span>
+                    <span>
+                      Частина повторюваної серії ({(booking.occurrenceIndex ?? 0) + 1} з {booking.occurrenceCount})
+                    </span>
+                  </span>
+                ) : null}
+              </span>
             <span className={styles.interval}>
               {formatMyBookingInterval(booking, timezone)}
             </span>
@@ -294,7 +311,8 @@ function BookingList({
             </button>
           ) : null}
         </li>
-      ))}
+      );
+    })}
     </ul>
   );
 }

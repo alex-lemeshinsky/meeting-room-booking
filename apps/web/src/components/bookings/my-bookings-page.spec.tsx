@@ -298,6 +298,93 @@ describe("MyBookingsPage", () => {
     expect(document.body.style.overflow).toBe("");
     expect(trigger).toHaveFocus();
   });
+
+  it("renders series badge for recurring booking rows", () => {
+    renderPage({
+      bookings: [
+        booking({
+          id: "booking-series-1",
+          title: "Щотижнева синхронізація",
+          seriesId: "series-100",
+          occurrenceIndex: 2,
+          occurrenceCount: 5
+        })
+      ],
+      nextCursor: null
+    });
+
+    expect(screen.getByText("↻")).toBeVisible();
+    expect(
+      screen.getByText("Частина повторюваної серії (3 з 5)")
+    ).toBeVisible();
+  });
+
+  it("supports cancelling only one occurrence or the whole series", async () => {
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        apiSuccess({
+          seriesId: "series-100",
+          cancelledAt: "2026-07-27T06:00:00.000Z",
+          cancelledCount: 3
+        })
+      )
+      .mockResolvedValueOnce(apiSuccess(emptyResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    renderPage({
+      bookings: [
+        booking({
+          id: "booking-series-1",
+          title: "Щотижнева синхронізація",
+          seriesId: "series-100",
+          occurrenceIndex: 0,
+          occurrenceCount: 4
+        })
+      ],
+      nextCursor: null
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Скасувати бронювання «Щотижнева синхронізація»"
+      })
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Скасувати бронювання"
+    });
+    expect(
+      within(dialog).getByRole("button", { name: "Залишити бронювання" })
+    ).toHaveFocus();
+
+    const singleBtn = within(dialog).getByRole("button", { name: "Лише цю подію" });
+    const seriesBtn = within(dialog).getByRole("button", { name: "Усю серію" });
+    expect(singleBtn).toBeEnabled();
+    expect(seriesBtn).toBeEnabled();
+
+    await user.click(seriesBtn);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Скасувати бронювання" })
+      ).not.toBeInTheDocument()
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/booking-series/series-100/cancel",
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "csrf-value"
+        },
+        body: JSON.stringify({})
+      }
+    );
+  });
 });
 
 function renderPage(initialUpcoming: MyBookingsResponse) {
