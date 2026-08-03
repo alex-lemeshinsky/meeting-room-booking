@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ProtectedHeader } from "../../components/shell/protected-header";
 import { QueryProvider } from "../../components/providers/query-provider";
+import { ToastProvider } from "../../components/shell/toast-provider";
 import { UnauthenticatedError } from "../../lib/api/server";
 import { SESSION_COOKIE } from "../../lib/auth/cookies";
 import { getCurrentSession } from "../../lib/auth/session";
@@ -24,7 +25,9 @@ export default async function ProtectedLayout({
       <div className={styles.appShell}>
         <ProtectedHeader userName={user.name} />
         <QueryProvider>
-          <main className={styles.main}>{children}</main>
+          <ToastProvider>
+            <main className={styles.main}>{children}</main>
+          </ToastProvider>
         </QueryProvider>
       </div>
     );
