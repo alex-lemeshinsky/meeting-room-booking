@@ -10,7 +10,7 @@ const DNIPRO_ROOM_ID = "10000000-0000-4000-8000-000000000002";
 const VERIFICATION_ERROR =
   "Підтвердьте email за посиланням із журналу API, щоб створювати бронювання.";
 const MOBILE_BOOKING_TITLE = "Stage 7 mobile booking";
-const MOBILE_BOOKING_END = "2030-01-10T10:30:00.000Z";
+const MOBILE_BOOKING_END = "2026-08-06T09:30:00.000Z";
 
 test.describe.serial("Stage 7 email verification", () => {
   test.use({ timezoneId: "Europe/Kyiv" });
@@ -114,7 +114,7 @@ test.describe.serial("Stage 7 email verification", () => {
     ).toBeVisible();
 
     const slot = page.getByRole("button", {
-      name: /Забронювати четвер, 10 січня 2030 р., 11:30/
+      name: /Забронювати четвер, 6 серпня 2026 р., 11:30/
     });
     await slot.scrollIntoViewIfNeeded();
     await slot.click();
@@ -161,12 +161,12 @@ test.describe.serial("Stage 7 email verification", () => {
       page.getByRole("heading", { name: "Email підтверджено" })
     ).toBeFocused();
 
-    await page.goto(`/rooms/${DNIPRO_ROOM_ID}?week=2030-01-07`);
+    await page.goto(`/rooms/${DNIPRO_ROOM_ID}?week=2026-08-03`);
     await expect(
       page.getByRole("heading", { name: "Розклад кімнати Дніпро" })
     ).toBeVisible();
     const retrySlot = page.getByRole("button", {
-      name: /Забронювати четвер, 10 січня 2030 р., 11:30/
+      name: /Забронювати четвер, 6 серпня 2026 р., 11:30/
     });
     await retrySlot.scrollIntoViewIfNeeded();
     await retrySlot.click();

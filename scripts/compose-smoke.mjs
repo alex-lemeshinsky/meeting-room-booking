@@ -11,6 +11,10 @@ const verificationProbe = "P".repeat(43);
 const genericLogProbe = "compose-generic-route-log-probe";
 const composeArgs = ["compose", "--project-name", projectName];
 
+// Smoke bookings sit on the next 30-minute grid boundary, so the product
+// default 10-minute window would never fire. Widen it for this project only.
+process.env.NOTIFY_BEFORE_MINUTES ??= "60";
+
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {

@@ -71,7 +71,7 @@ test.describe("Stage 6 mobile journey", () => {
     const timeLabel = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
     const title = `Stage 6 mobile ${testInfo.retry}`;
     const slot = page.getByRole("button", {
-      name: new RegExp(`Забронювати вівторок, 22 січня 2030 р., ${timeLabel}`)
+      name: new RegExp(`Забронювати вівторок, 18 серпня 2026 р., ${timeLabel}`)
     });
     await slot.scrollIntoViewIfNeeded();
     await slot.click();

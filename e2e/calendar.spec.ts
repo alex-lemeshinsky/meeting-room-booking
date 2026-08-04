@@ -124,7 +124,7 @@ test.describe("weekly calendar", () => {
     await openCurrentDniproSchedule(page);
 
     const slot = page.getByRole("button", {
-      name: /Забронювати четвер, 10 січня 2030 р., 09:00/
+      name: /Забронювати четвер, 6 серпня 2026 р., 09:00/
     });
     await slot.click();
 
@@ -141,12 +141,12 @@ test.describe("weekly calendar", () => {
       })
     ).toEqual({ right: 1440, viewportWidth: 1440, width: 384 });
     await expect(page.getByLabel("Кімната")).toHaveValue("Дніпро");
-    await expect(page.getByLabel("Дата")).toHaveValue("2030-01-10");
+    await expect(page.getByLabel("Дата")).toHaveValue("2026-08-06");
     await expect(page.getByLabel("Початок")).toHaveValue(
-      "2030-01-10T07:00:00.000Z"
+      "2026-08-06T06:00:00.000Z"
     );
     await expect(page.getByLabel("Завершення")).toHaveValue(
-      "2030-01-10T07:30:00.000Z"
+      "2026-08-06T06:30:00.000Z"
     );
 
     await page.getByLabel("Назва").fill("E2E командне планування");
@@ -186,13 +186,13 @@ test.describe("weekly calendar", () => {
 
     await page
       .getByRole("button", {
-        name: /Забронювати четвер, 10 січня 2030 р., 10:00/
+        name: /Забронювати четвер, 6 серпня 2026 р., 10:00/
       })
       .click();
     await page.getByLabel("Назва").fill("Конфліктна зустріч");
     await page
       .getByLabel("Завершення")
-      .selectOption("2030-01-10T09:00:00.000Z");
+      .selectOption("2026-08-06T08:00:00.000Z");
     await page
       .getByRole("dialog", { name: "Нове бронювання" })
       .getByRole("button", { name: "Забронювати" })
@@ -207,7 +207,7 @@ test.describe("weekly calendar", () => {
     await expect(alert).toBeFocused();
     await expect(page.getByLabel("Назва")).toHaveValue("Конфліктна зустріч");
     await expect(page.getByLabel("Завершення")).toHaveValue(
-      "2030-01-10T09:00:00.000Z"
+      "2026-08-06T08:00:00.000Z"
     );
     await expect(
       page.getByRole("dialog", { name: "Нове бронювання" })
@@ -376,7 +376,7 @@ test.describe("weekly calendar", () => {
     ).toBe(true);
 
     const mobileSlot = page.getByRole("button", {
-      name: /Забронювати четвер, 10 січня 2030 р., 11:00/
+      name: /Забронювати четвер, 6 серпня 2026 р., 11:00/
     });
     await mobileSlot.click();
     const mobileDialog = page.getByRole("dialog", {

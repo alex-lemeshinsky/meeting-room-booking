@@ -49,6 +49,7 @@ services:
     environment:
       <<: *database-environment
       APP_ORIGIN: http://localhost:3000
+      NOTIFY_BEFORE_MINUTES: ${NOTIFY_BEFORE_MINUTES:-10}
       PORT: 3001
     healthcheck:
       test:

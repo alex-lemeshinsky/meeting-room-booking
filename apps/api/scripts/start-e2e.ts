@@ -40,6 +40,9 @@ try {
         DATABASE_URL: databaseUrl,
         APP_ORIGIN: "http://127.0.0.1:3000",
         NODE_ENV: "test",
+        // Pinned so the notification fixtures stay inside the window whatever
+        // a local .env configures.
+        NOTIFY_BEFORE_MINUTES: "60",
         PORT: "3001"
       };
       const commandOptions = {

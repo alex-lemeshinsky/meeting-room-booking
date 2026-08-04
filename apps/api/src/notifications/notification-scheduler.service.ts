@@ -22,7 +22,7 @@ export class NotificationSchedulerService {
     @Inject(CLOCK) private readonly clock: Clock
   ) {
     this.notifyBeforeMinutes = Number(
-      this.configService.get<string>("NOTIFY_BEFORE_MINUTES", "60")
+      this.configService.get<string>("NOTIFY_BEFORE_MINUTES", "10")
     );
   }
 

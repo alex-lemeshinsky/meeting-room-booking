@@ -1,4 +1,6 @@
 import { FixedClock } from "@mrb/time";
+import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { DatabaseService } from "../../src/database/database.service.js";
@@ -16,6 +18,7 @@ const BOOKING_2_ID = "30000000-0000-4000-8000-000000000092";
 interface AuthenticatedAgent {
   agent: ReturnType<typeof request.agent>;
   csrfToken: string;
+  cookieHeader: string;
 }
 
 describe("Notifications API & SSE integration", () => {
@@ -23,6 +26,7 @@ describe("Notifications API & SSE integration", () => {
   let database: DatabaseService;
   let olena: AuthenticatedAgent;
   let alex: AuthenticatedAgent;
+  let baseUrl: string;
 
   beforeAll(async () => {
     context = await startPostgresTestApp({
@@ -30,6 +34,7 @@ describe("Notifications API & SSE integration", () => {
       clock: new FixedClock(NOW)
     });
     database = context.app.get(DatabaseService);
+    baseUrl = await listen(context.app.getHttpServer() as Server);
     olena = await login(context, "olena@example.com", "Rooms123!");
     alex = await login(context, "alex@example.com", "Meeting123!");
   }, 120_000);
@@ -208,12 +213,27 @@ describe("Notifications API & SSE integration", () => {
       await request(context.app.getHttpServer()).get("/events").expect(401);
     });
 
+    // The stream stays open by design, so this asserts on response headers and
+    // aborts; awaiting the response body would hang until the test times out.
     it("returns text/event-stream headers for authenticated user", async () => {
-      const res = await olena.agent
-        .get("/events")
-        .set("Accept", "text/event-stream");
+      const controller = new AbortController();
 
-      expect(res.headers["content-type"]).toMatch(/text\/event-stream/);
+      try {
+        const response = await fetch(`${baseUrl}/events`, {
+          headers: {
+            accept: "text/event-stream",
+            cookie: olena.cookieHeader
+          },
+          signal: controller.signal
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("content-type")).toMatch(
+          /text\/event-stream/
+        );
+      } finally {
+        controller.abort();
+      }
     });
   });
 });
@@ -232,8 +252,33 @@ async function login(
 
   return {
     agent,
-    csrfToken: cookieValue(cookie(response, "mrb_csrf"))
+    csrfToken: cookieValue(cookie(response, "mrb_csrf")),
+    cookieHeader: cookieHeader(response)
   };
+}
+
+async function listen(server: Server): Promise<string> {
+  if (!server.listening) {
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+  }
+
+  const address = server.address() as AddressInfo;
+  return `http://127.0.0.1:${address.port}`;
+}
+
+function cookieHeader(response: request.Response): string {
+  const setCookie = response.headers["set-cookie"];
+  const cookieHeaders = Array.isArray(setCookie)
+    ? setCookie
+    : setCookie
+      ? [setCookie]
+      : [];
+
+  return cookieHeaders
+    .map((item) => item.slice(0, item.indexOf(";")))
+    .join("; ");
 }
 
 function cookie(response: request.Response, name: string): string {

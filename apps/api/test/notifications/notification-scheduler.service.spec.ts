@@ -17,6 +17,16 @@ describe("NotificationSchedulerService", () => {
     } as unknown as ConfigService;
   }
 
+  function createUnconfiguredConfigService(): ConfigService {
+    return {
+      get: vi
+        .fn()
+        .mockImplementation(
+          (_key: string, defaultValue: string) => defaultValue
+        )
+    } as unknown as ConfigService;
+  }
+
   function createMockEventEmitter(): EventEmitter2 {
     return {
       emit: vi.fn()
@@ -103,6 +113,47 @@ describe("NotificationSchedulerService", () => {
       userId: insertedNotification.user_id,
       notificationId: insertedNotification.id
     });
+  });
+
+  it("falls back to the documented 10-minute window when NOTIFY_BEFORE_MINUTES is unset", async () => {
+    const candidate = {
+      current_booking_id: "10000000-0000-4000-8000-000000000001",
+      user_id: "00000000-0000-4000-8000-000000000001",
+      current_title: "Sprint Sync",
+      end_at: new Date("2035-01-15T12:00:00.000Z"),
+      next_booking_id: "10000000-0000-4000-8000-000000000002",
+      next_title: "Client Pitch",
+      next_start_at: new Date("2035-01-15T12:00:00.000Z"),
+      room_name: "Переговорна 1"
+    };
+
+    const queryRawMock = vi
+      .fn()
+      .mockResolvedValueOnce([{ acquired: true }]) // advisory lock query
+      .mockResolvedValueOnce([candidate]) // candidate detection query
+      .mockResolvedValueOnce([
+        {
+          id: "90000000-0000-4000-8000-000000000001",
+          user_id: candidate.user_id
+        }
+      ]); // insert notification query
+
+    const txMock = { $queryRaw: queryRawMock };
+
+    const scheduler = new NotificationSchedulerService(
+      createMockDatabaseService(txMock),
+      createMockEventEmitter(),
+      createUnconfiguredConfigService(),
+      new FixedClock(NOW)
+    );
+
+    await scheduler.processNotifications();
+
+    const insertCallArgs = queryRawMock.mock.calls[2];
+    expect(insertCallArgs).toBeDefined();
+    expect(insertCallArgs).toContain(
+      "«Sprint Sync» у Переговорна 1 завершується за 10 хв — наступне бронювання починається одразу"
+    );
   });
 
   it("skips candidates when current_b or next_b status is not ACTIVE (empty candidate array returned by query)", async () => {

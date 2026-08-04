@@ -12,8 +12,13 @@ describe("NotificationSchedulerService (Integration)", () => {
   let context: PostgresTestApp;
   let database: DatabaseService;
   let mutableClock: { nowTime: Date; now: () => Date };
+  let previousNotifyBeforeMinutes: string | undefined;
 
   beforeAll(async () => {
+    // Pin the window so a local .env cannot change the asserted message.
+    previousNotifyBeforeMinutes = process.env.NOTIFY_BEFORE_MINUTES;
+    process.env.NOTIFY_BEFORE_MINUTES = "10";
+
     mutableClock = {
       nowTime: new Date("2035-01-15T10:00:00.000Z"),
       now() {
@@ -34,7 +39,15 @@ describe("NotificationSchedulerService (Integration)", () => {
     await database.bookingSeries.deleteMany();
   });
 
-  afterAll(async () => context.stop());
+  afterAll(async () => {
+    await context.stop();
+
+    if (previousNotifyBeforeMinutes === undefined) {
+      delete process.env.NOTIFY_BEFORE_MINUTES;
+    } else {
+      process.env.NOTIFY_BEFORE_MINUTES = previousNotifyBeforeMinutes;
+    }
+  });
 
   it("detects back-to-back bookings within notification window, creates DB notification, is idempotent, and skips cancelled bookings", async () => {
     const scheduler = context.app.get(NotificationSchedulerService);
