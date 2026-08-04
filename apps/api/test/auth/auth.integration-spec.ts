@@ -65,7 +65,8 @@ describe("POST /api/v1/auth/register", () => {
       user: {
         id: expect.any(String),
         name: "Олена",
-        email: REGISTERED_EMAIL
+        email: REGISTERED_EMAIL,
+        weekStartsOn: 1
       }
     });
 
@@ -416,7 +417,8 @@ describe("authentication session lifecycle", () => {
       user: {
         id: expect.any(String),
         name: "Олена",
-        email: "olena@example.com"
+        email: "olena@example.com",
+        weekStartsOn: 1
       }
     });
   });

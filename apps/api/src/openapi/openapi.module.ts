@@ -21,6 +21,8 @@ import { RecurrenceController } from "../recurrence/recurrence.controller.js";
 import { RecurrenceService } from "../recurrence/recurrence.service.js";
 import { RoomsController } from "../rooms/rooms.controller.js";
 import { RoomsService } from "../rooms/rooms.service.js";
+import { UsersController } from "../users/users.controller.js";
+import { UsersService } from "../users/users.service.js";
 
 const inertProvider = {};
 const allowRequest = { canActivate: () => true };
@@ -34,7 +36,8 @@ const allowRequest = { canActivate: () => true };
     RecurrenceController,
     RoomsController,
     NotificationsController,
-    NotificationSseController
+    NotificationSseController,
+    UsersController
   ],
   providers: [
     {
@@ -51,6 +54,7 @@ const allowRequest = { canActivate: () => true };
     { provide: RecurrenceService, useValue: inertProvider },
     { provide: RoomsService, useValue: inertProvider },
     { provide: SessionService, useValue: inertProvider },
+    { provide: UsersService, useValue: inertProvider },
     { provide: CsrfGuard, useValue: allowRequest },
     { provide: PreAuthMutationGuard, useValue: allowRequest },
     { provide: SessionGuard, useValue: allowRequest }

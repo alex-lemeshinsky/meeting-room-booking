@@ -84,7 +84,8 @@ export class SessionService {
       user: {
         id: session.user.id,
         name: session.user.name,
-        email: session.user.emailNormalized
+        email: session.user.emailNormalized,
+        weekStartsOn: session.user.weekStartsOn
       },
       session: {
         id: session.id,

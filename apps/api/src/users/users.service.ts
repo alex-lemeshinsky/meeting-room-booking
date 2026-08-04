@@ -13,6 +13,7 @@ export interface PublicUser {
   id: string;
   name: string;
   email: string;
+  weekStartsOn: number;
 }
 
 type UserWriter = Pick<Prisma.TransactionClient, "user">;
@@ -55,7 +56,19 @@ export class UsersService {
   }
 
   toPublicUser(user: User): PublicUser {
-    return { id: user.id, name: user.name, email: user.emailNormalized };
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.emailNormalized,
+      weekStartsOn: user.weekStartsOn
+    };
+  }
+
+  updateWeekStartsOn(userId: string, weekStartsOn: number): Promise<User> {
+    return this.database.user.update({
+      where: { id: userId },
+      data: { weekStartsOn }
+    });
   }
 }
 

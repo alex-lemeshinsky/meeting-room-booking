@@ -14,9 +14,16 @@ import { NotificationsModule } from "./notifications/notifications.module.js";
 import { RecurrenceModule } from "./recurrence/recurrence.module.js";
 import { RoomsController } from "./rooms/rooms.controller.js";
 import { RoomsModule } from "./rooms/rooms.module.js";
+import { UsersController } from "./users/users.controller.js";
+import { UsersModule } from "./users/users.module.js";
 
 @Module({
-  controllers: [BookingsController, MyBookingsController, RoomsController],
+  controllers: [
+    BookingsController,
+    MyBookingsController,
+    RoomsController,
+    UsersController
+  ],
   imports: [
     ConfigModule.forRoot({
       envFilePath: resolve(process.cwd(), "../../.env"),
@@ -31,6 +38,7 @@ import { RoomsModule } from "./rooms/rooms.module.js";
     BookingsModule,
     RecurrenceModule,
     RoomsModule,
+    UsersModule,
     NotificationsModule
   ]
 })

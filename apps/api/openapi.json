@@ -1277,6 +1277,102 @@
           "notifications"
         ]
       }
+    },
+    "/api/v1/me": {
+      "patch": {
+        "operationId": "updateMe",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "users"
+        ]
+      }
     }
   },
   "info": {
@@ -1336,12 +1432,19 @@
             "type": "string",
             "example": "olena@example.com",
             "format": "email"
+          },
+          "weekStartsOn": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1,
+            "maximum": 7
           }
         },
         "required": [
           "id",
           "name",
-          "email"
+          "email",
+          "weekStartsOn"
         ]
       },
       "AuthResponseDto": {
@@ -2191,6 +2294,20 @@
         },
         "required": [
           "notification"
+        ]
+      },
+      "UpdateMeDto": {
+        "type": "object",
+        "properties": {
+          "weekStartsOn": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1,
+            "maximum": 7
+          }
+        },
+        "required": [
+          "weekStartsOn"
         ]
       }
     }
