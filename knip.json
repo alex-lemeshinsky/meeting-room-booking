@@ -1,0 +1,16 @@
+{
+  "workspaces": {
+    "apps/api": {
+      "entry": [
+        "scripts/start-e2e.ts",
+        "scripts/e2e-main.ts",
+        "../../prisma/seed.ts"
+      ],
+      "ignoreDependencies": ["@prisma/client"]
+    },
+    "packages/config": {
+      "ignoreDependencies": ["next"]
+    }
+  },
+  "ignore": ["packages/contracts/src/generated/**"]
+}

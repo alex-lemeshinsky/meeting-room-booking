@@ -6,10 +6,7 @@ import { markNotificationRead } from "../../lib/api/notifications";
 import type { NotificationItem } from "../../lib/api/contracts";
 import styles from "./notification-panel.module.css";
 
-export function formatRelativeTime(
-  isoString: string,
-  now: Date = new Date()
-): string {
+function formatRelativeTime(isoString: string, now: Date = new Date()): string {
   const date = new Date(isoString);
   const diffMs = now.getTime() - date.getTime();
   if (isNaN(diffMs) || diffMs < 0) {
