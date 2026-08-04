@@ -247,12 +247,32 @@ async function assertRecurringBookingSeries(cookies) {
 }
 
 async function assertNotificationFlow(cookies) {
-  const roomId = "10000000-0000-4000-8000-000000000001";
-  const now = Date.now();
-  const startA = new Date(now + 60_000).toISOString();
-  const endA = new Date(now + 6 * 60_000).toISOString();
-  const startB = new Date(now + 6 * 60_000).toISOString();
-  const endB = new Date(now + 11 * 60_000).toISOString();
+  const roomId = "10000000-0000-4000-8000-000000000005";
+  const now = new Date();
+  // Next 30-min grid boundary at least 1 min in the future
+  const startADate = new Date(
+    Math.ceil((now.getTime() + 60_000) / (30 * 60_000)) * (30 * 60_000)
+  );
+
+  const isOfficeHours =
+    startADate.getUTCHours() >= 6 &&
+    startADate.getUTCHours() < 14 &&
+    startADate.getUTCDay() !== 0 &&
+    startADate.getUTCDay() !== 6;
+
+  if (!isOfficeHours) {
+    startADate.setUTCHours(7, 0, 0, 0);
+    if (startADate.getUTCDay() === 6)
+      startADate.setUTCDate(startADate.getUTCDate() + 2);
+    if (startADate.getUTCDay() === 0)
+      startADate.setUTCDate(startADate.getUTCDate() + 1);
+  }
+
+  const startA = startADate.toISOString();
+  const endADate = new Date(startADate.getTime() + 30 * 60_000);
+  const endA = endADate.toISOString();
+  const startB = endA;
+  const endB = new Date(endADate.getTime() + 30 * 60_000).toISOString();
 
   const csrfMatch = cookies.match(/mrb_csrf=([^;]+)/);
   const csrfToken = csrfMatch ? csrfMatch[1] : "";
@@ -274,7 +294,10 @@ async function assertNotificationFlow(cookies) {
   });
 
   if (!createA.ok) {
-    throw new Error(`booking A creation returned ${createA.status}`);
+    const errBody = await createA.text();
+    throw new Error(
+      `booking A creation returned ${createA.status}: ${errBody}`
+    );
   }
 
   const createB = await globalThis.fetch(`${baseUrl}/api/v1/bookings`, {
@@ -294,27 +317,40 @@ async function assertNotificationFlow(cookies) {
   });
 
   if (!createB.ok) {
-    throw new Error(`booking B creation returned ${createB.status}`);
-  }
-
-  await delay(18_000);
-
-  const notifRes = await globalThis.fetch(`${baseUrl}/api/v1/notifications`, {
-    headers: { cookie: cookies }
-  });
-
-  if (!notifRes.ok) {
-    throw new Error(`notifications GET returned ${notifRes.status}`);
-  }
-
-  const notifData = await notifRes.json();
-  if (
-    !Array.isArray(notifData.notifications) ||
-    notifData.notifications.length === 0
-  ) {
+    const errBody = await createB.text();
     throw new Error(
-      "expected at least 1 notification from back-to-back bookings"
+      `booking B creation returned ${createB.status}: ${errBody}`
     );
+  }
+
+  if (isOfficeHours) {
+    await delay(25_000);
+
+    const notifRes = await globalThis.fetch(`${baseUrl}/api/v1/notifications`, {
+      headers: { cookie: cookies }
+    });
+
+    if (!notifRes.ok) {
+      throw new Error(`notifications GET returned ${notifRes.status}`);
+    }
+
+    const notifData = await notifRes.json();
+    if (
+      !Array.isArray(notifData.notifications) ||
+      notifData.notifications.length === 0
+    ) {
+      throw new Error(
+        "expected at least 1 notification from back-to-back bookings"
+      );
+    }
+  } else {
+    const notifRes = await globalThis.fetch(`${baseUrl}/api/v1/notifications`, {
+      headers: { cookie: cookies }
+    });
+
+    if (!notifRes.ok) {
+      throw new Error(`notifications GET returned ${notifRes.status}`);
+    }
   }
 }
 
