@@ -243,9 +243,9 @@ async function assertRecurringBookingSeries(cookies) {
   }
 
   const cancelData = await cancelRes.json();
-  if (cancelData.cancelledCount !== 2) {
+  if (cancelData.series.cancelledCount !== 2) {
     throw new Error(
-      `expected 2 cancelled occurrences, received ${cancelData.cancelledCount}`
+      `expected 2 cancelled occurrences, received ${cancelData.series.cancelledCount}`
     );
   }
 }
@@ -266,10 +266,12 @@ async function assertNotificationFlow(cookies) {
 
   if (!isOfficeHours) {
     startADate.setUTCHours(7, 0, 0, 0);
-    if (startADate.getUTCDay() === 6)
-      startADate.setUTCDate(startADate.getUTCDate() + 2);
-    if (startADate.getUTCDay() === 0)
+    if (startADate.getTime() <= now.getTime()) {
       startADate.setUTCDate(startADate.getUTCDate() + 1);
+    }
+    while (startADate.getUTCDay() === 0 || startADate.getUTCDay() === 6) {
+      startADate.setUTCDate(startADate.getUTCDate() + 1);
+    }
   }
 
   const startA = startADate.toISOString();
