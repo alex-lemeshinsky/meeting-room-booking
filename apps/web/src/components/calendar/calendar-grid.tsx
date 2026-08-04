@@ -152,7 +152,7 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
             ref={day.isToday ? currentDayHeaderRef : undefined}
             aria-label={day.fullDateLabel}
           >
-            <span>{day.label}</span>
+            <span data-testid="calendar-day-heading">{day.label}</span>
           </time>
         ))}
       </div>
