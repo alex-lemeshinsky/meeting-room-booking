@@ -407,6 +407,129 @@ describe("configurable week start", () => {
   });
 });
 
+describe("week starts in zones whose DST gap lands on midnight", () => {
+  // Santiago moves to summer time at 24:00 on Saturday 2026-09-05, so Sunday
+  // 2026-09-06 has no 00:00 and its first existing instant is 01:00 -03:00.
+  // Beirut does the same on Sunday 2026-03-29 (first instant 01:00 +03:00).
+
+  it("anchors on a Sunday whose local midnight does not exist", () => {
+    for (const now of [
+      new Date("2026-09-06T15:00:00.000Z"), // the gap Sunday itself
+      new Date("2026-09-09T15:00:00.000Z"), // midweek
+      new Date("2026-09-12T15:00:00.000Z") // the Saturday that closes the week
+    ]) {
+      expect(getCurrentLocalWeekStart("America/Santiago", 7, now)).toBe(
+        "2026-09-06"
+      );
+    }
+
+    expect(
+      getCurrentLocalWeekStart(
+        "Asia/Beirut",
+        7,
+        new Date("2026-03-29T10:00:00.000Z")
+      )
+    ).toBe("2026-03-29");
+  });
+
+  it("starts the week at the first instant that exists on the gap day", () => {
+    const santiago = getLocalWeek(
+      "2026-09-06",
+      "America/Santiago",
+      7,
+      new Date("2026-09-09T15:00:00.000Z")
+    );
+
+    // 04:00Z is 01:00 -03:00, not the nonexistent 00:00.
+    expect(santiago.from).toBe("2026-09-06T04:00:00.000Z");
+    expect(santiago.days.map((day) => day.localDate)).toEqual([
+      "2026-09-06",
+      "2026-09-07",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-12"
+    ]);
+
+    const beirut = getLocalWeek(
+      "2026-03-29",
+      "Asia/Beirut",
+      7,
+      new Date("2026-04-01T10:00:00.000Z")
+    );
+
+    expect(beirut.from).toBe("2026-03-28T22:00:00.000Z");
+    expect(beirut.days[0]?.localDate).toBe("2026-03-29");
+    expect(beirut.days[6]?.localDate).toBe("2026-04-04");
+  });
+
+  it("normalizes back to plain midnight when the anchor precedes the gap day", () => {
+    // Standing on the gap day, every earlier anchor resolves to a normal date
+    // whose midnight exists; the week start must not inherit the 01:00 shift.
+    const onGapDay = new Date("2026-09-06T15:00:00.000Z");
+    const expected: Record<number, string> = {
+      1: "2026-08-31",
+      2: "2026-09-01",
+      3: "2026-09-02",
+      4: "2026-09-03",
+      5: "2026-09-04",
+      6: "2026-09-05",
+      7: "2026-09-06"
+    };
+
+    for (const [weekStartsOn, weekStart] of Object.entries(expected)) {
+      expect(
+        getCurrentLocalWeekStart(
+          "America/Santiago",
+          Number(weekStartsOn),
+          onGapDay
+        )
+      ).toBe(weekStart);
+      expect(
+        snapToLocalWeekStart(
+          "2026-09-06",
+          "America/Santiago",
+          Number(weekStartsOn)
+        )
+      ).toBe(weekStart);
+    }
+  });
+
+  it("shifts weeks across a gap anchor without drifting", () => {
+    expect(shiftLocalWeekStart("2026-09-06", "America/Santiago", 1, 7)).toBe(
+      "2026-09-13"
+    );
+    expect(shiftLocalWeekStart("2026-09-06", "America/Santiago", -1, 7)).toBe(
+      "2026-08-30"
+    );
+    // Landing on the gap week from the neighbouring weeks resolves identically.
+    expect(shiftLocalWeekStart("2026-08-30", "America/Santiago", 1, 7)).toBe(
+      "2026-09-06"
+    );
+  });
+
+  it("anchors the Sunday that follows a midnight fall-back", () => {
+    // Beirut returns to winter time at 24:00 on Saturday 2026-10-24, so the
+    // following Sunday starts at a plain 00:00 +02:00.
+    const week = getLocalWeek(
+      "2026-10-25",
+      "Asia/Beirut",
+      7,
+      new Date("2026-10-28T10:00:00.000Z")
+    );
+
+    expect(
+      getCurrentLocalWeekStart(
+        "Asia/Beirut",
+        7,
+        new Date("2026-10-28T10:00:00.000Z")
+      )
+    ).toBe("2026-10-25");
+    expect(week.from).toBe("2026-10-24T22:00:00.000Z");
+  });
+});
+
 describe("snapping a local date to its week start", () => {
   it("snaps any weekday to the containing week under each anchor", () => {
     expect(snapToLocalWeekStart("2026-07-29", "Europe/Kyiv", 1)).toBe(

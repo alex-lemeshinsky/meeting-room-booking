@@ -353,8 +353,7 @@ POST   /api/v1/auth/login
 POST   /api/v1/auth/logout
 GET    /api/v1/auth/session
 POST   /api/v1/auth/verify-email
-GET    /api/v1/users/me
-PATCH  /api/v1/users/me
+PATCH  /api/v1/me
 GET    /api/v1/rooms
 GET    /api/v1/rooms/:roomId/schedule
 POST   /api/v1/bookings
