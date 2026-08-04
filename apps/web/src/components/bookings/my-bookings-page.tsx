@@ -38,11 +38,13 @@ interface CancellationSelection {
 interface MyBookingsPageProps {
   initialUpcoming: MyBookingsResponse;
   initialTimezone?: string;
+  weekStartsOn: number;
 }
 
 export function MyBookingsPage({
   initialUpcoming,
-  initialTimezone
+  initialTimezone,
+  weekStartsOn
 }: MyBookingsPageProps) {
   const queryClient = useQueryClient();
   const upcomingPanelRef = useRef<HTMLElement>(null);
@@ -191,6 +193,7 @@ export function MyBookingsPage({
             <BookingList
               bookings={upcoming.data.bookings}
               timezone={timezone}
+              weekStartsOn={weekStartsOn}
               onCancel={(booking, trigger) =>
                 setCancellation({ booking, trigger })
               }
@@ -215,7 +218,11 @@ export function MyBookingsPage({
             <EmptyHistory />
           ) : (
             <>
-              <BookingList bookings={historyBookings} timezone={timezone} />
+              <BookingList
+                bookings={historyBookings}
+                timezone={timezone}
+                weekStartsOn={weekStartsOn}
+              />
               {history.hasNextPage ? (
                 <button
                   className={styles.loadMore}
@@ -254,10 +261,12 @@ export function MyBookingsPage({
 function BookingList({
   bookings,
   timezone,
+  weekStartsOn,
   onCancel
 }: {
   bookings: MyBooking[];
   timezone: string;
+  weekStartsOn: number;
   onCancel?: (booking: MyBooking, trigger: HTMLButtonElement) => void;
 }) {
   return (
@@ -273,7 +282,7 @@ function BookingList({
             <Link
               aria-label={`Відкрити бронювання «${booking.title}» в календарі`}
               className={styles.rowLink}
-              href={bookingCalendarHref(booking, timezone)}
+              href={bookingCalendarHref(booking, timezone, weekStartsOn)}
             >
               <span className={styles.rowMain}>
                 <strong>{booking.title}</strong>

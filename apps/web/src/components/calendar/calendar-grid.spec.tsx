@@ -45,6 +45,7 @@ function layout(
     },
     weekStart: "2026-07-27",
     timezone,
+    weekStartsOn: 1,
     now
   });
 }
@@ -439,6 +440,7 @@ describe("CalendarGrid", () => {
       },
       weekStart: "2026-10-26",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-10-26T12:00:00.000Z")
     });
     render(<CalendarGrid layout={foldLayout} />);
@@ -510,6 +512,7 @@ describe("CalendarGrid", () => {
       },
       weekStart: "2026-10-26",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-10-26T12:00:00.000Z")
     });
     render(<CalendarGrid layout={foldLayout} />);

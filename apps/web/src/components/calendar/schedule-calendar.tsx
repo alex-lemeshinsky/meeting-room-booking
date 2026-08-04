@@ -31,6 +31,7 @@ interface ScheduleCalendarProps {
   room: RoomsResponse["rooms"][number];
   initialWeekStart?: string | undefined;
   initialTimezone?: string | undefined;
+  weekStartsOn: number;
 }
 
 interface ScheduleQueryData {
@@ -44,7 +45,8 @@ const CALENDAR_CLOCK_INTERVAL_MS = 60_000;
 export function ScheduleCalendar({
   room,
   initialWeekStart,
-  initialTimezone
+  initialTimezone,
+  weekStartsOn
 }: ScheduleCalendarProps) {
   const [timezone, setTimezone] = useState<string | null>(
     initialTimezone ?? null
@@ -65,6 +67,7 @@ export function ScheduleCalendar({
       room={room}
       initialWeekStart={initialWeekStart}
       timezone={timezone}
+      weekStartsOn={weekStartsOn}
     />
   );
 }
@@ -72,7 +75,8 @@ export function ScheduleCalendar({
 function ResolvedScheduleCalendar({
   room,
   initialWeekStart,
-  timezone
+  timezone,
+  weekStartsOn
 }: ScheduleCalendarProps & { timezone: string }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -83,10 +87,10 @@ function ResolvedScheduleCalendar({
   );
   const [successMessage, setSuccessMessage] = useState<string>();
   const weekStart =
-    initialWeekStart ?? getCurrentLocalWeekStart(timezone, 1, now);
+    initialWeekStart ?? getCurrentLocalWeekStart(timezone, weekStartsOn, now);
   const request = useMemo(
-    () => createScheduleRequest(room.id, weekStart, timezone),
-    [room.id, timezone, weekStart]
+    () => createScheduleRequest(room.id, weekStart, timezone, weekStartsOn),
+    [room.id, timezone, weekStart, weekStartsOn]
   );
   const query = useQuery<ScheduleQueryData, Error>({
     queryKey: request.queryKey,
@@ -113,9 +117,10 @@ function ResolvedScheduleCalendar({
             response: query.data.response,
             weekStart: query.data.weekStart,
             timezone: query.data.timezone,
+            weekStartsOn,
             now
           }),
-    [now, query.data]
+    [now, query.data, weekStartsOn]
   );
 
   useEffect(() => {
@@ -175,6 +180,7 @@ function ResolvedScheduleCalendar({
       <WeekToolbar
         weekStart={weekStart}
         timezone={timezone}
+        weekStartsOn={weekStartsOn}
         onWeekChange={navigateToWeek}
       />
       <TimezoneBanner timezone={timezone} />

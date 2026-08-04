@@ -7,11 +7,12 @@ type MyBookingState = MyBooking["state"];
 
 export function bookingCalendarHref(
   booking: MyBooking,
-  timezone: string
+  timezone: string,
+  weekStartsOn: number
 ): string {
   const weekStart = getCurrentLocalWeekStart(
     timezone,
-    1,
+    weekStartsOn,
     new Date(booking.startAt)
   );
 

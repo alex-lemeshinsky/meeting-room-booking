@@ -37,9 +37,9 @@ function scheduleResponse(
 describe("schedule request", () => {
   it("uses the room, local week, and timezone in the key and UTC URL", () => {
     expect(
-      createScheduleRequest("room/one", "2026-07-27", "America/New_York")
+      createScheduleRequest("room/one", "2026-07-27", "America/New_York", 1)
     ).toEqual({
-      queryKey: ["schedule", "room/one", "2026-07-27", "America/New_York"],
+      queryKey: ["schedule", "room/one", "2026-07-27", "America/New_York", 1],
       from: "2026-07-27T04:00:00.000Z",
       to: "2026-08-03T04:00:00.000Z",
       url:
@@ -65,6 +65,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-07-27",
       timezone: "Europe/Kyiv",
+      weekStartsOn: 1,
       now: new Date("2026-07-27T06:15:00.000Z")
     });
     const monday = layout.days[0];
@@ -90,6 +91,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-07-27",
       timezone: "Asia/Kathmandu",
+      weekStartsOn: 1,
       now: new Date("2026-07-27T05:00:00.000Z")
     });
     const monday = layout.days[0];
@@ -109,6 +111,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-07-27",
       timezone: "Europe/Kyiv",
+      weekStartsOn: 1,
       now: new Date("2026-07-29T07:15:00.000Z")
     });
 
@@ -126,6 +129,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-07-27",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-07-29T12:00:00.000Z")
     });
 
@@ -144,6 +148,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-03-02",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-03-02T12:00:00.000Z")
     });
     const springSunday = spring.days.find(
@@ -161,6 +166,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-10-26",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-10-26T12:00:00.000Z")
     });
     const autumnSunday = autumn.days.find(
@@ -186,6 +192,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-03-02",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-03-02T12:00:00.000Z")
     });
     const springSunday = layout.days.find(
@@ -205,6 +212,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-10-26",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-10-26T12:00:00.000Z")
     });
     const autumnSunday = layout.days.find(
@@ -259,6 +267,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-10-26",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-10-26T12:00:00.000Z")
     });
 
@@ -289,6 +298,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-10-26",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-10-26T12:00:00.000Z")
     });
 
@@ -321,6 +331,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-07-27",
       timezone: "Asia/Kathmandu",
+      weekStartsOn: 1,
       now: new Date("2026-07-27T07:00:00.000Z")
     });
     const monday = layout.days[0];
@@ -374,6 +385,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-07-27",
       timezone: "Pacific/Chatham",
+      weekStartsOn: 1,
       now: new Date("2026-07-27T07:00:00.000Z")
     });
 
@@ -452,6 +464,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-07-27",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-07-29T12:00:00.000Z")
     });
 
@@ -502,6 +515,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-07-27",
       timezone: "Europe/Kyiv",
+      weekStartsOn: 1,
       now: new Date("2026-07-29T07:15:00.000Z")
     });
 
@@ -536,6 +550,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-07-27",
       timezone: "Europe/Kyiv",
+      weekStartsOn: 1,
       now: new Date("2026-07-29T07:15:00.000Z")
     });
     const today = layout.days.find((day) => day.localDate === "2026-07-29");
@@ -564,6 +579,7 @@ describe("calendar layout", () => {
       response: scheduleResponse(),
       weekStart: "2026-10-26",
       timezone: "America/Los_Angeles",
+      weekStartsOn: 1,
       now: new Date("2026-11-01T09:15:00.000Z")
     });
     const foldDay = layout.days.find((day) => day.localDate === "2026-11-01");
@@ -595,6 +611,7 @@ describe("calendar layout", () => {
       ]),
       weekStart: "2026-07-27",
       timezone: "Europe/Kyiv",
+      weekStartsOn: 1,
       now: new Date("2026-07-29T06:00:00.000Z")
     });
 

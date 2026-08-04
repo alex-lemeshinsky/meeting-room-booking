@@ -1,10 +1,10 @@
-import { getLocalWeek, isValidTimezone } from "@mrb/time/calendar";
+import { isValidTimezone, snapToLocalWeekStart } from "@mrb/time/calendar";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ScheduleCalendar } from "../../../../components/calendar/schedule-calendar";
 import { UnauthenticatedError } from "../../../../lib/api/server";
-import { getRoom } from "../../../../lib/auth/session";
+import { getCurrentSession, getRoom } from "../../../../lib/auth/session";
 import { TIMEZONE_COOKIE } from "../../../../lib/calendar/timezone";
 import styles from "./schedule.module.css";
 
@@ -14,15 +14,15 @@ type SchedulePageProps = {
 };
 
 export function normalizeScheduleWeek(
-  week: string | string[] | undefined
+  week: string | string[] | undefined,
+  weekStartsOn: number
 ): string | undefined {
   if (typeof week !== "string") {
     return undefined;
   }
 
   try {
-    getLocalWeek(week, "Europe/Kyiv", 1);
-    return week;
+    return snapToLocalWeekStart(week, "Europe/Kyiv", weekStartsOn);
   } catch {
     return undefined;
   }
@@ -63,8 +63,12 @@ export default async function SchedulePage({
     notFound();
   }
 
-  const [query, cookieStore] = await Promise.all([searchParams, cookies()]);
-  const initialWeekStart = normalizeScheduleWeek(query.week);
+  const [query, cookieStore, { user }] = await Promise.all([
+    searchParams,
+    cookies(),
+    getCurrentSession()
+  ]);
+  const initialWeekStart = normalizeScheduleWeek(query.week, user.weekStartsOn);
   const initialTimezone = normalizeTimezoneCookie(
     cookieStore.get(TIMEZONE_COOKIE)?.value
   );
@@ -102,6 +106,7 @@ export default async function SchedulePage({
         room={room}
         initialWeekStart={initialWeekStart}
         initialTimezone={initialTimezone}
+        weekStartsOn={user.weekStartsOn}
       />
     </section>
   );

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const {
   cookieStore,
   cookies,
+  getCurrentSession,
   getRoom,
   notFound,
   redirect,
@@ -16,6 +17,7 @@ const {
   return {
     cookieStore: { get: vi.fn() },
     cookies: vi.fn(),
+    getCurrentSession: vi.fn(),
     getRoom: vi.fn(),
     notFound: vi.fn(() => {
       throw new Error("NEXT_NOT_FOUND");
@@ -34,7 +36,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/rooms/room-1",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() })
 }));
-vi.mock("../../../../lib/auth/session", () => ({ getRoom }));
+vi.mock("../../../../lib/auth/session", () => ({ getCurrentSession, getRoom }));
 vi.mock("../../../../lib/api/server", () => ({ UnauthenticatedError }));
 
 import SchedulePage, {
@@ -53,6 +55,7 @@ afterEach(() => {
   cleanup();
   cookieStore.get.mockReset();
   cookies.mockReset();
+  getCurrentSession.mockReset();
   getRoom.mockReset();
   notFound.mockClear();
   redirect.mockClear();
@@ -62,6 +65,14 @@ afterEach(() => {
 describe("room schedule route", () => {
   it("renders the selected room context and calendar loading geometry", async () => {
     getRoom.mockResolvedValue(room);
+    getCurrentSession.mockResolvedValue({
+      user: {
+        id: "user-1",
+        name: "Тест",
+        email: "test@example.com",
+        weekStartsOn: 1
+      }
+    });
     cookieStore.get.mockReturnValue(undefined);
     cookies.mockResolvedValue(cookieStore);
     vi.stubGlobal(
@@ -114,15 +125,28 @@ describe("room schedule route", () => {
   });
 });
 
-describe("schedule route state normalization", () => {
-  it("accepts only a single valid Monday as the authoritative week", () => {
-    expect(normalizeScheduleWeek("2026-07-27")).toBe("2026-07-27");
-    expect(normalizeScheduleWeek("2026-07-28")).toBeUndefined();
-    expect(normalizeScheduleWeek("not-a-date")).toBeUndefined();
-    expect(normalizeScheduleWeek(["2026-07-27"])).toBeUndefined();
-    expect(normalizeScheduleWeek(undefined)).toBeUndefined();
+describe("normalizeScheduleWeek", () => {
+  it("returns the week start unchanged when it already matches the anchor", () => {
+    expect(normalizeScheduleWeek("2026-07-27", 1)).toBe("2026-07-27");
   });
 
+  it("snaps a mid-week date to the containing week", () => {
+    expect(normalizeScheduleWeek("2026-07-29", 1)).toBe("2026-07-27");
+  });
+
+  it("snaps a Monday link for a Sunday-anchored viewer", () => {
+    expect(normalizeScheduleWeek("2026-08-03", 7)).toBe("2026-08-02");
+  });
+
+  it("ignores absent, repeated, and malformed values", () => {
+    expect(normalizeScheduleWeek(undefined, 1)).toBeUndefined();
+    expect(normalizeScheduleWeek(["2026-07-27"], 1)).toBeUndefined();
+    expect(normalizeScheduleWeek("2026-02-30", 1)).toBeUndefined();
+    expect(normalizeScheduleWeek("not-a-date", 1)).toBeUndefined();
+  });
+});
+
+describe("schedule route state normalization", () => {
   it("accepts only valid IANA timezone cookies", () => {
     expect(normalizeTimezoneCookie("America/New_York")).toBe(
       "America/New_York"

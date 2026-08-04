@@ -399,6 +399,7 @@ function renderPage(initialUpcoming: MyBookingsResponse) {
       <MyBookingsPage
         initialTimezone="Europe/Kyiv"
         initialUpcoming={initialUpcoming}
+        weekStartsOn={1}
       />
     </QueryClientProvider>
   );

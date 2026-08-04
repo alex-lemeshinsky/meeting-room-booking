@@ -20,6 +20,7 @@ describe("WeekToolbar", () => {
       <WeekToolbar
         weekStart="2026-07-27"
         timezone="Europe/Kyiv"
+        weekStartsOn={1}
         onWeekChange={onWeekChange}
       />
     );
@@ -35,6 +36,7 @@ describe("WeekToolbar", () => {
       <WeekToolbar
         weekStart="2026-08-10"
         timezone="Europe/Kyiv"
+        weekStartsOn={1}
         onWeekChange={onWeekChange}
       />
     );
@@ -50,6 +52,7 @@ describe("WeekToolbar", () => {
       <WeekToolbar
         weekStart="2026-07-27"
         timezone="Europe/Kyiv"
+        weekStartsOn={1}
         onWeekChange={onWeekChange}
       />
     );

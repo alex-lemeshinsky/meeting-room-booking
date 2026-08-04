@@ -3,14 +3,15 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { MyBookingsPage } from "../../../components/bookings/my-bookings-page";
 import { UnauthenticatedError } from "../../../lib/api/server";
-import { getMyBookings } from "../../../lib/auth/session";
+import { getCurrentSession, getMyBookings } from "../../../lib/auth/session";
 import { TIMEZONE_COOKIE } from "../../../lib/calendar/timezone";
 
 export default async function MyBookingsRoute() {
   try {
-    const [initialUpcoming, cookieStore] = await Promise.all([
+    const [initialUpcoming, cookieStore, { user }] = await Promise.all([
       getMyBookings(),
-      cookies()
+      cookies(),
+      getCurrentSession()
     ]);
     const initialTimezone = validTimezone(
       cookieStore.get(TIMEZONE_COOKIE)?.value
@@ -19,6 +20,7 @@ export default async function MyBookingsRoute() {
     return (
       <MyBookingsPage
         initialUpcoming={initialUpcoming}
+        weekStartsOn={user.weekStartsOn}
         {...(initialTimezone === undefined ? {} : { initialTimezone })}
       />
     );

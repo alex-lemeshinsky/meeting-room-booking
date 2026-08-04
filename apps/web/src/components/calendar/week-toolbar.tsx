@@ -9,12 +9,14 @@ import styles from "./calendar.module.css";
 interface WeekToolbarProps {
   weekStart: string;
   timezone: string;
+  weekStartsOn: number;
   onWeekChange: (weekStart: string) => void;
 }
 
 export function WeekToolbar({
   weekStart,
   timezone,
+  weekStartsOn,
   onWeekChange
 }: WeekToolbarProps) {
   return (
@@ -23,7 +25,9 @@ export function WeekToolbar({
         className={styles.secondaryAction}
         type="button"
         onClick={() =>
-          onWeekChange(shiftLocalWeekStart(weekStart, timezone, -1, 1))
+          onWeekChange(
+            shiftLocalWeekStart(weekStart, timezone, -1, weekStartsOn)
+          )
         }
       >
         Попередній тиждень
@@ -31,7 +35,9 @@ export function WeekToolbar({
       <button
         className={styles.secondaryAction}
         type="button"
-        onClick={() => onWeekChange(getCurrentLocalWeekStart(timezone, 1))}
+        onClick={() =>
+          onWeekChange(getCurrentLocalWeekStart(timezone, weekStartsOn))
+        }
       >
         Поточний тиждень
       </button>
@@ -39,7 +45,9 @@ export function WeekToolbar({
         className={styles.secondaryAction}
         type="button"
         onClick={() =>
-          onWeekChange(shiftLocalWeekStart(weekStart, timezone, 1, 1))
+          onWeekChange(
+            shiftLocalWeekStart(weekStart, timezone, 1, weekStartsOn)
+          )
         }
       >
         Наступний тиждень

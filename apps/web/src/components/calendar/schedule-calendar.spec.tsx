@@ -93,6 +93,7 @@ function renderSchedule(
         room={room}
         initialWeekStart={weekStart}
         initialTimezone={initialTimezone}
+        weekStartsOn={1}
       />
     </QueryClientProvider>
   );
@@ -180,7 +181,11 @@ describe("ScheduleCalendar", () => {
 
     const html = renderToString(
       <QueryClientProvider client={queryClient}>
-        <ScheduleCalendar room={room} initialWeekStart="2026-07-27" />
+        <ScheduleCalendar
+          room={room}
+          initialWeekStart="2026-07-27"
+          weekStartsOn={1}
+        />
       </QueryClientProvider>
     );
 
@@ -217,7 +222,7 @@ describe("ScheduleCalendar", () => {
       to: "2026-08-03T04:00:00.000Z"
     };
     queryClient.setQueryData(
-      ["schedule", "room-1", "2026-07-27", "America/New_York"],
+      ["schedule", "room-1", "2026-07-27", "America/New_York", 1],
       {
         response,
         weekStart: "2026-07-27",
@@ -231,6 +236,7 @@ describe("ScheduleCalendar", () => {
           room={room}
           initialWeekStart="2026-07-27"
           initialTimezone="America/New_York"
+          weekStartsOn={1}
         />
       </QueryClientProvider>
     );
@@ -289,7 +295,8 @@ describe("ScheduleCalendar", () => {
         "schedule",
         "room-1",
         "2026-07-27",
-        "Europe/Kyiv"
+        "Europe/Kyiv",
+        1
       ])?.status
     ).toBe("success");
   });

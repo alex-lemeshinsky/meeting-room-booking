@@ -22,12 +22,15 @@ const booking: MyBookingsResponse["bookings"][number] = {
 };
 
 describe("My Bookings display model", () => {
-  it("builds a schedule link for the booking's local week", () => {
-    expect(bookingCalendarHref(booking, "America/New_York")).toBe(
+  it("builds a schedule link for the booking's local week with weekStartsOn", () => {
+    expect(bookingCalendarHref(booking, "America/New_York", 1)).toBe(
       "/rooms/10000000-0000-4000-8000-000000000001?week=2026-07-20"
     );
-    expect(bookingCalendarHref(booking, "Europe/Kyiv")).toBe(
+    expect(bookingCalendarHref(booking, "Europe/Kyiv", 1)).toBe(
       "/rooms/10000000-0000-4000-8000-000000000001?week=2026-07-27"
+    );
+    expect(bookingCalendarHref(booking, "Europe/Kyiv", 7)).toBe(
+      "/rooms/10000000-0000-4000-8000-000000000001?week=2026-07-26"
     );
   });
 

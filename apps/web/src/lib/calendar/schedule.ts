@@ -16,7 +16,8 @@ export interface ScheduleRequest {
     "schedule",
     roomId: string,
     weekStart: string,
-    timezone: string
+    timezone: string,
+    weekStartsOn: number
   ];
   from: string;
   to: string;
@@ -90,19 +91,21 @@ interface BuildCalendarLayoutOptions {
   response: ScheduleResponse;
   weekStart: string;
   timezone: string;
+  weekStartsOn: number;
   now?: Date;
 }
 
 export function createScheduleRequest(
   roomId: string,
   weekStart: string,
-  timezone: string
+  timezone: string,
+  weekStartsOn: number
 ): ScheduleRequest {
-  const { from, to } = getLocalWeek(weekStart, timezone, 1);
+  const { from, to } = getLocalWeek(weekStart, timezone, weekStartsOn);
   const roomPath = encodeURIComponent(roomId);
 
   return {
-    queryKey: ["schedule", roomId, weekStart, timezone],
+    queryKey: ["schedule", roomId, weekStart, timezone, weekStartsOn],
     from,
     to,
     url:
@@ -124,9 +127,10 @@ export function buildCalendarLayout({
   response,
   weekStart,
   timezone,
+  weekStartsOn,
   now = new Date()
 }: BuildCalendarLayoutOptions): CalendarLayout {
-  const week = getLocalWeek(weekStart, timezone, 1, now);
+  const week = getLocalWeek(weekStart, timezone, weekStartsOn, now);
   const localDates = new Set(week.days.map((day) => day.localDate));
   const officeIntervals = getKyivOfficeIntervals(week.from, week.to);
   const officeFragmentGroups = officeIntervals.map((interval, index) =>

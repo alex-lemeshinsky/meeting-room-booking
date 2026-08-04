@@ -23,6 +23,7 @@ const layout = buildCalendarLayout({
   response,
   weekStart: "2026-07-27",
   timezone: "Europe/Kyiv",
+  weekStartsOn: 1,
   now: new Date("2026-07-27T06:15:00.000Z")
 });
 const selection: BookingSlotSelection = {
@@ -199,6 +200,7 @@ describe("BookingSheet", () => {
       response,
       weekStart: "2026-07-27",
       timezone: "Europe/Kyiv",
+      weekStartsOn: 1,
       now: new Date("2026-07-27T16:00:00.000Z")
     });
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import "server-only";
 import { cookies } from "next/headers";
 import type {
@@ -19,12 +20,14 @@ async function currentSessionSecret(): Promise<string> {
   return sessionSecret;
 }
 
-export async function getCurrentSession(): Promise<AuthResponse> {
-  return serverApi<AuthResponse>(
-    "/api/v1/auth/session",
-    await currentSessionSecret()
-  );
-}
+export const getCurrentSession = cache(
+  async function getCurrentSession(): Promise<AuthResponse> {
+    return serverApi<AuthResponse>(
+      "/api/v1/auth/session",
+      await currentSessionSecret()
+    );
+  }
+);
 
 export async function getRooms(minCapacity?: number): Promise<RoomsResponse> {
   const query = new URLSearchParams();
