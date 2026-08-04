@@ -1,4 +1,4 @@
-import { getCurrentLocalWeekStart, getLocalWeek } from "@mrb/time/calendar";
+import { getLocalWeek, isValidTimezone } from "@mrb/time/calendar";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -21,7 +21,7 @@ export function normalizeScheduleWeek(
   }
 
   try {
-    getLocalWeek(week, "Europe/Kyiv");
+    getLocalWeek(week, "Europe/Kyiv", 1);
     return week;
   } catch {
     return undefined;
@@ -35,12 +35,7 @@ export function normalizeTimezoneCookie(
     return undefined;
   }
 
-  try {
-    getCurrentLocalWeekStart(timezone);
-    return timezone;
-  } catch {
-    return undefined;
-  }
+  return isValidTimezone(timezone) ? timezone : undefined;
 }
 
 function capacityLabel(capacity: number): string {

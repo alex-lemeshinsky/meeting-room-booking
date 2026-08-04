@@ -1,4 +1,4 @@
-import { getCurrentLocalWeekStart } from "@mrb/time/calendar";
+import { isValidTimezone } from "@mrb/time/calendar";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { MyBookingsPage } from "../../../components/bookings/my-bookings-page";
@@ -34,10 +34,5 @@ export default async function MyBookingsRoute() {
 function validTimezone(timezone: string | undefined): string | undefined {
   if (timezone === undefined) return undefined;
 
-  try {
-    getCurrentLocalWeekStart(timezone);
-    return timezone;
-  } catch {
-    return undefined;
-  }
+  return isValidTimezone(timezone) ? timezone : undefined;
 }

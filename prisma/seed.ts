@@ -142,8 +142,8 @@ async function seed(): Promise<void> {
 }
 
 function getWeekOfficeIntervals(now: Date) {
-  const weekStart = getCurrentLocalWeekStart("Europe/Kyiv", now);
-  const week = getLocalWeek(weekStart, "Europe/Kyiv", now);
+  const weekStart = getCurrentLocalWeekStart("Europe/Kyiv", 1, now);
+  const week = getLocalWeek(weekStart, "Europe/Kyiv", 1, now);
   return getKyivOfficeIntervals(week.from, week.to);
 }
 

@@ -3,7 +3,9 @@ import {
   getCurrentLocalWeekStart,
   getKyivOfficeIntervals,
   getLocalWeek,
+  isValidTimezone,
   shiftLocalWeekStart,
+  snapToLocalWeekStart,
   splitBookingIntoLocalFragments
 } from "./index.js";
 
@@ -11,8 +13,8 @@ describe("local calendar weeks", () => {
   it("uses the Monday that has already started in Kyiv at the UTC boundary", () => {
     const now = new Date("2026-07-26T21:30:00.000Z");
 
-    expect(getCurrentLocalWeekStart("Europe/Kyiv", now)).toBe("2026-07-27");
-    expect(getLocalWeek("2026-07-27", "Europe/Kyiv", now)).toMatchObject({
+    expect(getCurrentLocalWeekStart("Europe/Kyiv", 1, now)).toBe("2026-07-27");
+    expect(getLocalWeek("2026-07-27", "Europe/Kyiv", 1, now)).toMatchObject({
       from: "2026-07-26T21:00:00.000Z",
       to: "2026-08-02T21:00:00.000Z",
       days: [
@@ -31,6 +33,7 @@ describe("local calendar weeks", () => {
     const week = getLocalWeek(
       "2026-07-27",
       "Europe/Kyiv",
+      1,
       new Date("2026-07-29T07:15:00.000Z")
     );
 
@@ -44,10 +47,12 @@ describe("local calendar weeks", () => {
   it("uses the previous Monday while New York is still on Sunday", () => {
     const now = new Date("2026-07-27T03:30:00.000Z");
 
-    expect(getCurrentLocalWeekStart("America/New_York", now)).toBe(
+    expect(getCurrentLocalWeekStart("America/New_York", 1, now)).toBe(
       "2026-07-20"
     );
-    expect(getLocalWeek("2026-07-27", "America/New_York", now)).toMatchObject({
+    expect(
+      getLocalWeek("2026-07-27", "America/New_York", 1, now)
+    ).toMatchObject({
       from: "2026-07-27T04:00:00.000Z",
       to: "2026-08-03T04:00:00.000Z"
     });
@@ -57,6 +62,7 @@ describe("local calendar weeks", () => {
     const week = getLocalWeek(
       "2026-03-02",
       "America/New_York",
+      1,
       new Date("2026-03-02T12:00:00.000Z")
     );
     const transitionDay = week.days[6];
@@ -75,6 +81,7 @@ describe("local calendar weeks", () => {
     const week = getLocalWeek(
       "2026-08-31",
       "America/Santiago",
+      1,
       new Date("2026-08-31T12:00:00.000Z")
     );
     const transitionDay = week.days[6];
@@ -96,6 +103,7 @@ describe("local calendar weeks", () => {
     const week = getLocalWeek(
       "2026-10-26",
       "America/New_York",
+      1,
       new Date("2026-10-26T12:00:00.000Z")
     );
     const transitionDay = week.days[6];
@@ -126,13 +134,13 @@ describe("local calendar weeks", () => {
   });
 
   it("shifts Monday week starts with local calendar arithmetic", () => {
-    expect(shiftLocalWeekStart("2026-03-02", "America/New_York", 1)).toBe(
+    expect(shiftLocalWeekStart("2026-03-02", "America/New_York", 1, 1)).toBe(
       "2026-03-09"
     );
-    expect(shiftLocalWeekStart("2026-11-02", "America/New_York", -1)).toBe(
+    expect(shiftLocalWeekStart("2026-11-02", "America/New_York", -1, 1)).toBe(
       "2026-10-26"
     );
-    expect(shiftLocalWeekStart("2026-07-27", "Europe/Kyiv", 0)).toBe(
+    expect(shiftLocalWeekStart("2026-07-27", "Europe/Kyiv", 0, 1)).toBe(
       "2026-07-27"
     );
   });
@@ -249,7 +257,7 @@ describe("local booking fragments", () => {
 
 describe("calendar input validation", () => {
   it("rejects invalid IANA zones", () => {
-    expect(() => getCurrentLocalWeekStart("Not/A_Zone", new Date())).toThrow(
+    expect(() => getCurrentLocalWeekStart("Not/A_Zone", 1, new Date())).toThrow(
       /timezone/i
     );
     expect(() =>
@@ -266,31 +274,31 @@ describe("calendar input validation", () => {
     "rejects the fixed-offset zone identifier %s",
     (timezone) => {
       expect(() =>
-        getCurrentLocalWeekStart(timezone, new Date("2026-07-27T10:00:00.000Z"))
+        getCurrentLocalWeekStart(
+          timezone,
+          1,
+          new Date("2026-07-27T10:00:00.000Z")
+        )
       ).toThrow(/timezone/i);
     }
   );
 
   it("rejects invalid local dates and non-Monday week starts", () => {
-    expect(() => getLocalWeek("2026-02-30", "Europe/Kyiv")).toThrow(
+    expect(() => getLocalWeek("2026-02-30", "Europe/Kyiv", 1)).toThrow(
       /weekStart/i
     );
-    expect(() => getLocalWeek("2026-07-28", "Europe/Kyiv")).toThrow(/Monday/i);
-    expect(() => shiftLocalWeekStart("2026-02-30", "Europe/Kyiv", 1)).toThrow(
-      /weekStart/i
-    );
-    expect(() => shiftLocalWeekStart("2026-07-28", "Europe/Kyiv", 1)).toThrow(
-      /Monday/i
-    );
+    expect(() =>
+      shiftLocalWeekStart("2026-02-30", "Europe/Kyiv", 1, 1)
+    ).toThrow(/weekStart/i);
   });
 
   it("rejects invalid week shift zones and non-integer offsets", () => {
-    expect(() => shiftLocalWeekStart("2026-07-27", "Not/A_Zone", 1)).toThrow(
+    expect(() => shiftLocalWeekStart("2026-07-27", "Not/A_Zone", 1, 1)).toThrow(
       /timezone/i
     );
-    expect(() => shiftLocalWeekStart("2026-07-27", "Europe/Kyiv", 1.5)).toThrow(
-      /weekOffset/i
-    );
+    expect(() =>
+      shiftLocalWeekStart("2026-07-27", "Europe/Kyiv", 1.5, 1)
+    ).toThrow(/weekOffset/i);
   });
 
   it("rejects invalid and empty office ranges", () => {
@@ -330,5 +338,145 @@ describe("calendar input validation", () => {
         "Europe/Kyiv"
       )
     ).toThrow(/startAt.*endAt/i);
+  });
+});
+
+describe("configurable week start", () => {
+  // 2026-07-27 is a Monday; the week runs Mon 07-27 .. Sun 08-02.
+  const wednesday = new Date("2026-07-29T12:00:00.000Z");
+
+  it("anchors the current week on each of the seven weekdays", () => {
+    const expected: Record<number, string> = {
+      1: "2026-07-27",
+      2: "2026-07-28",
+      3: "2026-07-29",
+      4: "2026-07-23",
+      5: "2026-07-24",
+      6: "2026-07-25",
+      7: "2026-07-26"
+    };
+
+    for (const [weekStartsOn, weekStart] of Object.entries(expected)) {
+      expect(
+        getCurrentLocalWeekStart("Europe/Kyiv", Number(weekStartsOn), wednesday)
+      ).toBe(weekStart);
+    }
+  });
+
+  it("builds a Sunday-anchored week with Sunday first and Saturday last", () => {
+    const week = getLocalWeek("2026-07-26", "Europe/Kyiv", 7, wednesday);
+
+    expect(week.days.map((day) => day.localDate)).toEqual([
+      "2026-07-26",
+      "2026-07-27",
+      "2026-07-28",
+      "2026-07-29",
+      "2026-07-30",
+      "2026-07-31",
+      "2026-08-01"
+    ]);
+  });
+
+  it("shifts weeks while preserving a non-Monday anchor", () => {
+    expect(shiftLocalWeekStart("2026-07-26", "Europe/Kyiv", 1, 7)).toBe(
+      "2026-08-02"
+    );
+    expect(shiftLocalWeekStart("2026-07-26", "Europe/Kyiv", -1, 7)).toBe(
+      "2026-07-19"
+    );
+  });
+
+  it("keeps a Sunday anchor across the Kyiv spring-forward week", () => {
+    // Kyiv moves to summer time on Sunday 2026-03-29.
+    const week = getLocalWeek(
+      "2026-03-29",
+      "Europe/Kyiv",
+      7,
+      new Date("2026-03-30T12:00:00.000Z")
+    );
+
+    expect(week.days[0]?.localDate).toBe("2026-03-29");
+    expect(week.days[6]?.localDate).toBe("2026-04-04");
+  });
+
+  it("keeps a Sunday anchor across the New York spring-forward week", () => {
+    // The United States moves to daylight time on Sunday 2026-03-08.
+    expect(shiftLocalWeekStart("2026-03-01", "America/New_York", 1, 7)).toBe(
+      "2026-03-08"
+    );
+  });
+});
+
+describe("snapping a local date to its week start", () => {
+  it("snaps any weekday to the containing week under each anchor", () => {
+    expect(snapToLocalWeekStart("2026-07-29", "Europe/Kyiv", 1)).toBe(
+      "2026-07-27"
+    );
+    expect(snapToLocalWeekStart("2026-07-29", "Europe/Kyiv", 7)).toBe(
+      "2026-07-26"
+    );
+    expect(snapToLocalWeekStart("2026-07-29", "Europe/Kyiv", 6)).toBe(
+      "2026-07-25"
+    );
+  });
+
+  it("returns the input when it is already the week start", () => {
+    expect(snapToLocalWeekStart("2026-07-27", "Europe/Kyiv", 1)).toBe(
+      "2026-07-27"
+    );
+  });
+
+  it("parses the local date in the target zone, not as UTC midnight", () => {
+    // Regression guard: `new Date("2026-08-03")` is UTC midnight, which is
+    // Sunday 2026-08-02 20:00 in New York and would snap to 2026-07-27.
+    expect(snapToLocalWeekStart("2026-08-03", "America/New_York", 1)).toBe(
+      "2026-08-03"
+    );
+    expect(snapToLocalWeekStart("2026-08-03", "America/New_York", 7)).toBe(
+      "2026-08-02"
+    );
+  });
+
+  it("rejects malformed local dates and invalid zones", () => {
+    expect(() => snapToLocalWeekStart("2026-02-30", "Europe/Kyiv", 1)).toThrow(
+      RangeError
+    );
+    expect(() => snapToLocalWeekStart("2026-07-27", "Not/A_Zone", 1)).toThrow(
+      RangeError
+    );
+  });
+});
+
+describe("week start validation", () => {
+  it("rejects values outside the integer range 1 to 7", () => {
+    for (const invalid of [0, 8, 1.5, Number.NaN]) {
+      expect(() =>
+        getCurrentLocalWeekStart("Europe/Kyiv", invalid, new Date())
+      ).toThrow(/weekStartsOn/);
+      expect(() =>
+        snapToLocalWeekStart("2026-07-27", "Europe/Kyiv", invalid)
+      ).toThrow(/weekStartsOn/);
+    }
+  });
+
+  it("rejects a week start that does not match the configured anchor", () => {
+    expect(() => getLocalWeek("2026-07-28", "Europe/Kyiv", 1)).toThrow(
+      /weekday 1/
+    );
+    expect(() => getLocalWeek("2026-07-27", "Europe/Kyiv", 7)).toThrow(
+      /weekday 7/
+    );
+    expect(() =>
+      shiftLocalWeekStart("2026-07-28", "Europe/Kyiv", 1, 1)
+    ).toThrow(/weekday 1/);
+  });
+});
+
+describe("timezone validation helper", () => {
+  it("accepts IANA zones and rejects fixed offsets and unknown zones", () => {
+    expect(isValidTimezone("Europe/Kyiv")).toBe(true);
+    expect(isValidTimezone("America/New_York")).toBe(true);
+    expect(isValidTimezone("+02:00")).toBe(false);
+    expect(isValidTimezone("Not/A_Zone")).toBe(false);
   });
 });

@@ -23,7 +23,7 @@ export function WeekToolbar({
         className={styles.secondaryAction}
         type="button"
         onClick={() =>
-          onWeekChange(shiftLocalWeekStart(weekStart, timezone, -1))
+          onWeekChange(shiftLocalWeekStart(weekStart, timezone, -1, 1))
         }
       >
         Попередній тиждень
@@ -31,7 +31,7 @@ export function WeekToolbar({
       <button
         className={styles.secondaryAction}
         type="button"
-        onClick={() => onWeekChange(getCurrentLocalWeekStart(timezone))}
+        onClick={() => onWeekChange(getCurrentLocalWeekStart(timezone, 1))}
       >
         Поточний тиждень
       </button>
@@ -39,7 +39,7 @@ export function WeekToolbar({
         className={styles.secondaryAction}
         type="button"
         onClick={() =>
-          onWeekChange(shiftLocalWeekStart(weekStart, timezone, 1))
+          onWeekChange(shiftLocalWeekStart(weekStart, timezone, 1, 1))
         }
       >
         Наступний тиждень

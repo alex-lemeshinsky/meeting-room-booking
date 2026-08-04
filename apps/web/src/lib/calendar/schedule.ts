@@ -98,7 +98,7 @@ export function createScheduleRequest(
   weekStart: string,
   timezone: string
 ): ScheduleRequest {
-  const { from, to } = getLocalWeek(weekStart, timezone);
+  const { from, to } = getLocalWeek(weekStart, timezone, 1);
   const roomPath = encodeURIComponent(roomId);
 
   return {
@@ -126,7 +126,7 @@ export function buildCalendarLayout({
   timezone,
   now = new Date()
 }: BuildCalendarLayoutOptions): CalendarLayout {
-  const week = getLocalWeek(weekStart, timezone, now);
+  const week = getLocalWeek(weekStart, timezone, 1, now);
   const localDates = new Set(week.days.map((day) => day.localDate));
   const officeIntervals = getKyivOfficeIntervals(week.from, week.to);
   const officeFragmentGroups = officeIntervals.map((interval, index) =>

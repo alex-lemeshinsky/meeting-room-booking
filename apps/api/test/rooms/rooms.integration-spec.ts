@@ -182,8 +182,9 @@ describe("GET /api/v1/rooms", () => {
 
     const now = new Date();
     const currentWeek = getLocalWeek(
-      getCurrentLocalWeekStart("Europe/Kyiv", now),
+      getCurrentLocalWeekStart("Europe/Kyiv", 1, now),
       "Europe/Kyiv",
+      1,
       now
     );
     const currentWeekBookings = bookingsAfter.filter(

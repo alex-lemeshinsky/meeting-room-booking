@@ -34,13 +34,13 @@ export interface BookingFragment {
 export function getLocalWeek(
   weekStart: string,
   timezone: string,
+  weekStartsOn: number,
   now: Date = new Date()
 ): { from: string; to: string; days: CalendarDay[] } {
   assertTimezone(timezone);
+  assertWeekStartsOn(weekStartsOn);
   const start = parseLocalDate(weekStart, "weekStart", timezone);
-  if (start.weekday !== 1) {
-    throw new RangeError("weekStart must be a Monday local date");
-  }
+  assertWeekAnchor(start, weekStartsOn);
 
   const localNow = parseNow(now, timezone);
   const today = requiredIsoDate(localNow);
@@ -72,29 +72,40 @@ export function getLocalWeek(
 
 export function getCurrentLocalWeekStart(
   timezone: string,
+  weekStartsOn: number,
   now: Date = new Date()
 ): string {
   assertTimezone(timezone);
+  assertWeekStartsOn(weekStartsOn);
   const localNow = parseNow(now, timezone);
-  return requiredIsoDate(
-    localNow.startOf("day").minus({ days: localNow.weekday - 1 })
-  );
+  return requiredIsoDate(startOfWeek(localNow, weekStartsOn));
+}
+
+export function snapToLocalWeekStart(
+  localDate: string,
+  timezone: string,
+  weekStartsOn: number
+): string {
+  assertTimezone(timezone);
+  assertWeekStartsOn(weekStartsOn);
+  const day = parseLocalDate(localDate, "localDate", timezone);
+  return requiredIsoDate(startOfWeek(day, weekStartsOn));
 }
 
 export function shiftLocalWeekStart(
   weekStart: string,
   timezone: string,
-  weekOffset: number
+  weekOffset: number,
+  weekStartsOn: number
 ): string {
   assertTimezone(timezone);
+  assertWeekStartsOn(weekStartsOn);
   if (!Number.isInteger(weekOffset)) {
     throw new RangeError("weekOffset must be an integer");
   }
 
   const start = parseLocalDate(weekStart, "weekStart", timezone);
-  if (start.weekday !== 1) {
-    throw new RangeError("weekStart must be a Monday local date");
-  }
+  assertWeekAnchor(start, weekStartsOn);
 
   return requiredIsoDate(start.plus({ weeks: weekOffset }));
 }
@@ -227,13 +238,38 @@ function startOfNextLocalDate(value: DateTime): DateTime {
   return value.plus({ days: 1 }).startOf("day");
 }
 
+export function isValidTimezone(timezone: string): boolean {
+  return (
+    !FIXED_OFFSET_ZONE_PATTERN.test(timezone) && IANAZone.isValidZone(timezone)
+  );
+}
+
 function assertTimezone(timezone: string): void {
-  if (
-    FIXED_OFFSET_ZONE_PATTERN.test(timezone) ||
-    !IANAZone.isValidZone(timezone)
-  ) {
+  if (!isValidTimezone(timezone)) {
     throw new RangeError(`timezone must be a valid IANA zone: ${timezone}`);
   }
+}
+
+function assertWeekStartsOn(weekStartsOn: number): void {
+  if (!Number.isInteger(weekStartsOn) || weekStartsOn < 1 || weekStartsOn > 7) {
+    throw new RangeError(
+      "weekStartsOn must be an integer between 1 (Monday) and 7 (Sunday): " +
+        String(weekStartsOn)
+    );
+  }
+}
+
+function assertWeekAnchor(start: DateTime, weekStartsOn: number): void {
+  if (start.weekday !== weekStartsOn) {
+    throw new RangeError(
+      `weekStart must be a local date with weekday ${weekStartsOn}`
+    );
+  }
+}
+
+function startOfWeek(day: DateTime, weekStartsOn: number): DateTime {
+  const diff = (day.weekday - weekStartsOn + 7) % 7;
+  return day.startOf("day").minus({ days: diff }).startOf("day");
 }
 
 function parseLocalDate(

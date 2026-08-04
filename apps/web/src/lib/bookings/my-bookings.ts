@@ -11,6 +11,7 @@ export function bookingCalendarHref(
 ): string {
   const weekStart = getCurrentLocalWeekStart(
     timezone,
+    1,
     new Date(booking.startAt)
   );
 

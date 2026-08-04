@@ -82,7 +82,8 @@ function ResolvedScheduleCalendar({
     null
   );
   const [successMessage, setSuccessMessage] = useState<string>();
-  const weekStart = initialWeekStart ?? getCurrentLocalWeekStart(timezone, now);
+  const weekStart =
+    initialWeekStart ?? getCurrentLocalWeekStart(timezone, 1, now);
   const request = useMemo(
     () => createScheduleRequest(room.id, weekStart, timezone),
     [room.id, timezone, weekStart]

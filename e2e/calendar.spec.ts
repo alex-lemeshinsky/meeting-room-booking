@@ -23,6 +23,7 @@ async function loginAsSeededUser(page: Page): Promise<void> {
 async function openCurrentDniproSchedule(page: Page): Promise<string> {
   const currentWeek = getCurrentLocalWeekStart(
     DISPLAY_TIMEZONE,
+    1,
     new Date(E2E_NOW_ISO)
   );
 
@@ -65,8 +66,13 @@ test.describe("weekly calendar", () => {
       })
     ).toBeGreaterThanOrEqual(0.9);
     await expect(page.getByTestId("calendar-scroll-cue")).toBeHidden();
-    const nextWeek = shiftLocalWeekStart(currentWeek, DISPLAY_TIMEZONE, 1);
-    const previousWeek = shiftLocalWeekStart(currentWeek, DISPLAY_TIMEZONE, -1);
+    const nextWeek = shiftLocalWeekStart(currentWeek, DISPLAY_TIMEZONE, 1, 1);
+    const previousWeek = shiftLocalWeekStart(
+      currentWeek,
+      DISPLAY_TIMEZONE,
+      -1,
+      1
+    );
     const booking = page.locator(
       `[data-booking-id="${DNIPRO_BOOKING_ID}"][data-testid="booking-fragment"]`
     );
