@@ -22,14 +22,14 @@ export default async function ProtectedLayout({
     const { user } = await getCurrentSession();
 
     return (
-      <div className={styles.appShell}>
-        <ProtectedHeader userName={user.name} />
-        <QueryProvider>
-          <ToastProvider>
+      <QueryProvider>
+        <ToastProvider>
+          <div className={styles.appShell}>
+            <ProtectedHeader userName={user.name} />
             <main className={styles.main}>{children}</main>
-          </ToastProvider>
-        </QueryProvider>
-      </div>
+          </div>
+        </ToastProvider>
+      </QueryProvider>
     );
   } catch (error) {
     if (error instanceof UnauthenticatedError) {

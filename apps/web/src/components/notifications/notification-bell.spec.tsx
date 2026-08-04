@@ -1,8 +1,17 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchNotifications, markNotificationRead } from "../../lib/api/notifications";
+import {
+  fetchNotifications,
+  markNotificationRead
+} from "../../lib/api/notifications";
 import { NotificationBell } from "./notification-bell";
 
 const mockPush = vi.fn();

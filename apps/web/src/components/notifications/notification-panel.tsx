@@ -44,11 +44,14 @@ export function NotificationPanel({
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const handleItemClick = (item: NotificationItem) => {
+  const handleItemClick = async (item: NotificationItem) => {
     if (!item.readAt) {
-      void markNotificationRead(item.id).then(() => {
-        void queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      });
+      try {
+        await markNotificationRead(item.id);
+        await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      } catch (err) {
+        console.error("Failed to mark notification as read:", err);
+      }
     }
 
     if (onClose) {

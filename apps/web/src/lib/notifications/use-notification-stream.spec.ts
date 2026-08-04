@@ -2,7 +2,10 @@ import { renderHook } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useToast, type ShowToastOptions } from "../../components/shell/toast-provider";
+import {
+  useToast,
+  type ShowToastOptions
+} from "../../components/shell/toast-provider";
 import { useNotificationStream } from "./use-notification-stream";
 
 vi.mock("../../components/shell/toast-provider", () => ({
@@ -38,7 +41,9 @@ describe("useNotificationStream", () => {
     vi.stubGlobal("EventSource", MockEventSource);
 
     showToastSpy = vi.fn();
-    mockShowToast = showToastSpy as unknown as (options: ShowToastOptions) => void;
+    mockShowToast = showToastSpy as unknown as (
+      options: ShowToastOptions
+    ) => void;
     vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast });
 
     queryClient = new QueryClient({
@@ -56,7 +61,11 @@ describe("useNotificationStream", () => {
   });
 
   function wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children
+    );
   }
 
   it("initializes EventSource with /events and withCredentials true", () => {

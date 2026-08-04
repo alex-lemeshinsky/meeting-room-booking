@@ -41,7 +41,7 @@ test.describe.serial("Stage 8 recurring bookings", () => {
     await page.getByLabel("Повторювати щотижня").check();
 
     const countInput = page.getByLabel("Кількість повторень");
-    await expect(countInput).toHaveValue(2);
+    await expect(countInput).toHaveValue("2");
     await countInput.fill("3");
 
     await page.getByRole("button", { name: "Забронювати" }).click();

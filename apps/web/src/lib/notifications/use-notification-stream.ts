@@ -14,7 +14,10 @@ export function useNotificationStream(): void {
         const data = JSON.parse(event.data);
         if (data.type === "notification") {
           void queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          showToast({ message: "У вас нове сповіщення про бронювання", type: "info" });
+          showToast({
+            message: "У вас нове сповіщення про бронювання",
+            type: "info"
+          });
         }
       } catch {
         // Ignore malformed event payload

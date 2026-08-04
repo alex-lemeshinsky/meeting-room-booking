@@ -58,11 +58,11 @@ test.describe("Stage 6 mobile journey", () => {
       .click();
     await page.getByRole("button", { name: "Наступний тиждень" }).click();
     await expect(page).toHaveURL(
-      (url) => url.searchParams.get("week") === "2030-01-14"
+      (url) => url.searchParams.get("week") === "2026-08-10"
     );
     await page.getByRole("button", { name: "Наступний тиждень" }).click();
     await expect(page).toHaveURL(
-      (url) => url.searchParams.get("week") === "2030-01-21"
+      (url) => url.searchParams.get("week") === "2026-08-17"
     );
 
     const retryMinutes = testInfo.retry * 30;

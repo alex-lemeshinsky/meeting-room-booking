@@ -16,19 +16,19 @@ export class NotificationSchedulerService {
   private readonly notifyBeforeMinutes: number;
 
   constructor(
-    private readonly database: DatabaseService,
-    private readonly eventEmitter: EventEmitter2,
-    private readonly configService: ConfigService,
+    @Inject(DatabaseService) private readonly database: DatabaseService,
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
+    @Inject(ConfigService) private readonly configService: ConfigService,
     @Inject(CLOCK) private readonly clock: Clock
   ) {
     this.notifyBeforeMinutes = Number(
-      this.configService.get<string>("NOTIFY_BEFORE_MINUTES", "10")
+      this.configService.get<string>("NOTIFY_BEFORE_MINUTES", "60")
     );
   }
 
   @Interval(15_000)
-  async processNotifications(): Promise<number> {
-    const now = this.clock.now();
+  async processNotifications(overrideNow?: Date): Promise<number> {
+    const now = overrideNow ?? this.clock.now();
     let createdCount = 0;
 
     await this.database.$transaction(async (tx) => {
@@ -80,7 +80,9 @@ export class NotificationSchedulerService {
       for (const candidate of candidates) {
         const message = `«${candidate.current_title}» у ${candidate.room_name} завершується за ${this.notifyBeforeMinutes} хв — наступне бронювання починається одразу`;
 
-        const inserted = await tx.$queryRaw<Array<{ id: string; user_id: string }>>`
+        const inserted = await tx.$queryRaw<
+          Array<{ id: string; user_id: string }>
+        >`
           INSERT INTO notifications (user_id, current_booking_id, next_booking_id, type, message, room_name, scheduled_for)
           VALUES (
             ${candidate.user_id}::uuid,

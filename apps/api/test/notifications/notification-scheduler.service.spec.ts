@@ -23,9 +23,11 @@ describe("NotificationSchedulerService", () => {
     } as unknown as EventEmitter2;
   }
 
-  function createMockDatabaseService(txMock: any): DatabaseService {
+  function createMockDatabaseService(txMock: unknown): DatabaseService {
     return {
-      $transaction: vi.fn().mockImplementation(async (cb: any) => cb(txMock))
+      $transaction: vi
+        .fn()
+        .mockImplementation(async (cb: (tx: unknown) => unknown) => cb(txMock))
     } as unknown as DatabaseService;
   }
 
@@ -90,11 +92,12 @@ describe("NotificationSchedulerService", () => {
     expect(count).toBe(1);
     expect(queryRawMock).toHaveBeenCalledTimes(3);
 
-    const expectedMessage = "«Sprint Sync» у Переговорна 1 завершується за 10 хв — наступне бронювання починається одразу";
+    const expectedMessage =
+      "«Sprint Sync» у Переговорна 1 завершується за 10 хв — наступне бронювання починається одразу";
 
-    // Verify insert call format (arg 0 of 3rd call is raw query template strings, remaining args are values)
     const insertCallArgs = queryRawMock.mock.calls[2];
     expect(insertCallArgs).toBeDefined();
+    expect(insertCallArgs).toContain(expectedMessage);
 
     expect(eventEmitter.emit).toHaveBeenCalledWith("notification.created", {
       userId: insertedNotification.user_id,

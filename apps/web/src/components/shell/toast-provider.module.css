@@ -23,7 +23,8 @@
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-raised);
   font: var(--type-body);
-  transition: transform var(--duration-base) var(--ease-standard),
+  transition:
+    transform var(--duration-base) var(--ease-standard),
     opacity var(--duration-base) var(--ease-standard);
 }
 

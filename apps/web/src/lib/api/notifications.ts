@@ -21,6 +21,7 @@ export function markNotificationRead(
       method: "PATCH",
       credentials: "same-origin",
       headers: {
+        "Content-Type": "application/json",
         "X-CSRF-Token": csrfTokenFromCookie()
       }
     }

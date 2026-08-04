@@ -6,11 +6,15 @@ import { NotificationsService } from "../../src/notifications/notifications.serv
 
 const NOW = new Date("2026-08-03T10:55:00.000Z");
 const USER_ID = "00000000-0000-4000-8000-000000000001";
-const OTHER_USER_ID = "00000000-0000-4000-8000-000000000002";
 const NOTIF_ID = "40000000-0000-4000-8000-000000000001";
 
 describe("NotificationsService", () => {
-  function createMockDatabase(findManyMock: any, countMock: any, findFirstMock?: any, updateMock?: any): DatabaseService {
+  function createMockDatabase(
+    findManyMock: unknown,
+    countMock: unknown,
+    findFirstMock?: unknown,
+    updateMock?: unknown
+  ): DatabaseService {
     return {
       notification: {
         findMany: findManyMock ?? vi.fn(),
@@ -81,10 +85,12 @@ describe("NotificationsService", () => {
       await expect(service.markAsRead(USER_ID, NOTIF_ID)).rejects.toThrow(
         AppError
       );
-      await expect(service.markAsRead(USER_ID, NOTIF_ID)).rejects.toMatchObject({
-        status: 404,
-        code: "NOTIFICATION_NOT_FOUND"
-      });
+      await expect(service.markAsRead(USER_ID, NOTIF_ID)).rejects.toMatchObject(
+        {
+          status: 404,
+          code: "NOTIFICATION_NOT_FOUND"
+        }
+      );
     });
 
     it("marks unread notification as read using current clock time", async () => {
@@ -99,7 +105,12 @@ describe("NotificationsService", () => {
         readAt: NOW
       });
 
-      const database = createMockDatabase(null, null, findFirstMock, updateMock);
+      const database = createMockDatabase(
+        null,
+        null,
+        findFirstMock,
+        updateMock
+      );
       const service = new NotificationsService(database, new FixedClock(NOW));
 
       const result = await service.markAsRead(USER_ID, NOTIF_ID);
@@ -129,7 +140,12 @@ describe("NotificationsService", () => {
       const findFirstMock = vi.fn().mockResolvedValue(existingNotif);
       const updateMock = vi.fn();
 
-      const database = createMockDatabase(null, null, findFirstMock, updateMock);
+      const database = createMockDatabase(
+        null,
+        null,
+        findFirstMock,
+        updateMock
+      );
       const service = new NotificationsService(database, new FixedClock(NOW));
 
       const result = await service.markAsRead(USER_ID, NOTIF_ID);

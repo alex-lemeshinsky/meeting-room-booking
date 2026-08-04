@@ -80,7 +80,11 @@
 }
 
 .unreadItem:hover {
-  background: #e4ebff;
+  background: color-mix(
+    in srgb,
+    var(--color-action-soft) 80%,
+    var(--color-action-primary) 20%
+  );
 }
 
 .itemHeader {

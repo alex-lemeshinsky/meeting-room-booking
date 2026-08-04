@@ -246,6 +246,78 @@ async function assertRecurringBookingSeries(cookies) {
   }
 }
 
+async function assertNotificationFlow(cookies) {
+  const roomId = "10000000-0000-4000-8000-000000000001";
+  const now = Date.now();
+  const startA = new Date(now + 60_000).toISOString();
+  const endA = new Date(now + 6 * 60_000).toISOString();
+  const startB = new Date(now + 6 * 60_000).toISOString();
+  const endB = new Date(now + 11 * 60_000).toISOString();
+
+  const csrfMatch = cookies.match(/mrb_csrf=([^;]+)/);
+  const csrfToken = csrfMatch ? csrfMatch[1] : "";
+
+  const createA = await globalThis.fetch(`${baseUrl}/api/v1/bookings`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: appOrigin,
+      cookie: cookies,
+      "x-csrf-token": csrfToken
+    },
+    body: JSON.stringify({
+      roomId,
+      title: "Smoke Booking A",
+      startAt: startA,
+      endAt: endA
+    })
+  });
+
+  if (!createA.ok) {
+    throw new Error(`booking A creation returned ${createA.status}`);
+  }
+
+  const createB = await globalThis.fetch(`${baseUrl}/api/v1/bookings`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: appOrigin,
+      cookie: cookies,
+      "x-csrf-token": csrfToken
+    },
+    body: JSON.stringify({
+      roomId,
+      title: "Smoke Booking B",
+      startAt: startB,
+      endAt: endB
+    })
+  });
+
+  if (!createB.ok) {
+    throw new Error(`booking B creation returned ${createB.status}`);
+  }
+
+  await delay(18_000);
+
+  const notifRes = await globalThis.fetch(`${baseUrl}/api/v1/notifications`, {
+    headers: { cookie: cookies }
+  });
+
+  if (!notifRes.ok) {
+    throw new Error(`notifications GET returned ${notifRes.status}`);
+  }
+
+  const notifData = await notifRes.json();
+  if (
+    !Array.isArray(notifData.notifications) ||
+    notifData.notifications.length === 0
+  ) {
+    throw new Error(
+      "expected at least 1 notification from back-to-back bookings"
+    );
+  }
+}
+
 async function main() {
   let attemptedStartup = false;
   try {
@@ -256,6 +328,7 @@ async function main() {
     const sessionCookies = await login();
     await assertFilteredRooms(sessionCookies);
     await assertRecurringBookingSeries(sessionCookies);
+    await assertNotificationFlow(sessionCookies);
 
     await compose("restart", "db");
     await waitForReady();

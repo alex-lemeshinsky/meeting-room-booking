@@ -584,7 +584,7 @@ export interface components {
             /** @example 2026-08-03T10:50:01.000Z */
             createdAt: string;
             /** @example 2026-08-03T10:55:00.000Z */
-            readAt: Record<string, never> | null;
+            readAt: string | null;
         };
         NotificationsResponseDto: {
             notifications: components["schemas"]["NotificationItemDto"][];
@@ -1089,8 +1089,8 @@ export interface operations {
     listMyBookings: {
         parameters: {
             query: {
-                section: "upcoming" | "history";
                 cursor?: string;
+                section: "upcoming" | "history";
             };
             header?: never;
             path?: never;
@@ -1340,8 +1340,8 @@ export interface operations {
     getRoomSchedule: {
         parameters: {
             query: {
-                from: string;
                 to: string;
+                from: string;
             };
             header?: never;
             path: {

@@ -16,7 +16,8 @@
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
   cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-standard),
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
     color var(--duration-fast) var(--ease-standard);
 }
 

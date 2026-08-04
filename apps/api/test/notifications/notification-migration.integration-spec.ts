@@ -156,7 +156,9 @@ describe("notification migration", () => {
           'ToDelete notification', 'Boardroom', '2031-08-04T09:50:00.000Z', CURRENT_TIMESTAMP
         )
       `);
-      await client.query(`DELETE FROM "bookings" WHERE "id" = '${BOOKING_1_ID}'`);
+      await client.query(
+        `DELETE FROM "bookings" WHERE "id" = '${BOOKING_1_ID}'`
+      );
       const afterBookingDelete = await client.query(
         `SELECT * FROM "notifications" WHERE "id" = '${NOTIF_BOOKING_DEL_ID}'`
       );

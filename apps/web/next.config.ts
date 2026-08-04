@@ -31,6 +31,10 @@ const config: NextConfig = {
   async rewrites() {
     return [
       {
+        source: "/events",
+        destination: `${apiOrigin}/events`
+      },
+      {
         source: "/api/:path*",
         destination: `${apiOrigin}/api/:path*`
       }

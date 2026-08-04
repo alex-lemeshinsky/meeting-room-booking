@@ -657,7 +657,9 @@ describe("OpenAPI document", () => {
     expectErrorResponses(markReadOp?.responses, [400, 401, 403, 404, 415, 500]);
 
     expect(document.components?.schemas?.NotificationItemDto).toBeDefined();
-    expect(document.components?.schemas?.NotificationsResponseDto).toBeDefined();
+    expect(
+      document.components?.schemas?.NotificationsResponseDto
+    ).toBeDefined();
     expect(document.components?.schemas?.MarkReadResponseDto).toBeDefined();
   });
 });

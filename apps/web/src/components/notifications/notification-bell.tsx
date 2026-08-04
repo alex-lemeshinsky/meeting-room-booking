@@ -76,9 +76,7 @@ export function NotificationBell() {
           />
         </svg>
 
-        {unreadCount > 0 && (
-          <span className={styles.badge}>{unreadCount}</span>
-        )}
+        {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
       </button>
 
       {isOpen && (

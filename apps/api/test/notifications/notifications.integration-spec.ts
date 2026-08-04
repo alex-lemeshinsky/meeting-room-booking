@@ -104,6 +104,14 @@ describe("Notifications API & SSE integration", () => {
         ],
         unreadCount: 1
       });
+
+      const alexResponse = await alex.agent
+        .get("/api/v1/notifications")
+        .expect(200);
+      expect(alexResponse.body).toEqual({
+        notifications: [],
+        unreadCount: 0
+      });
     });
   });
 
@@ -197,9 +205,7 @@ describe("Notifications API & SSE integration", () => {
 
   describe("GET /events SSE stream", () => {
     it("requires an authenticated session", async () => {
-      await request(context.app.getHttpServer())
-        .get("/events")
-        .expect(401);
+      await request(context.app.getHttpServer()).get("/events").expect(401);
     });
 
     it("returns text/event-stream headers for authenticated user", async () => {
