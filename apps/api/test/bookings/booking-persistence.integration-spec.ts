@@ -61,6 +61,37 @@ describe("booking persistence constraints", () => {
     expect(result.rows).toEqual([{ count: "3" }]);
   });
 
+  it("accepts the same clock time repeated on the following day", async () => {
+    await insertBooking(
+      pool,
+      "30000000-0000-4000-8000-000000000004",
+      "2031-01-20T10:00:00.000Z",
+      "2031-01-20T11:00:00.000Z"
+    );
+
+    await expect(
+      insertBooking(
+        pool,
+        "30000000-0000-4000-8000-000000000005",
+        "2031-01-21T10:00:00.000Z",
+        "2031-01-21T11:00:00.000Z"
+      )
+    ).resolves.toBeUndefined();
+
+    const result = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM "bookings"
+       WHERE "id" = ANY($1::uuid[])`,
+      [
+        [
+          "30000000-0000-4000-8000-000000000004",
+          "30000000-0000-4000-8000-000000000005"
+        ]
+      ]
+    );
+    expect(result.rows).toEqual([{ count: "2" }]);
+  });
+
   it.each([
     [
       "the same interval",
