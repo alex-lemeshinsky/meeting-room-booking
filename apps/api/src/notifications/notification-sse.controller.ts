@@ -13,6 +13,12 @@ import type { AuthenticatedRequest } from "../auth/auth.types.js";
 import { SessionGuard } from "../auth/guards/session.guard.js";
 import type { NotificationCreatedEvent } from "./notification-scheduler.service.js";
 
+// Without traffic an SSE stream is idle, and reverse proxies close idle
+// upstreams on their own read timeout (nginx defaults to 60s). Every close
+// costs a reconnect window in which no listener is attached and pushed
+// notifications are lost, so keep the stream busy well inside that default.
+export const SSE_HEARTBEAT_INTERVAL_MS = 25_000;
+
 @ApiTags("notifications")
 @Controller()
 export class NotificationSseController {
@@ -41,7 +47,14 @@ export class NotificationSseController {
 
       this.eventEmitter.on("notification.created", listener);
 
+      // Clients ignore a non-default event type, so this keeps proxies from
+      // treating the stream as idle without reaching onmessage.
+      const heartbeat = setInterval(() => {
+        subscriber.next({ type: "heartbeat", data: "" });
+      }, SSE_HEARTBEAT_INTERVAL_MS);
+
       const cleanup = () => {
+        clearInterval(heartbeat);
         this.eventEmitter.off("notification.created", listener);
       };
 
