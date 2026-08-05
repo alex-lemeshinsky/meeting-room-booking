@@ -59,9 +59,7 @@ export function BookingSheet({
   const countRef = useRef<HTMLInputElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const shouldFocusRequestError = useRef(false);
-  const conflictBookingsRef = useRef<ScheduleResponse["bookings"] | null>(
-    null
-  );
+  const conflictBookingsRef = useRef<ScheduleResponse["bookings"] | null>(null);
   const [title, setTitle] = useState("");
   const [localDate, setLocalDate] = useState(initialSelection.localDate);
   const [startAt, setStartAt] = useState(initialSelection.startAt);
