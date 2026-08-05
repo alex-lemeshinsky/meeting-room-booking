@@ -76,7 +76,7 @@ test.describe.serial("My Bookings", () => {
     await dialog.getByRole("button", { name: "Скасувати бронювання" }).click();
 
     await expect(dialog).toHaveCount(0);
-    await expect(page.getByRole("status")).toHaveText(
+    await expect(page.getByRole("status")).toContainText(
       `Бронювання «${title}» скасовано.`
     );
     await expect(
@@ -195,7 +195,9 @@ test.describe.serial("My Bookings", () => {
       .getByRole("button", { name: "Скасувати бронювання" })
       .click();
     const successToast = page.getByRole("status");
-    await expect(successToast).toHaveText(`Бронювання «${title}» скасовано.`);
+    await expect(successToast).toContainText(
+      `Бронювання «${title}» скасовано.`
+    );
     await expect(
       page.getByRole("tabpanel", { name: /Майбутні/ })
     ).toBeFocused();

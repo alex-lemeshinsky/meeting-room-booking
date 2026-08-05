@@ -11,7 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import styles from "./toast-provider.module.css";
 
-export type ToastType = "info" | "success" | "danger";
+type ToastType = "info" | "success" | "danger";
 
 export interface ShowToastOptions {
   message: string;

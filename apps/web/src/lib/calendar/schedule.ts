@@ -24,7 +24,7 @@ export interface ScheduleRequest {
   url: string;
 }
 
-export interface CalendarLayoutSlot extends CalendarSlot {
+interface CalendarLayoutSlot extends CalendarSlot {
   bookingStartAt?: string;
   bookingStartLabel?: string;
   elapsedPercent: number;
@@ -34,14 +34,14 @@ export interface CalendarLayoutSlot extends CalendarSlot {
   rowIndex: number;
 }
 
-export interface CalendarRow {
+interface CalendarRow {
   id: string;
   label: string;
   minuteOfDay: number;
   offsetLabel?: string;
 }
 
-export interface CalendarLayoutDay {
+interface CalendarLayoutDay {
   localDate: string;
   label: string;
   fullDateLabel: string;
@@ -49,7 +49,7 @@ export interface CalendarLayoutDay {
   slots: CalendarLayoutSlot[];
 }
 
-export interface CalendarLayoutBooking {
+interface CalendarLayoutBooking {
   bookingId: string;
   title: string;
   organizerName: string;

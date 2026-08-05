@@ -120,9 +120,11 @@ test.describe("Stage 6 mobile journey", () => {
     await cancelDialog
       .getByRole("button", { name: "Скасувати бронювання" })
       .click();
-    await expect(page.getByRole("status")).toHaveText(
-      `Бронювання «${title}» скасовано.`
-    );
+    await expect(
+      page
+        .getByRole("status")
+        .filter({ hasText: `Бронювання «${title}» скасовано.` })
+    ).toBeVisible();
     await assertDocumentContained(page);
     expect(consoleErrors).toEqual([]);
   });

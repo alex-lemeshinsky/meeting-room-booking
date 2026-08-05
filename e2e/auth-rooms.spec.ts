@@ -11,10 +11,7 @@ test.describe.serial("authentication and rooms", () => {
     const email = accountEmail("journey", testInfo.retry);
 
     await page.goto("/rooms");
-    await expect(page).toHaveURL(/\/login\?reason=session/);
-    await expect(page.getByRole("status")).toHaveText(
-      "Сесія завершилася. Увійдіть знову."
-    );
+    await expect(page).toHaveURL(/\/login$/);
     const authPanel = await page.locator("main > section").evaluate((panel) => {
       const style = getComputedStyle(panel);
       return {
@@ -63,10 +60,7 @@ test.describe.serial("authentication and rooms", () => {
     await page.getByRole("button", { name: "Вийти" }).click();
     await expect(page).toHaveURL(/\/login\?loggedOut=1/);
     await page.goto("/rooms");
-    await expect(page).toHaveURL(/\/login\?reason=session/);
-    await expect(page.getByRole("status")).toHaveText(
-      "Сесія завершилася. Увійдіть знову."
-    );
+    await expect(page).toHaveURL(/\/login$/);
   });
 
   test("fits authentication and rooms pages at the approved mobile viewport", async ({

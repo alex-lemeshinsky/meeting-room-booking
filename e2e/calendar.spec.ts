@@ -79,11 +79,8 @@ test.describe("weekly calendar", () => {
 
     await expect(booking).toContainText("Планування спринту");
     await expect(booking).toContainText("Моє");
-    const browserTimezone = await page.evaluate(
-      () => Intl.DateTimeFormat().resolvedOptions().timeZone
-    );
     await expect(
-      page.getByText(`Ваш часовий пояс: ${browserTimezone}`)
+      page.getByText(`Ваш часовий пояс: ${DISPLAY_TIMEZONE}`)
     ).toBeVisible();
     await expect(page.getByText("Офіс: Europe/Kyiv")).toBeVisible();
 
