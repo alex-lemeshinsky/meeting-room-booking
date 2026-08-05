@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "../../../components/shell/toast-provider";
 
 const {
   cookieStore,
@@ -72,7 +73,7 @@ describe("My Bookings route", () => {
 
     render(
       <QueryClientProvider client={new QueryClient()}>
-        {await MyBookingsRoute()}
+        <ToastProvider>{await MyBookingsRoute()}</ToastProvider>
       </QueryClientProvider>
     );
 

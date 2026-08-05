@@ -59,6 +59,9 @@ export function BookingSheet({
   const countRef = useRef<HTMLInputElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const shouldFocusRequestError = useRef(false);
+  const conflictBookingsRef = useRef<ScheduleResponse["bookings"] | null>(
+    null
+  );
   const [title, setTitle] = useState("");
   const [localDate, setLocalDate] = useState(initialSelection.localDate);
   const [startAt, setStartAt] = useState(initialSelection.startAt);
@@ -74,6 +77,7 @@ export function BookingSheet({
   const [isPending, setIsPending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [requestError, setRequestError] = useState<string>();
+  const [resetEndAfterConflict, setResetEndAfterConflict] = useState(false);
 
   const availableDays = useMemo(() => {
     const bookableDays = layout.days.filter((day) =>
@@ -143,6 +147,16 @@ export function BookingSheet({
       errorRef.current?.focus();
     }
   }, [requestError]);
+
+  useEffect(() => {
+    if (!resetEndAfterConflict || bookings === conflictBookingsRef.current) {
+      return;
+    }
+    setResetEndAfterConflict(false);
+    setEndAt(
+      buildBookingEndOptions(startAt, bookings, timezone)[0]?.value ?? ""
+    );
+  }, [resetEndAfterConflict, bookings, startAt, timezone]);
 
   useEffect(() => {
     function closeOnEscape(event: globalThis.KeyboardEvent) {
@@ -238,6 +252,8 @@ export function BookingSheet({
               "Цей слот щойно зайняли. Ми оновили розклад. Оберіть інший час."
             );
           }
+          conflictBookingsRef.current = bookings;
+          setResetEndAfterConflict(true);
           await onConflict();
         } else {
           const localizedFields = localizedFieldErrors(

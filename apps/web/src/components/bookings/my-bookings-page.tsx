@@ -24,7 +24,11 @@ import {
   detectBrowserTimezone,
   persistBrowserTimezoneCookie
 } from "../../lib/calendar/timezone";
-import { CancelBookingDialog } from "./cancel-booking-dialog";
+import { useToast } from "../shell/toast-provider";
+import {
+  CancelBookingDialog,
+  type CancellationScope
+} from "./cancel-booking-dialog";
 import styles from "./my-bookings.module.css";
 
 type MyBooking = MyBookingsResponse["bookings"][number];
@@ -47,6 +51,7 @@ export function MyBookingsPage({
   weekStartsOn
 }: MyBookingsPageProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const upcomingPanelRef = useRef<HTMLElement>(null);
   const upcomingTabRef = useRef<HTMLButtonElement>(null);
   const historyTabRef = useRef<HTMLButtonElement>(null);
@@ -55,7 +60,6 @@ export function MyBookingsPage({
     initialTimezone ?? null
   );
   const [cancellation, setCancellation] = useState<CancellationSelection>();
-  const [successMessage, setSuccessMessage] = useState<string>();
 
   useEffect(() => {
     const detectedTimezone = detectBrowserTimezone();
@@ -87,8 +91,14 @@ export function MyBookingsPage({
     return <MyBookingsSkeleton />;
   }
 
-  async function cancelled(booking: MyBooking) {
-    setSuccessMessage(`Бронювання «${booking.title}» скасовано.`);
+  async function cancelled(booking: MyBooking, scope: CancellationScope) {
+    showToast({
+      type: "success",
+      message:
+        scope === "series"
+          ? `Серію бронювань «${booking.title}» скасовано.`
+          : `Бронювання «${booking.title}» скасовано.`
+    });
     await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: ["my-bookings"] }),
       queryClient.invalidateQueries({ queryKey: ["schedule"] })
@@ -240,16 +250,10 @@ export function MyBookingsPage({
         </section>
       )}
 
-      {successMessage ? (
-        <div className={styles.successToast} role="status">
-          {successMessage}
-        </div>
-      ) : null}
-
       {cancellation ? (
         <CancelBookingDialog
           booking={cancellation.booking}
-          onCancelled={() => cancelled(cancellation.booking)}
+          onCancelled={(scope) => cancelled(cancellation.booking, scope)}
           onClose={closeCancellationDialog}
           timezone={timezone}
         />

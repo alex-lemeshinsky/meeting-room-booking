@@ -40,6 +40,12 @@ describe("browser timezone", () => {
     }
   );
 
+  it("normalizes the legacy Europe/Kiev alias to Europe/Kyiv", () => {
+    mockResolvedTimezone("Europe/Kiev");
+
+    expect(detectBrowserTimezone()).toBe("Europe/Kyiv");
+  });
+
   it("persists the encoded non-secret timezone cookie", () => {
     persistBrowserTimezoneCookie("America/New_York");
 

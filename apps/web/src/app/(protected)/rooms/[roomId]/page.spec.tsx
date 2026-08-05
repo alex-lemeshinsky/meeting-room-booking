@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "../../../../components/shell/toast-provider";
 
 const {
   cookieStore,
@@ -83,10 +84,12 @@ describe("room schedule route", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        {await SchedulePage({
-          params: Promise.resolve({ roomId: "room-1" }),
-          searchParams: Promise.resolve({ week: "2026-07-27" })
-        })}
+        <ToastProvider>
+          {await SchedulePage({
+            params: Promise.resolve({ roomId: "room-1" }),
+            searchParams: Promise.resolve({ week: "2026-07-27" })
+          })}
+        </ToastProvider>
       </QueryClientProvider>
     );
 

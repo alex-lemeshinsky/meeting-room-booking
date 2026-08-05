@@ -10,11 +10,13 @@ import styles from "./my-bookings.module.css";
 
 type MyBooking = MyBookingsResponse["bookings"][number];
 
+export type CancellationScope = "occurrence" | "series";
+
 interface CancelBookingDialogProps {
   booking: MyBooking;
   timezone: string;
   onClose(): void;
-  onCancelled(): Promise<void>;
+  onCancelled(scope: CancellationScope): Promise<void>;
 }
 
 export function CancelBookingDialog({
@@ -49,7 +51,7 @@ export function CancelBookingDialog({
     setRequestError(undefined);
     try {
       await cancelBooking(booking.id);
-      await onCancelled();
+      await onCancelled("occurrence");
     } catch (error) {
       setRequestError(localizedCancellationError(error));
     } finally {
@@ -64,7 +66,7 @@ export function CancelBookingDialog({
     setRequestError(undefined);
     try {
       await cancelBookingSeries(booking.seriesId);
-      await onCancelled();
+      await onCancelled("series");
     } catch (error) {
       setRequestError(localizedCancellationError(error));
     } finally {

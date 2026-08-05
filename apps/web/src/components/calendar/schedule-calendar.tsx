@@ -22,6 +22,7 @@ import {
   BookingSheet,
   type BookingCreationResult
 } from "../bookings/booking-sheet";
+import { useToast } from "../shell/toast-provider";
 import { CalendarGrid, type BookingSlotSelection } from "./calendar-grid";
 import styles from "./calendar.module.css";
 import { TimezoneBanner } from "./timezone-banner";
@@ -80,12 +81,12 @@ function ResolvedScheduleCalendar({
 }: ScheduleCalendarProps & { timezone: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { showToast } = useToast();
   const now = useCalendarNow();
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlotSelection | null>(
     null
   );
-  const [successMessage, setSuccessMessage] = useState<string>();
   const weekStart =
     initialWeekStart ?? getCurrentLocalWeekStart(timezone, weekStartsOn, now);
   const request = useMemo(
@@ -151,15 +152,18 @@ function ResolvedScheduleCalendar({
     (result: BookingCreationResult) => {
       setSelectedSlot(null);
       if (result.kind === "series") {
-        setSuccessMessage(
-          `Серію бронювань створено (${formatOccurrenceCountLabel(result.response.series.occurrenceCount)}): ${room.name}.`
-        );
+        showToast({
+          type: "success",
+          message: `Серію бронювань створено (${formatOccurrenceCountLabel(result.response.series.occurrenceCount)}): ${room.name}.`
+        });
       } else {
-        setSuccessMessage(
-          `Бронювання створено: ${room.name}, ` +
+        showToast({
+          type: "success",
+          message:
+            `Бронювання створено: ${room.name}, ` +
             `${formatTime(result.response.booking.startAt, timezone)}–` +
             `${formatTime(result.response.booking.endAt, timezone)}.`
-        );
+        });
       }
       void query.refetch();
       queueMicrotask(() => {
@@ -168,7 +172,7 @@ function ResolvedScheduleCalendar({
           ?.focus();
       });
     },
-    [query, room.name, timezone]
+    [query, room.name, showToast, timezone]
   );
 
   if (query.isPending && query.data === undefined) {
@@ -224,19 +228,12 @@ function ResolvedScheduleCalendar({
               layout={layout}
               onSelectSlot={(selection, trigger) => {
                 openerRef.current = trigger;
-                setSuccessMessage(undefined);
                 setSelectedSlot(selection);
               }}
             />
           </div>
         </div>
       )}
-
-      {successMessage ? (
-        <div className={styles.successToast} role="status">
-          {successMessage}
-        </div>
-      ) : null}
 
       {selectedSlot !== null && query.data !== undefined && layout !== null ? (
         <BookingSheet

@@ -15,7 +15,7 @@ export default async function ProtectedLayout({
   const cookieStore = await cookies();
 
   if (!cookieStore.has(SESSION_COOKIE)) {
-    redirect("/login?reason=session");
+    redirect("/login");
   }
 
   try {

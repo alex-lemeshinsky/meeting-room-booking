@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ScheduleResponse } from "../../lib/api/contracts";
+import { ToastProvider } from "../shell/toast-provider";
 import styles from "./calendar.module.css";
 import { ScheduleCalendar } from "./schedule-calendar";
 
@@ -89,12 +90,14 @@ function renderSchedule(
 
   const calendar = (weekStart: string | undefined) => (
     <QueryClientProvider client={queryClient}>
-      <ScheduleCalendar
-        room={room}
-        initialWeekStart={weekStart}
-        initialTimezone={initialTimezone}
-        weekStartsOn={1}
-      />
+      <ToastProvider>
+        <ScheduleCalendar
+          room={room}
+          initialWeekStart={weekStart}
+          initialTimezone={initialTimezone}
+          weekStartsOn={1}
+        />
+      </ToastProvider>
     </QueryClientProvider>
   );
   const view = render(calendar(initialWeekStart));
@@ -181,11 +184,13 @@ describe("ScheduleCalendar", () => {
 
     const html = renderToString(
       <QueryClientProvider client={queryClient}>
-        <ScheduleCalendar
-          room={room}
-          initialWeekStart="2026-07-27"
-          weekStartsOn={1}
-        />
+        <ToastProvider>
+          <ScheduleCalendar
+            room={room}
+            initialWeekStart="2026-07-27"
+            weekStartsOn={1}
+          />
+        </ToastProvider>
       </QueryClientProvider>
     );
 
@@ -232,12 +237,14 @@ describe("ScheduleCalendar", () => {
 
     const html = renderToString(
       <QueryClientProvider client={queryClient}>
-        <ScheduleCalendar
-          room={room}
-          initialWeekStart="2026-07-27"
-          initialTimezone="America/New_York"
-          weekStartsOn={1}
-        />
+        <ToastProvider>
+          <ScheduleCalendar
+            room={room}
+            initialWeekStart="2026-07-27"
+            initialTimezone="America/New_York"
+            weekStartsOn={1}
+          />
+        </ToastProvider>
       </QueryClientProvider>
     );
 

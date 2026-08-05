@@ -10,6 +10,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MyBookingsResponse } from "../../lib/api/contracts";
+import { ToastProvider } from "../shell/toast-provider";
 import { MyBookingsPage } from "./my-bookings-page";
 
 afterEach(() => {
@@ -373,6 +374,9 @@ describe("MyBookingsPage", () => {
         screen.queryByRole("dialog", { name: "Скасувати бронювання" })
       ).not.toBeInTheDocument()
     );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Серію бронювань «Щотижнева синхронізація» скасовано."
+    );
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       "/api/v1/booking-series/series-100/cancel",
@@ -396,11 +400,13 @@ function renderPage(initialUpcoming: MyBookingsResponse) {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MyBookingsPage
-        initialTimezone="Europe/Kyiv"
-        initialUpcoming={initialUpcoming}
-        weekStartsOn={1}
-      />
+      <ToastProvider>
+        <MyBookingsPage
+          initialTimezone="Europe/Kyiv"
+          initialUpcoming={initialUpcoming}
+          weekStartsOn={1}
+        />
+      </ToastProvider>
     </QueryClientProvider>
   );
 }
