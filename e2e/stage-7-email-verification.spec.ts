@@ -243,7 +243,9 @@ async function isFullScreen(
 async function assertControlsAtLeast44(
   locator: ReturnType<Page["locator"]>
 ): Promise<void> {
-  const controls = locator.locator("button, input, select");
+  const controls = locator.locator(
+    "button, input:not([type='checkbox']), select, label:has(input[type='checkbox'])"
+  );
   const undersized = await controls.evaluateAll((elements) =>
     elements.flatMap((element) => {
       const bounds = element.getBoundingClientRect();
