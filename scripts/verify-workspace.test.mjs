@@ -495,6 +495,8 @@ test("CI starts PostgreSQL before fast verification", async () => {
 
   assert.match(workflow, /^\s+services:\s*$/m);
   assert.match(workflow, /^\s+postgres:\s*$/m);
+  assert.match(workflow, /^\s+ports:\s*$/m);
+  assert.match(workflow, /^\s+- 5432:5432\s*$/m);
   assert.match(workflow, /postgres:\d+(?:\.\d+)*-alpine/);
   assert.match(workflow, /--health-cmd "pg_isready/);
 });

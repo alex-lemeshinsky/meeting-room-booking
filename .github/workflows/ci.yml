@@ -25,6 +25,8 @@ jobs:
           POSTGRES_DB: meeting_room
           POSTGRES_PASSWORD: meeting_room
           POSTGRES_USER: meeting_room
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U meeting_room -d meeting_room"
           --health-interval 2s
