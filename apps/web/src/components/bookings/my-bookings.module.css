@@ -161,6 +161,7 @@
 }
 
 .cancelAction {
+  align-self: center;
   min-width: 7rem;
   min-height: 44px;
   margin: var(--space-3);

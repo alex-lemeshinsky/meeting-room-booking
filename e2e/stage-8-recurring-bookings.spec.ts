@@ -55,6 +55,19 @@ test.describe.serial("Stage 8 recurring bookings", () => {
         name: /E2E Щотижнева синхронізація. понеділок, 3 серпня 2026 р., 14:00–14:30. Моє. Частина повторюваної серії \(1 з 3\)/
       })
     ).toBeVisible();
+
+    await page.getByRole("link", { name: "Мої бронювання" }).click();
+    const recurringCancellation = page
+      .getByRole("button", {
+        name: "Скасувати бронювання «E2E Щотижнева синхронізація»"
+      })
+      .first();
+    await expect(recurringCancellation).toBeVisible();
+    expect(
+      await recurringCancellation.evaluate(
+        (button) => button.getBoundingClientRect().height
+      )
+    ).toBe(44);
   });
 
   test("cancels whole series from My Bookings", async ({ page }) => {
