@@ -1,5 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WeekToolbar } from "./week-toolbar";
 
@@ -14,6 +20,34 @@ beforeEach(() => {
 });
 
 describe("WeekToolbar", () => {
+  it("renders compact labels without changing accessible navigation names", () => {
+    const onWeekChange = vi.fn();
+    render(
+      <WeekToolbar
+        weekStart="2026-07-27"
+        timezone="Europe/Kyiv"
+        weekStartsOn={1}
+        onWeekChange={onWeekChange}
+      />
+    );
+
+    const previous = screen.getByRole("button", {
+      name: "Попередній тиждень"
+    });
+    const current = screen.getByRole("button", { name: "Поточний тиждень" });
+    const next = screen.getByRole("button", { name: "Наступний тиждень" });
+
+    expect(within(previous).getByText("←")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
+    expect(within(current).getByText("Сьогодні")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
+    expect(within(next).getByText("→")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("moves to the previous local Monday", () => {
     const onWeekChange = vi.fn();
     render(

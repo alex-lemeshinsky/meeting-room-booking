@@ -11,6 +11,10 @@
   min-height: 44px;
 }
 
+.mobileWeekActionLabel {
+  display: none;
+}
+
 .secondaryAction,
 .retryAction {
   min-height: 44px;
@@ -515,6 +519,25 @@
 }
 
 @media (max-width: 40rem) {
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex-wrap: nowrap;
+  }
+
+  .toolbar .secondaryAction {
+    min-width: 0;
+    padding-inline: var(--space-2);
+  }
+
+  .desktopWeekActionLabel {
+    display: none;
+  }
+
+  .mobileWeekActionLabel {
+    display: inline;
+  }
+
   .gridShell {
     max-height: 60dvh;
   }
