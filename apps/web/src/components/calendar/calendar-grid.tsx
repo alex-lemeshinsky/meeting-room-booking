@@ -236,7 +236,7 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                       className={styles.edgeLabelBand}
                       data-edge="start"
                       data-testid="calendar-edge-label-band"
-                      style={{ gridRow: 1 }}
+                      style={{ gridColumn: 1, gridRow: 1 }}
                     />
                   ) : null}
                   {layout.rows.map((row, rowIndex) => {
@@ -255,6 +255,7 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                           data-testid="calendar-gap"
                           key={row.id}
                           style={{
+                            gridColumn: 1,
                             gridRow: rowIndex + 1 + edgeRowOffset
                           }}
                         />
@@ -285,6 +286,7 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                         key={slot.id}
                         style={
                           {
+                            gridColumn: 1,
                             gridRow: rowIndex + 1 + edgeRowOffset,
                             "--office-start": `${slot.officeStartPercent}%`,
                             "--office-end": `${slot.officeEndPercent}%`
@@ -350,7 +352,10 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                       className={styles.edgeLabelBand}
                       data-edge="end"
                       data-testid="calendar-edge-label-band"
-                      style={{ gridRow: layout.rows.length + 2 }}
+                      style={{
+                        gridColumn: 1,
+                        gridRow: layout.rows.length + 2
+                      }}
                     />
                   ) : null}
 
@@ -402,6 +407,7 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                       </span>
                     );
                     const markerStyle = {
+                      gridColumn: 1,
                       gridRow: booking.startRowIndex + 1 + edgeRowOffset,
                       "--booking-offset": `${
                         (SLOT_HEIGHT_PX * booking.startOffsetPercent) / 100
@@ -450,6 +456,7 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                           data-label-anchor={labelAnchor}
                           data-testid="booking-fragment"
                           style={{
+                            gridColumn: 1,
                             gridRow:
                               labelAnchor === "end" ? layout.rows.length + 2 : 1
                           }}
@@ -467,6 +474,7 @@ export function CalendarGrid({ layout, onSelectSlot }: CalendarGridProps) {
                       data-testid="now-indicator"
                       style={
                         {
+                          gridColumn: 1,
                           gridRow: nowSlot.rowIndex + 1 + edgeRowOffset,
                           "--now-offset": `${
                             (SLOT_HEIGHT_PX * now.offsetPercent) / 100

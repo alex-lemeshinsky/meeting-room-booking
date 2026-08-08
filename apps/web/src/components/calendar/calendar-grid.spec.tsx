@@ -241,6 +241,36 @@ describe("CalendarGrid", () => {
     expect(screen.getByText("Тарас")).toBeVisible();
   });
 
+  it("keeps a standard booking and its occupied slot in the full day column", () => {
+    render(
+      <CalendarGrid
+        layout={layout([
+          {
+            id: "booking-full-width",
+            title: "Повноширинна зустріч",
+            startAt: "2026-07-27T07:00:00.000Z",
+            endAt: "2026-07-27T08:00:00.000Z",
+            organizer: { id: "user-1", name: "Олена" },
+            isOwn: true
+          }
+        ])}
+      />
+    );
+
+    const day = within(screen.getByTestId("calendar-day-2026-07-27"));
+    expect(day.getByTestId("booking-fragment")).toHaveStyle({
+      gridColumn: "1"
+    });
+    expect(
+      day
+        .getAllByTestId("calendar-slot")
+        .find(
+          (slot) =>
+            slot.getAttribute("data-slot-id") === "2026-07-27T07:00:00.000Z"
+        )
+    ).toHaveStyle({ gridColumn: "1" });
+  });
+
   it("renders both linked fragments of a booking crossing local midnight", () => {
     render(
       <CalendarGrid
