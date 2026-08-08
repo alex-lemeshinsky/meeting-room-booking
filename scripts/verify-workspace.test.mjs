@@ -486,3 +486,15 @@ test("documents the auth and rooms clean-machine setup", async () => {
     /pnpm verify:fast\nnpm run doctor:full\npnpm verify:all/
   );
 });
+
+test("CI starts PostgreSQL before fast verification", async () => {
+  const workflow = await readFile(
+    new URL("../.github/workflows/ci.yml", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(workflow, /^\s+services:\s*$/m);
+  assert.match(workflow, /^\s+postgres:\s*$/m);
+  assert.match(workflow, /postgres:\d+(?:\.\d+)*-alpine/);
+  assert.match(workflow, /--health-cmd "pg_isready/);
+});
