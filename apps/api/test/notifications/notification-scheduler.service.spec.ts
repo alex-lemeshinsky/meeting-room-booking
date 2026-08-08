@@ -1,7 +1,6 @@
 import { FixedClock } from "@mrb/time";
 import { describe, expect, it, vi } from "vitest";
 import type { ConfigService } from "@nestjs/config";
-import type { EventEmitter2 } from "@nestjs/event-emitter";
 import type { DatabaseService } from "../../src/database/database.service.js";
 import { NotificationSchedulerService } from "../../src/notifications/notification-scheduler.service.js";
 
@@ -27,10 +26,10 @@ describe("NotificationSchedulerService", () => {
     } as unknown as ConfigService;
   }
 
-  function createMockEventEmitter(): EventEmitter2 {
+  function createMockEventPublisher() {
     return {
-      emit: vi.fn()
-    } as unknown as EventEmitter2;
+      publish: vi.fn().mockResolvedValue(undefined)
+    };
   }
 
   function createMockDatabaseService(txMock: unknown): DatabaseService {
@@ -45,12 +44,12 @@ describe("NotificationSchedulerService", () => {
     const queryRawMock = vi.fn().mockResolvedValueOnce([{ acquired: false }]);
     const txMock = { $queryRaw: queryRawMock };
     const database = createMockDatabaseService(txMock);
-    const eventEmitter = createMockEventEmitter();
+    const eventPublisher = createMockEventPublisher();
     const configService = createMockConfigService("10");
 
     const scheduler = new NotificationSchedulerService(
       database,
-      eventEmitter,
+      eventPublisher,
       configService,
       new FixedClock(NOW)
     );
@@ -62,7 +61,7 @@ describe("NotificationSchedulerService", () => {
     // Verify candidate detection query was NOT executed
   });
 
-  it("detects active back-to-back bookings within NOTIFY_BEFORE_MINUTES window, formats Ukrainian message, inserts row and emits notification.created event", async () => {
+  it("detects active back-to-back bookings within NOTIFY_BEFORE_MINUTES window, formats Ukrainian message, inserts row and publishes notification.created event", async () => {
     const candidate = {
       current_booking_id: "10000000-0000-4000-8000-000000000001",
       user_id: "00000000-0000-4000-8000-000000000001",
@@ -87,12 +86,12 @@ describe("NotificationSchedulerService", () => {
 
     const txMock = { $queryRaw: queryRawMock };
     const database = createMockDatabaseService(txMock);
-    const eventEmitter = createMockEventEmitter();
+    const eventPublisher = createMockEventPublisher();
     const configService = createMockConfigService("10");
 
     const scheduler = new NotificationSchedulerService(
       database,
-      eventEmitter,
+      eventPublisher,
       configService,
       new FixedClock(NOW)
     );
@@ -109,7 +108,69 @@ describe("NotificationSchedulerService", () => {
     expect(insertCallArgs).toBeDefined();
     expect(insertCallArgs).toContain(expectedMessage);
 
-    expect(eventEmitter.emit).toHaveBeenCalledWith("notification.created", {
+    expect(eventPublisher.publish).toHaveBeenCalledWith({
+      userId: insertedNotification.user_id,
+      notificationId: insertedNotification.id
+    });
+  });
+
+  it("publishes a created notification only after its transaction commits", async () => {
+    const candidate = {
+      current_booking_id: "10000000-0000-4000-8000-000000000001",
+      user_id: "00000000-0000-4000-8000-000000000001",
+      current_title: "Sprint Sync",
+      end_at: new Date("2035-01-15T12:00:00.000Z"),
+      next_booking_id: "10000000-0000-4000-8000-000000000002",
+      next_title: "Client Pitch",
+      next_start_at: new Date("2035-01-15T12:00:00.000Z"),
+      room_name: "Переговорна 1"
+    };
+    const insertedNotification = {
+      id: "90000000-0000-4000-8000-000000000001",
+      user_id: "00000000-0000-4000-8000-000000000001"
+    };
+    const queryRawMock = vi
+      .fn()
+      .mockResolvedValueOnce([{ acquired: true }])
+      .mockResolvedValueOnce([candidate])
+      .mockResolvedValueOnce([insertedNotification]);
+    const transaction = { $queryRaw: queryRawMock };
+    let releaseTransaction!: () => void;
+    let signalCallbackComplete!: () => void;
+    const transactionGate = new Promise<void>((resolve) => {
+      releaseTransaction = resolve;
+    });
+    const callbackComplete = new Promise<void>((resolve) => {
+      signalCallbackComplete = resolve;
+    });
+    const database = {
+      $transaction: vi.fn().mockImplementation(async (callback) => {
+        const result = await callback(transaction);
+        signalCallbackComplete();
+        await transactionGate;
+        return result;
+      })
+    } as unknown as DatabaseService;
+    const publisher = {
+      emit: vi.fn(),
+      publish: vi.fn().mockResolvedValue(undefined)
+    };
+    const scheduler = new NotificationSchedulerService(
+      database,
+      publisher as never,
+      createMockConfigService(),
+      new FixedClock(NOW)
+    );
+
+    const processing = scheduler.processNotifications();
+    await callbackComplete;
+
+    expect(publisher.publish).not.toHaveBeenCalled();
+
+    releaseTransaction();
+    await processing;
+
+    expect(publisher.publish).toHaveBeenCalledWith({
       userId: insertedNotification.user_id,
       notificationId: insertedNotification.id
     });
@@ -142,7 +203,7 @@ describe("NotificationSchedulerService", () => {
 
     const scheduler = new NotificationSchedulerService(
       createMockDatabaseService(txMock),
-      createMockEventEmitter(),
+      createMockEventPublisher(),
       createUnconfiguredConfigService(),
       new FixedClock(NOW)
     );
@@ -165,12 +226,12 @@ describe("NotificationSchedulerService", () => {
 
     const txMock = { $queryRaw: queryRawMock };
     const database = createMockDatabaseService(txMock);
-    const eventEmitter = createMockEventEmitter();
+    const eventPublisher = createMockEventPublisher();
     const configService = createMockConfigService("10");
 
     const scheduler = new NotificationSchedulerService(
       database,
-      eventEmitter,
+      eventPublisher,
       configService,
       new FixedClock(NOW)
     );
@@ -178,6 +239,6 @@ describe("NotificationSchedulerService", () => {
     const count = await scheduler.processNotifications();
 
     expect(count).toBe(0);
-    expect(eventEmitter.emit).not.toHaveBeenCalled();
+    expect(eventPublisher.publish).not.toHaveBeenCalled();
   });
 });
