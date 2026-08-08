@@ -152,11 +152,17 @@
 }
 
 .checkboxLabel input[type="checkbox"] {
-  width: 44px;
-  height: 44px;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   accent-color: var(--color-action-primary);
   cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"]:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .recurrenceFields {
