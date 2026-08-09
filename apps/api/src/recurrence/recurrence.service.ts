@@ -94,12 +94,50 @@ export class RecurrenceService {
         )
       }));
 
+    try {
+      return await this.persist(
+        userId,
+        input,
+        firstBooking.title,
+        projection,
+        validatedOccurrences
+      );
+    } catch (error) {
+      if (!this.policy.isRetryableWriteConflict(error)) {
+        throw error;
+      }
+
+      // A deadlock rolls the whole transaction back, so nothing was written
+      // and the entire series is rebuilt on the retry. The competing writer
+      // has settled by now, so this resolves to a created series or a
+      // definite BOOKING_CONFLICT on the occurrence that lost.
+      return await this.persist(
+        userId,
+        input,
+        firstBooking.title,
+        projection,
+        validatedOccurrences
+      );
+    }
+  }
+
+  private persist(
+    userId: string,
+    input: CreateBookingSeriesInput,
+    title: string,
+    projection: {
+      firstLocalDate: string;
+      firstLocalStartTime: string;
+      durationMinutes: number;
+    },
+    validatedOccurrences: ValidatedOccurrence[]
+  ): Promise<CreateBookingSeriesResponse> {
     return this.database.$transaction(async (transaction) => {
       const series = await transaction.bookingSeries.create({
         data: {
           userId,
           roomId: input.roomId,
-          title: firstBooking.title,
+          title,
           officeTimezone: OFFICE_TIMEZONE,
           firstLocalDate: new Date(
             `${projection.firstLocalDate}T00:00:00.000Z`

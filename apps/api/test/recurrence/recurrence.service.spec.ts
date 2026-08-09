@@ -30,6 +30,58 @@ describe("RecurrenceService", () => {
     vi.mocked(buildKyivWeeklySeries).mockReturnValue(projection());
   });
 
+  it("rebuilds the whole series once when the transaction deadlocks", async () => {
+    const deadlock = deadlockError();
+    const database = databaseDouble();
+    let attempts = 0;
+    database.$transaction = vi.fn(
+      (callback: (client: typeof database.transaction) => Promise<unknown>) => {
+        attempts += 1;
+        return attempts === 1
+          ? Promise.reject(deadlock)
+          : callback(database.transaction);
+      }
+    ) as unknown as typeof database.$transaction;
+    const policy = policyDouble({ retryable: deadlock });
+    const service = new RecurrenceService(database, clockDouble(), policy);
+
+    await expect(service.create(USER_ID, validInput())).resolves.toMatchObject({
+      series: { id: SERIES_ID, occurrenceCount: 3 }
+    });
+    expect(attempts).toBe(2);
+  });
+
+  it("does not retry a deadlocked series more than once", async () => {
+    const deadlock = deadlockError();
+    const database = databaseDouble();
+    let attempts = 0;
+    database.$transaction = vi.fn(() => {
+      attempts += 1;
+      return Promise.reject(deadlock);
+    }) as unknown as typeof database.$transaction;
+    const policy = policyDouble({ retryable: deadlock });
+    const service = new RecurrenceService(database, clockDouble(), policy);
+
+    await expect(service.create(USER_ID, validInput())).rejects.toBe(deadlock);
+    expect(attempts).toBe(2);
+  });
+
+  it("does not retry a series conflict that is not a deadlock", async () => {
+    const overlap = new Error("exclusion constraint");
+    const database = databaseDouble({
+      conflictAtOccurrenceIndex: 1,
+      overlap
+    });
+    const policy = policyDouble({ overlap });
+    const service = new RecurrenceService(database, clockDouble(), policy);
+
+    await expect(service.create(USER_ID, validInput())).rejects.toMatchObject({
+      status: 409,
+      code: "BOOKING_CONFLICT"
+    });
+    expect(database.$transaction).toHaveBeenCalledTimes(1);
+  });
+
   it("projects, validates, and creates ordered occurrences in one transaction", async () => {
     const database = databaseDouble();
     const clock = clockDouble();
@@ -369,10 +421,23 @@ function clockDouble(): Clock & { now: ReturnType<typeof vi.fn> } {
   };
 }
 
+/** Mirrors the SQLSTATE placement @prisma/adapter-pg produces for a deadlock. */
+function deadlockError() {
+  return {
+    code: "P2039",
+    meta: {
+      driverAdapterError: {
+        cause: { code: "40P01", message: "deadlock detected" }
+      }
+    }
+  };
+}
+
 function policyDouble(options?: {
   validationError?: AppError;
   contextError?: AppError;
   overlap?: unknown;
+  retryable?: unknown;
 }) {
   return {
     assertContext:
@@ -388,11 +453,16 @@ function policyDouble(options?: {
     isActiveOverlapError: vi.fn(
       (error: unknown) =>
         options?.overlap !== undefined && error === options.overlap
+    ),
+    isRetryableWriteConflict: vi.fn(
+      (error: unknown) =>
+        options?.retryable !== undefined && error === options.retryable
     )
   } as unknown as BookingWritePolicyService & {
     assertContext: ReturnType<typeof vi.fn>;
     validateCandidate: ReturnType<typeof vi.fn>;
     isActiveOverlapError: ReturnType<typeof vi.fn>;
+    isRetryableWriteConflict: ReturnType<typeof vi.fn>;
   };
 }
 
