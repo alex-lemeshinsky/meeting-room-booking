@@ -4,50 +4,10 @@
 з окремими Next.js web і NestJS API застосунками, PostgreSQL/Prisma межею та
 контрактами, згенерованими з OpenAPI.
 
-## Передумови
-
-- Node.js `24.18.0`;
-- pnpm `11.17.0`;
-- Docker із Compose plugin.
-
-## Перший запуск
-
-```bash
-nvm install
-nvm use
-npm install --global pnpm@11.17.0
-cp .env.example .env
-npm run doctor:fast
-pnpm install --frozen-lockfile
-npm run doctor:full
-pnpm dev:infra
-pnpm exec prisma migrate deploy
-pnpm exec prisma generate
-pnpm db:seed
-pnpm dev
-```
-
-Можна використати інший менеджер Node.js замість `nvm`, але активна версія
-має відповідати `.nvmrc`. `npm run doctor:fast` не потребує `node_modules`,
-Docker або registry та перевіряє Node.js і pnpm. `npm run doctor:full` додатково
-перевіряє Docker CLI і Compose plugin перед integration або E2E work. Виправте
-всі позначені `✗` перед відповідним етапом.
-
-Після запуску:
-
-- web: <http://localhost:3000>;
-- API liveness: <http://localhost:3001/api/v1/health/live>;
-- API readiness: <http://localhost:3001/api/v1/health/ready>.
-
-`pnpm dev:infra` запускає лише локальний PostgreSQL. Web звертається до API
-через same-origin `/api/*`; Next.js проксіює ці запити до NestJS у локальній
-розробці.
-
 ## Production-like запуск у Docker
 
 ```bash
 cp .env.example .env
-npm run doctor:full
 docker compose up --build --wait
 ```
 
@@ -80,6 +40,47 @@ docker compose down --volumes
 Ці дані призначені лише для локальної розробки та E2E-перевірок. Не
 використовуйте їх у production. Обидва seed-акаунти вже мають підтверджений
 email, тому ними можна одразу створювати бронювання.
+
+## Налаштування середовища розробки
+
+### Залежності
+
+- Node.js `24.18.0`;
+- pnpm `11.17.0`;
+- Docker із Compose plugin.
+
+### Запуск в dev режимі
+
+```bash
+nvm install
+nvm use
+npm install --global pnpm@11.17.0
+cp .env.example .env
+npm run doctor:fast
+pnpm install --frozen-lockfile
+npm run doctor:full
+pnpm dev:infra
+pnpm exec prisma migrate deploy
+pnpm exec prisma generate
+pnpm db:seed
+pnpm dev
+```
+
+Можна використати інший менеджер Node.js замість `nvm`, але активна версія
+має відповідати `.nvmrc`. `npm run doctor:fast` не потребує `node_modules`,
+Docker або registry та перевіряє Node.js і pnpm. `npm run doctor:full` додатково
+перевіряє Docker CLI і Compose plugin перед integration або E2E work. Виправте
+всі позначені `✗` перед відповідним етапом.
+
+Після запуску:
+
+- web: <http://localhost:3000>;
+- API liveness: <http://localhost:3001/api/v1/health/live>;
+- API readiness: <http://localhost:3001/api/v1/health/ready>.
+
+`pnpm dev:infra` запускає лише локальний PostgreSQL. Web звертається до API
+через same-origin `/api/*`; Next.js проксіює ці запити до NestJS у локальній
+розробці.
 
 ## Підтвердження email
 
