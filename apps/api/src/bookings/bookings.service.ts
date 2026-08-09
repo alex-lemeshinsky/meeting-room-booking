@@ -2,7 +2,10 @@ import { CLOCK, type Clock } from "@mrb/time";
 import { Inject, Injectable } from "@nestjs/common";
 import { AppError } from "../common/errors/app-error.js";
 import { DatabaseService } from "../database/database.service.js";
-import type { CreateBookingPolicyInput } from "./booking-policy.js";
+import type {
+  CreateBookingPolicyInput,
+  ValidatedBooking
+} from "./booking-policy.js";
 import { BookingWritePolicyService } from "./booking-write-policy.service.js";
 import {
   decodeHistoryCursor,
@@ -84,9 +87,28 @@ export class BookingsService {
     await this.writePolicy.assertContext(userId, input.roomId);
 
     try {
+      return await this.insert(userId, input.roomId, booking);
+    } catch (error) {
+      if (!this.writePolicy.isRetryableWriteConflict(error)) {
+        throw error;
+      }
+
+      // The competing transaction has settled by the time the deadlock is
+      // reported, so a single retry resolves to either a successful insert or
+      // a definite BOOKING_CONFLICT.
+      return await this.insert(userId, input.roomId, booking);
+    }
+  }
+
+  private async insert(
+    userId: string,
+    roomId: string,
+    booking: ValidatedBooking
+  ): Promise<CreateBookingResponse> {
+    try {
       const created = await this.database.booking.create({
         data: {
-          roomId: input.roomId,
+          roomId,
           userId,
           title: booking.title,
           startAt: booking.startAt,

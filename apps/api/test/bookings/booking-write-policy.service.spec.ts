@@ -83,6 +83,58 @@ describe("BookingWritePolicyService", () => {
       })
     ).toBe(false);
   });
+
+  it("recognizes the exclusion violation as the driver adapter reports it", () => {
+    const policy = new BookingWritePolicyService(databaseDouble());
+
+    expect(
+      policy.isActiveOverlapError({
+        code: "P2039",
+        meta: {
+          modelName: "Booking",
+          driverAdapterError: {
+            name: "DriverAdapterError",
+            cause: {
+              code: "23P01",
+              message:
+                'conflicting key value violates exclusion constraint "bookings_no_active_overlap"'
+            }
+          }
+        }
+      })
+    ).toBe(true);
+  });
+
+  it("treats a deadlock as retryable rather than as a conflict", () => {
+    const policy = new BookingWritePolicyService(databaseDouble());
+    const deadlock = {
+      code: "P2039",
+      meta: {
+        driverAdapterError: {
+          cause: { code: "40P01", message: "deadlock detected" }
+        }
+      }
+    };
+
+    expect(policy.isRetryableWriteConflict(deadlock)).toBe(true);
+    expect(policy.isActiveOverlapError(deadlock)).toBe(false);
+  });
+
+  it("does not treat an exclusion violation as retryable", () => {
+    const policy = new BookingWritePolicyService(databaseDouble());
+
+    expect(
+      policy.isRetryableWriteConflict({
+        code: "P2004",
+        meta: {
+          database_error: {
+            code: "23P01",
+            constraint: "bookings_no_active_overlap"
+          }
+        }
+      })
+    ).toBe(false);
+  });
 });
 
 function databaseDouble() {

@@ -51,6 +51,17 @@ export class BookingWritePolicyService {
       hasNestedText(error, "bookings_no_active_overlap")
     );
   }
+
+  /**
+   * Two concurrent inserts for the same slot can deadlock inside the GiST
+   * exclusion index instead of one cleanly violating it: each waits on the
+   * other's transaction, and PostgreSQL aborts one with `40P01`. The victim's
+   * transaction is rolled back without deciding whether the slot was taken, so
+   * this is a retryable outcome rather than a conflict.
+   */
+  isRetryableWriteConflict(error: unknown): boolean {
+    return hasNestedValue(error, "40P01") || hasNestedValue(error, "40001");
+  }
 }
 
 function hasNestedValue(value: unknown, expected: string): boolean {

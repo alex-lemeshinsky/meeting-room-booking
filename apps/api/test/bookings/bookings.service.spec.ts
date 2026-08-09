@@ -121,6 +121,61 @@ describe("BookingsService", () => {
     expect(database.booking.create).not.toHaveBeenCalled();
   });
 
+  it("retries a deadlocked insert once and returns the booking when it wins", async () => {
+    const database = databaseDouble();
+    database.booking.create = vi
+      .fn()
+      .mockRejectedValueOnce(deadlockError())
+      .mockResolvedValueOnce({
+        id: "20000000-0000-4000-8000-000000000001",
+        roomId: ROOM_ID,
+        title: "Планування спринту",
+        startAt: new Date("2035-01-15T07:00:00.000Z"),
+        endAt: new Date("2035-01-15T07:30:00.000Z")
+      });
+    const policy = policyDouble({ retryableWriteConflict: true });
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
+
+    await expect(service.create(USER_ID, validInput())).resolves.toMatchObject({
+      booking: { id: "20000000-0000-4000-8000-000000000001" }
+    });
+    expect(database.booking.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports BOOKING_CONFLICT when the retry after a deadlock loses the slot", async () => {
+    const database = databaseDouble();
+    database.booking.create = vi
+      .fn()
+      .mockRejectedValueOnce(deadlockError())
+      .mockRejectedValueOnce(exclusionError());
+    const policy = policyDouble({ retryableWriteConflict: true });
+    policy.isRetryableWriteConflict = vi
+      .fn()
+      .mockImplementation((error: unknown) => error === deadlockSentinel);
+    policy.isActiveOverlapError = vi
+      .fn()
+      .mockImplementation((error: unknown) => error !== deadlockSentinel);
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
+
+    await expect(service.create(USER_ID, validInput())).rejects.toMatchObject({
+      status: 409,
+      code: "BOOKING_CONFLICT"
+    });
+    expect(database.booking.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a deadlock more than once", async () => {
+    const database = databaseDouble();
+    database.booking.create = vi.fn().mockRejectedValue(deadlockError());
+    const policy = policyDouble({ retryableWriteConflict: true });
+    const service = new BookingsService(database, new FixedClock(NOW), policy);
+
+    await expect(service.create(USER_ID, validInput())).rejects.toBe(
+      deadlockSentinel
+    );
+    expect(database.booking.create).toHaveBeenCalledTimes(2);
+  });
+
   it("maps only the active-booking exclusion constraint to BOOKING_CONFLICT", async () => {
     const database = databaseDouble({
       createError: {
@@ -453,9 +508,42 @@ function validInput() {
   };
 }
 
+/**
+ * Shapes mirror what @prisma/adapter-pg surfaces for a PostgreSQL error: the
+ * SQLSTATE lives on meta.driverAdapterError.cause, not on the Prisma code.
+ */
+const deadlockSentinel = {
+  code: "P2039",
+  meta: {
+    driverAdapterError: {
+      cause: { code: "40P01", message: "deadlock detected" }
+    }
+  }
+};
+
+function deadlockError() {
+  return deadlockSentinel;
+}
+
+function exclusionError() {
+  return {
+    code: "P2039",
+    meta: {
+      driverAdapterError: {
+        cause: {
+          code: "23P01",
+          message:
+            'conflicting key value violates exclusion constraint "bookings_no_active_overlap"'
+        }
+      }
+    }
+  };
+}
+
 function policyDouble(options?: {
   contextError?: Error;
   activeOverlap?: boolean;
+  retryableWriteConflict?: boolean;
 }) {
   return {
     assertContext:
@@ -465,11 +553,15 @@ function policyDouble(options?: {
     validateCandidate: vi.fn(validateCreateBooking),
     isActiveOverlapError: vi
       .fn()
-      .mockReturnValue(options?.activeOverlap ?? false)
+      .mockReturnValue(options?.activeOverlap ?? false),
+    isRetryableWriteConflict: vi
+      .fn()
+      .mockReturnValue(options?.retryableWriteConflict ?? false)
   } as unknown as BookingWritePolicyService & {
     assertContext: ReturnType<typeof vi.fn>;
     validateCandidate: ReturnType<typeof vi.fn>;
     isActiveOverlapError: ReturnType<typeof vi.fn>;
+    isRetryableWriteConflict: ReturnType<typeof vi.fn>;
   };
 }
 
