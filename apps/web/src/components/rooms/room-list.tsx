@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { RoomsResponse } from "../../lib/api/contracts";
 import { capacityLabel } from "../../lib/rooms/capacity-label";
+import { floorLabel } from "../../lib/rooms/floor-label";
 import styles from "../../app/(protected)/protected.module.css";
 
 interface RoomListProps {
@@ -46,7 +47,7 @@ export function RoomList({ isFiltered = false, rooms }: RoomListProps) {
             <dl className={styles.roomDetails}>
               <div>
                 <dt>Поверх</dt>
-                <dd>{room.floor} поверх</dd>
+                <dd>{floorLabel(room.floor)}</dd>
               </div>
               <div>
                 <dt>Місткість</dt>

@@ -97,7 +97,7 @@ describe("room schedule route", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Розклад кімнати Дніпро" })
     ).toBeVisible();
-    expect(screen.getByText("4 поверх")).toBeVisible();
+    expect(screen.getByText("4-й поверх")).toBeVisible();
     expect(screen.getByText("4 місця")).toBeVisible();
     expect(
       screen.getByRole("link", { name: "До списку кімнат" })

@@ -197,3 +197,15 @@ packages/
 prisma/       schema, міграції та deterministic seed
 e2e/          Playwright user journeys
 ```
+
+## Документація
+
+Цей README самодостатній для запуску та перевірки проєкту. Глибші рішення
+винесені окремо:
+
+- [`docs/features.md`](docs/features.md) — продуктова поведінка по кожному
+  сценарію разом із критеріями приймання;
+- [`docs/architecture.md`](docs/architecture.md) — межі шарів, робота з
+  PostgreSQL, контракти між web і API;
+- [`docs/design-system.md`](docs/design-system.md) — токени, типографіка,
+  компоненти, правила адаптивності й доступності.

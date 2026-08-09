@@ -35,7 +35,7 @@ describe("RoomList", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Дніпро" })).toBeVisible();
-    expect(screen.getByText("1 поверх")).toBeVisible();
+    expect(screen.getByText("1-й поверх")).toBeVisible();
     expect(screen.getByText("6 місць")).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Відкрити розклад кімнати Дніпро" })

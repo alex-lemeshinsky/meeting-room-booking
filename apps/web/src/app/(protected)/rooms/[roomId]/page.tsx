@@ -7,6 +7,7 @@ import { UnauthenticatedError } from "../../../../lib/api/server";
 import { getCurrentSession, getRoom } from "../../../../lib/auth/session";
 import { TIMEZONE_COOKIE } from "../../../../lib/calendar/timezone";
 import { capacityLabel } from "../../../../lib/rooms/capacity-label";
+import { floorLabel } from "../../../../lib/rooms/floor-label";
 import styles from "./schedule.module.css";
 
 type SchedulePageProps = {
@@ -94,7 +95,7 @@ export default async function SchedulePage({
       <header className={styles.roomContext}>
         <h1 id="schedule-title">Розклад кімнати {room.name}</h1>
         <p>
-          <span>{room.floor} поверх</span>
+          <span>{floorLabel(room.floor)}</span>
           <span>{capacityLabel(room.capacity)}</span>
         </p>
       </header>
