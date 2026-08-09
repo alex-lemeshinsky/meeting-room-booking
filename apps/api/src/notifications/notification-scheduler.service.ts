@@ -26,6 +26,8 @@ export const NOTIFICATION_EVENT_PUBLISHER = Symbol(
   "NOTIFICATION_EVENT_PUBLISHER"
 );
 
+const DEFAULT_NOTIFY_BEFORE_MINUTES = 10;
+
 @Injectable()
 export class NotificationSchedulerService {
   private readonly logger = new Logger(NotificationSchedulerService.name);
@@ -38,9 +40,31 @@ export class NotificationSchedulerService {
     @Inject(ConfigService) private readonly configService: ConfigService,
     @Inject(CLOCK) private readonly clock: Clock
   ) {
-    this.notifyBeforeMinutes = Number(
-      this.configService.get<string>("NOTIFY_BEFORE_MINUTES", "10")
+    this.notifyBeforeMinutes = this.resolveNotifyBeforeMinutes();
+  }
+
+  /**
+   * An unusable NOTIFY_BEFORE_MINUTES must not reach the scheduling query: a
+   * NaN or negative interval silently matches nothing, so notifications would
+   * stop with no signal beyond the generic catch in processNotifications.
+   */
+  private resolveNotifyBeforeMinutes(): number {
+    const configured = this.configService.get<string>(
+      "NOTIFY_BEFORE_MINUTES",
+      String(DEFAULT_NOTIFY_BEFORE_MINUTES)
     );
+    const parsed = Number(configured);
+
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      this.logger.warn(
+        `NOTIFY_BEFORE_MINUTES must be a positive whole number of minutes, ` +
+          `received "${configured}". Falling back to ` +
+          `${DEFAULT_NOTIFY_BEFORE_MINUTES}.`
+      );
+      return DEFAULT_NOTIFY_BEFORE_MINUTES;
+    }
+
+    return parsed;
   }
 
   @Interval(15_000)

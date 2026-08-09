@@ -40,6 +40,51 @@ describe("NotificationSchedulerService", () => {
     } as unknown as DatabaseService;
   }
 
+  it.each([
+    ["a non-numeric value", "soon"],
+    ["a fractional value", "2.5"],
+    ["zero", "0"],
+    ["a negative value", "-5"]
+  ])(
+    "falls back to the 10 minute default when NOTIFY_BEFORE_MINUTES is %s",
+    async (_case, configured) => {
+      const candidate = {
+        current_booking_id: "30000000-0000-4000-8000-000000000001",
+        user_id: "00000000-0000-4000-8000-000000000001",
+        current_title: "Sprint Sync",
+        end_at: new Date("2035-01-15T12:00:00.000Z"),
+        next_booking_id: "30000000-0000-4000-8000-000000000002",
+        next_title: "Design Review",
+        next_start_at: new Date("2035-01-15T12:00:00.000Z"),
+        room_name: "Переговорна 1"
+      };
+      const queryRawMock = vi
+        .fn()
+        .mockResolvedValueOnce([{ acquired: true }])
+        .mockResolvedValueOnce([candidate])
+        .mockResolvedValueOnce([
+          {
+            id: "90000000-0000-4000-8000-000000000001",
+            user_id: candidate.user_id
+          }
+        ]);
+
+      const scheduler = new NotificationSchedulerService(
+        createMockDatabaseService({ $queryRaw: queryRawMock }),
+        createMockEventPublisher(),
+        createMockConfigService(configured),
+        new FixedClock(NOW)
+      );
+
+      await scheduler.processNotifications();
+
+      expect(queryRawMock.mock.calls[1]).toContain(10);
+      expect(queryRawMock.mock.calls[2]).toContain(
+        "«Sprint Sync» у Переговорна 1 завершується за 10 хв — наступне бронювання починається одразу"
+      );
+    }
+  );
+
   it("exits early without running candidate detection query if advisory lock is not acquired", async () => {
     const queryRawMock = vi.fn().mockResolvedValueOnce([{ acquired: false }]);
     const txMock = { $queryRaw: queryRawMock };
