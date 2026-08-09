@@ -146,6 +146,13 @@ export function BookingSheet({
     }
   }, [requestError]);
 
+  // A conflict rejects the selected end time, but the replacement options only
+  // exist once the refreshed schedule arrives, so the reset waits for the
+  // `bookings` identity to change. The refresh may be a no-op — a series
+  // conflict on an occurrence outside the visible week leaves this week's
+  // schedule untouched — so the pending reset must also expire as soon as the
+  // user picks a time themselves, or a later unrelated refresh would discard
+  // that choice.
   useEffect(() => {
     if (!resetEndAfterConflict || bookings === conflictBookingsRef.current) {
       return;
@@ -176,6 +183,7 @@ export function BookingSheet({
     setEndAt(
       buildBookingEndOptions(firstStart, bookings, timezone)[0]?.value ?? ""
     );
+    setResetEndAfterConflict(false);
     clearErrors();
   }
 
@@ -185,6 +193,7 @@ export function BookingSheet({
     setEndAt(
       buildBookingEndOptions(nextStart, bookings, timezone)[0]?.value ?? ""
     );
+    setResetEndAfterConflict(false);
     clearErrors();
   }
 
@@ -365,6 +374,7 @@ export function BookingSheet({
                 id="booking-end"
                 onChange={(event) => {
                   setEndAt(event.target.value);
+                  setResetEndAfterConflict(false);
                   clearErrors();
                 }}
                 ref={endRef}

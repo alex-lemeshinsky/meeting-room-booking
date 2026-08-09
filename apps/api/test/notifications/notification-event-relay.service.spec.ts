@@ -1,13 +1,28 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Logger } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
 import type { DatabaseService } from "../../src/database/database.service.js";
 import {
+  LISTENER_RECONNECT_INITIAL_DELAY_MS,
+  LISTENER_RECONNECT_MAX_DELAY_MS,
   NOTIFICATION_EVENT_CHANNEL,
   NotificationEventRelay,
   type NotificationListenerClient,
   type NotificationListenerClientFactory
 } from "../../src/notifications/notification-event-relay.service.js";
+
+beforeEach(() => {
+  // The reconnect cases drive the listener's error path on purpose; keep their
+  // expected Nest logs out of the suite output.
+  vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+  vi.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 const DATABASE_URL =
   "postgresql://meeting_room:meeting_room@db:5432/meeting_room";
@@ -24,10 +39,10 @@ class FakeNotificationListenerClient implements NotificationListenerClient {
     channel: string;
     payload?: string;
   }) => void;
+  private errorListener?: (error: Error) => void;
 
   onError(listener: (error: Error) => void): void {
-    // The unit test does not need to trigger the connection error path.
-    void listener;
+    this.errorListener = listener;
   }
 
   subscribe(
@@ -41,12 +56,25 @@ class FakeNotificationListenerClient implements NotificationListenerClient {
       payload === undefined ? { channel } : { channel, payload }
     );
   }
+
+  fail(error = new Error("connection terminated")): void {
+    this.errorListener?.(error);
+  }
 }
 
 function createSubject() {
-  const client = new FakeNotificationListenerClient();
+  // Each connect attempt gets its own client, mirroring pg.Client, which cannot
+  // be reused once its connection has errored.
+  const clients = [new FakeNotificationListenerClient()];
+  let createCount = 0;
   const clientFactory: NotificationListenerClientFactory = {
-    create: vi.fn().mockReturnValue(client)
+    create: vi.fn().mockImplementation(() => {
+      createCount += 1;
+      if (createCount > clients.length) {
+        clients.push(new FakeNotificationListenerClient());
+      }
+      return clients[createCount - 1];
+    })
   };
   const database = {
     $executeRaw: vi.fn().mockResolvedValue(1)
@@ -57,7 +85,8 @@ function createSubject() {
   } as unknown as ConfigService;
 
   return {
-    client,
+    clients,
+    client: clients[0]!,
     clientFactory,
     database,
     eventEmitter,
@@ -122,5 +151,95 @@ describe("NotificationEventRelay", () => {
     await relay.onModuleDestroy();
 
     expect(client.end).toHaveBeenCalledOnce();
+  });
+
+  it("re-establishes the listener after the connection drops", async () => {
+    vi.useFakeTimers();
+    const { relay, clients } = createSubject();
+
+    await relay.onModuleInit();
+    clients[0]!.fail();
+
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_INITIAL_DELAY_MS);
+
+    expect(clients).toHaveLength(2);
+    expect(clients[0]!.end).toHaveBeenCalledOnce();
+    expect(clients[1]!.connect).toHaveBeenCalledOnce();
+    expect(clients[1]!.query).toHaveBeenCalledWith(
+      `LISTEN ${NOTIFICATION_EVENT_CHANNEL}`
+    );
+
+    await relay.onModuleDestroy();
+  });
+
+  it("relays events over the reconnected listener", async () => {
+    vi.useFakeTimers();
+    const { relay, clients, eventEmitter } = createSubject();
+
+    await relay.onModuleInit();
+    clients[0]!.fail();
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_INITIAL_DELAY_MS);
+
+    clients[1]!.notify(NOTIFICATION_EVENT_CHANNEL, JSON.stringify(EVENT));
+
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      "notification.created",
+      EVENT
+    );
+    await relay.onModuleDestroy();
+  });
+
+  it("backs off before each retry while the database stays unreachable", async () => {
+    vi.useFakeTimers();
+    const { relay, clients } = createSubject();
+
+    await relay.onModuleInit();
+    clients[1] = new FakeNotificationListenerClient();
+    clients[1].connect.mockRejectedValue(new Error("ECONNREFUSED"));
+    clients[0]!.fail();
+
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_INITIAL_DELAY_MS);
+    expect(clients[1].connect).toHaveBeenCalledOnce();
+    expect(clients).toHaveLength(2);
+
+    // A second attempt must not fire on the same short delay.
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_INITIAL_DELAY_MS);
+    expect(clients).toHaveLength(2);
+
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_INITIAL_DELAY_MS);
+    expect(clients).toHaveLength(3);
+
+    await relay.onModuleDestroy();
+  });
+
+  it("ignores a late error from a connection that was already replaced", async () => {
+    vi.useFakeTimers();
+    const { relay, clients } = createSubject();
+
+    await relay.onModuleInit();
+    clients[0]!.fail();
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_INITIAL_DELAY_MS);
+    expect(clients).toHaveLength(2);
+
+    clients[0]!.fail();
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_MAX_DELAY_MS);
+
+    expect(clients).toHaveLength(2);
+    expect(clients[1]!.end).not.toHaveBeenCalled();
+
+    await relay.onModuleDestroy();
+  });
+
+  it("stops reconnecting once the module is destroyed", async () => {
+    vi.useFakeTimers();
+    const { relay, clients } = createSubject();
+
+    await relay.onModuleInit();
+    clients[0]!.fail();
+    await relay.onModuleDestroy();
+
+    await vi.advanceTimersByTimeAsync(LISTENER_RECONNECT_MAX_DELAY_MS * 2);
+
+    expect(clients).toHaveLength(1);
   });
 });

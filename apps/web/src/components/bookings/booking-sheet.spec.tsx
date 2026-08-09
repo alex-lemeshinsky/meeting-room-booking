@@ -131,7 +131,7 @@ describe("BookingSheet", () => {
     });
   });
 
-  it("preserves values, refreshes, and focuses the conflict message", async () => {
+  it("preserves the title, refreshes, and focuses the conflict message", async () => {
     document.cookie = "mrb_csrf=csrf-value; path=/";
     vi.stubGlobal(
       "fetch",
@@ -154,10 +154,103 @@ describe("BookingSheet", () => {
     );
     expect(alert).toHaveFocus();
     expect(screen.getByLabelText("Назва")).toHaveValue("Важлива зустріч");
-    expect(screen.getByLabelText("Завершення")).toHaveValue(
-      "2026-07-27T07:30:00.000Z"
-    );
     expect(onConflict).toHaveBeenCalledOnce();
+  });
+
+  it("resets the rejected end time once the refreshed schedule arrives", async () => {
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(apiError("BOOKING_CONFLICT"))
+    );
+    const user = userEvent.setup();
+    const view = renderSheet();
+
+    await user.type(screen.getByLabelText("Назва"), "Важлива зустріч");
+    await user.selectOptions(
+      screen.getByLabelText("Завершення"),
+      "2026-07-27T08:00:00.000Z"
+    );
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+    await screen.findByRole("alert");
+
+    // The refetch that onConflict triggers surfaces the booking that won the
+    // race, which is what makes the previously selected end time unreachable.
+    rerenderSheet(view, [
+      {
+        id: "30000000-0000-4000-8000-000000000001",
+        title: "Чужа зустріч",
+        startAt: "2026-07-27T07:00:00.000Z",
+        endAt: "2026-07-27T08:00:00.000Z",
+        organizer: { id: "user-2", name: "Тарас" },
+        isOwn: false,
+        seriesId: null,
+        occurrenceIndex: null,
+        occurrenceCount: null
+      }
+    ]);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Завершення")).toHaveValue(
+        "2026-07-27T07:00:00.000Z"
+      )
+    );
+    expect(screen.getByLabelText("Назва")).toHaveValue("Важлива зустріч");
+  });
+
+  it("keeps a re-picked end time when the conflict left the visible week unchanged", async () => {
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({
+          error: {
+            code: "BOOKING_CONFLICT",
+            message: "Conflict",
+            details: { occurrenceNumber: 2 },
+            requestId: "req-1"
+          }
+        })
+      })
+    );
+    const user = userEvent.setup();
+    const view = renderSheet();
+
+    await user.type(screen.getByLabelText("Назва"), "Важлива зустріч");
+    await user.click(screen.getByLabelText("Повторювати щотижня"));
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "Слот для 2-го повторення щойно зайняли. Ми оновили розклад. Оберіть інший час."
+    );
+
+    // A later occurrence conflicted, so refreshing leaves this week's bookings
+    // identical and no reset is owed. The user then picks a longer meeting.
+    await user.selectOptions(
+      screen.getByLabelText("Завершення"),
+      "2026-07-27T08:00:00.000Z"
+    );
+
+    // An unrelated later refresh must not discard that choice.
+    rerenderSheet(view, [
+      {
+        id: "30000000-0000-4000-8000-000000000002",
+        title: "Пізніша чужа зустріч",
+        startAt: "2026-07-27T15:00:00.000Z",
+        endAt: "2026-07-27T15:30:00.000Z",
+        organizer: { id: "user-2", name: "Тарас" },
+        isOwn: false,
+        seriesId: null,
+        occurrenceIndex: null,
+        occurrenceCount: null
+      }
+    ]);
+
+    expect(screen.getByLabelText("Завершення")).toHaveValue(
+      "2026-07-27T08:00:00.000Z"
+    );
   });
 
   it("keeps the form open and focused when email verification is required", async () => {
@@ -435,10 +528,8 @@ describe("BookingSheet", () => {
   });
 });
 
-function renderSheet(
-  overrides: Partial<React.ComponentProps<typeof BookingSheet>> = {}
-) {
-  return render(
+function sheet(overrides: Partial<React.ComponentProps<typeof BookingSheet>>) {
+  return (
     <BookingSheet
       bookings={response.bookings}
       initialSelection={selection}
@@ -451,6 +542,23 @@ function renderSheet(
       {...overrides}
     />
   );
+}
+
+function renderSheet(
+  overrides: Partial<React.ComponentProps<typeof BookingSheet>> = {}
+) {
+  return render(sheet(overrides));
+}
+
+/**
+ * Re-renders with a fresh `bookings` array, the way a refetched schedule
+ * reaches the sheet in production.
+ */
+function rerenderSheet(
+  view: ReturnType<typeof renderSheet>,
+  bookings: ScheduleResponse["bookings"]
+) {
+  view.rerender(sheet({ bookings }));
 }
 
 function apiSuccess(body: unknown) {
