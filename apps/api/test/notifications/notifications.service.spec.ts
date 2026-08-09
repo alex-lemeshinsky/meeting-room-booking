@@ -49,13 +49,18 @@ describe("NotificationsService", () => {
 
       const result = await service.listForUser(USER_ID);
 
+      const activePair = {
+        userId: USER_ID,
+        currentBooking: { status: "ACTIVE" },
+        nextBooking: { status: "ACTIVE" }
+      };
       expect(findManyMock).toHaveBeenCalledWith({
-        where: { userId: USER_ID },
+        where: activePair,
         orderBy: { createdAt: "desc" },
         take: 50
       });
       expect(countMock).toHaveBeenCalledWith({
-        where: { userId: USER_ID, readAt: null }
+        where: { ...activePair, readAt: null }
       });
       expect(result).toEqual({
         notifications: [

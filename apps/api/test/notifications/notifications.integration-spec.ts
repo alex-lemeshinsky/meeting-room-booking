@@ -118,6 +118,41 @@ describe("Notifications API & SSE integration", () => {
         unreadCount: 0
       });
     });
+
+    it.each([
+      ["the current booking", BOOKING_1_ID],
+      ["the next booking", BOOKING_2_ID]
+    ])(
+      "withholds a persisted notification once %s is cancelled",
+      async (_case, cancelledBookingId) => {
+        await database.notification.create({
+          data: {
+            userId: OLENA_ID,
+            currentBookingId: BOOKING_1_ID,
+            nextBookingId: BOOKING_2_ID,
+            type: "NEXT_BOOKING_STARTS",
+            message: "Meeting starting in 10 minutes",
+            roomName: "Berlin",
+            scheduledFor: new Date("2026-08-03T10:50:00.000Z")
+          }
+        });
+
+        await expect(
+          olena.agent.get("/api/v1/notifications").expect(200)
+        ).resolves.toMatchObject({ body: { unreadCount: 1 } });
+
+        await database.booking.update({
+          where: { id: cancelledBookingId },
+          data: { status: "CANCELLED", cancelledAt: NOW }
+        });
+
+        const response = await olena.agent
+          .get("/api/v1/notifications")
+          .expect(200);
+
+        expect(response.body).toEqual({ notifications: [], unreadCount: 0 });
+      }
+    );
   });
 
   describe("PATCH /api/v1/notifications/:id/read", () => {

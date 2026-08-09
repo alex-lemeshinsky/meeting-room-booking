@@ -5,6 +5,21 @@ import { DatabaseService } from "../database/database.service.js";
 import type { MarkReadResponseDto } from "./dto/mark-read-response.dto.js";
 import type { NotificationsResponseDto } from "./dto/notifications-response.dto.js";
 
+/**
+ * The scheduler only creates a notification while both bookings are active,
+ * but either one can still be cancelled during the notify-before window. The
+ * specification requires the notification not to stand in that case, so
+ * cancelled pairs are withheld at read time rather than deleted, keeping the
+ * row for history and closing the gap for notifications already persisted.
+ */
+function liveNotificationsFor(userId: string) {
+  return {
+    userId,
+    currentBooking: { status: "ACTIVE" },
+    nextBooking: { status: "ACTIVE" }
+  } as const;
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -14,14 +29,14 @@ export class NotificationsService {
 
   async listForUser(userId: string): Promise<NotificationsResponseDto> {
     const notifications = await this.database.notification.findMany({
-      where: { userId },
+      where: liveNotificationsFor(userId),
       orderBy: { createdAt: "desc" },
       take: 50
     });
 
     const unreadCount = await this.database.notification.count({
       where: {
-        userId,
+        ...liveNotificationsFor(userId),
         readAt: null
       }
     });
