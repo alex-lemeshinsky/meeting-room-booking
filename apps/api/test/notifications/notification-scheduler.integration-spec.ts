@@ -141,4 +141,76 @@ describe("NotificationSchedulerService (Integration)", () => {
     });
     expect(pair2Notifications).toHaveLength(0);
   });
+
+  // NOTIFY-03 must hold even when a cancellation is in flight while the
+  // scheduler picks candidates. The scheduler's `FOR SHARE OF current_b,
+  // next_b` is what makes that true: it waits for the uncommitted cancel, then
+  // re-checks `status = 'ACTIVE'` against the committed row. Without the row
+  // lock the scheduler reads the pre-cancel row version and notifies anyway.
+  it("waits for an in-flight cancellation and then skips the cancelled pair", async () => {
+    const scheduler = context.app.get(NotificationSchedulerService);
+
+    const currentBooking = await database.booking.create({
+      data: {
+        roomId: ROOM_ID,
+        userId: USER_1_ID,
+        title: "Планування спринту",
+        startAt: new Date("2035-01-15T10:00:00.000Z"),
+        endAt: new Date("2035-01-15T10:30:00.000Z"),
+        status: "ACTIVE"
+      }
+    });
+
+    await database.booking.create({
+      data: {
+        roomId: ROOM_ID,
+        userId: USER_2_ID,
+        title: "Огляд дизайну",
+        startAt: new Date("2035-01-15T10:30:00.000Z"),
+        endAt: new Date("2035-01-15T11:00:00.000Z"),
+        status: "ACTIVE"
+      }
+    });
+
+    const cancelledAt = new Date("2035-01-15T10:25:00.000Z");
+    mutableClock.nowTime = cancelledAt;
+
+    let releaseCancellation!: () => void;
+    let signalRowLocked!: () => void;
+    const cancellationGate = new Promise<void>((resolve) => {
+      releaseCancellation = resolve;
+    });
+    const rowLocked = new Promise<void>((resolve) => {
+      signalRowLocked = resolve;
+    });
+
+    // Mirrors BookingsService.cancel's updateMany, held open so the race
+    // window is deterministic instead of timing-dependent.
+    const cancellation = database.$transaction(
+      async (transaction) => {
+        await transaction.booking.updateMany({
+          where: { id: currentBooking.id, status: "ACTIVE" },
+          data: { status: "CANCELLED", cancelledAt }
+        });
+        signalRowLocked();
+        await cancellationGate;
+      },
+      { timeout: 20_000 }
+    );
+
+    await rowLocked;
+    const processing = scheduler.processNotifications();
+
+    const settledFirst = await Promise.race([
+      processing.then(() => "scheduler"),
+      new Promise((resolve) => setTimeout(() => resolve("blocked"), 500))
+    ]);
+    expect(settledFirst).toBe("blocked");
+
+    releaseCancellation();
+    await cancellation;
+
+    await expect(processing).resolves.toBe(0);
+    expect(await database.notification.count()).toBe(0);
+  });
 });

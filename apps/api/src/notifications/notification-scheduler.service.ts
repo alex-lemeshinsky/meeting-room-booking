@@ -53,7 +53,7 @@ export class NotificationSchedulerService {
         `;
 
         if (!lockResult[0]?.acquired) {
-          return { createdCount: 0, createdEvents: [] };
+          return { createdCount: 0 };
         }
 
         let createdCount = 0;
@@ -131,7 +131,7 @@ export class NotificationSchedulerService {
           await this.eventPublisher.publish(tx, event);
         }
 
-        return { createdCount, createdEvents };
+        return { createdCount };
       });
 
       if (createdCount > 0) {
