@@ -10,6 +10,10 @@
     "./calendar": {
       "types": "./src/calendar.ts",
       "default": "./dist/calendar.js"
+    },
+    "./interval": {
+      "types": "./src/interval.ts",
+      "default": "./dist/interval.js"
     }
   },
   "files": [

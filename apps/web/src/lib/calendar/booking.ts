@@ -1,4 +1,5 @@
 import { getKyivOfficeIntervals } from "@mrb/time/calendar";
+import { intervalsOverlap, parseInterval } from "@mrb/time/interval";
 import type { ScheduleResponse } from "../api/contracts";
 
 const SLOT_DURATION_MS = 30 * 60 * 1_000;
@@ -34,10 +35,11 @@ export function buildBookingEndOptions(
     candidateEnd <= latestEnd;
     candidateEnd += SLOT_DURATION_MS
   ) {
-    const overlaps = bookings.some(
-      (booking) =>
-        Date.parse(booking.startAt) < candidateEnd &&
-        Date.parse(booking.endAt) > start
+    const overlaps = bookings.some((booking) =>
+      intervalsOverlap(parseInterval(booking.startAt, booking.endAt), {
+        start,
+        end: candidateEnd
+      })
     );
     if (overlaps) break;
 

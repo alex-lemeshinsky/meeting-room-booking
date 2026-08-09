@@ -11,6 +11,7 @@ export {
   type CalendarSlot
 } from "./calendar.js";
 export { CLOCK, FixedClock, SystemClock, type Clock } from "./clock.js";
+export { intervalsOverlap, parseInterval, type Interval } from "./interval.js";
 export {
   buildKyivWeeklySeries,
   type KyivWeeklyOccurrence,

@@ -4,6 +4,7 @@ import {
   splitBookingIntoLocalFragments,
   type CalendarSlot
 } from "@mrb/time/calendar";
+import { intervalsOverlap, parseInterval } from "@mrb/time/interval";
 import { browserApi } from "../api/browser";
 import type { ScheduleResponse } from "../api/contracts";
 
@@ -248,10 +249,11 @@ function getBookingStartAt(
       continue;
     }
 
-    const overlaps = bookings.some(
-      (booking) =>
-        Date.parse(booking.startAt) < candidateEnd &&
-        Date.parse(booking.endAt) > candidateStart
+    const overlaps = bookings.some((booking) =>
+      intervalsOverlap(parseInterval(booking.startAt, booking.endAt), {
+        start: candidateStart,
+        end: candidateEnd
+      })
     );
     if (!overlaps) {
       return new Date(candidateStart).toISOString();
@@ -378,8 +380,10 @@ function buildBookingFragments(
 
       const occupiedSlots = day.slots.filter((slot) => {
         const slotStart = Date.parse(slot.instant);
-        const slotEnd = slotStart + SLOT_DURATION_MS;
-        return slotStart < bookingEnd && slotEnd > bookingStart;
+        return intervalsOverlap(
+          { start: slotStart, end: slotStart + SLOT_DURATION_MS },
+          { start: bookingStart, end: bookingEnd }
+        );
       });
       const firstSlot = occupiedSlots[0];
       const lastSlot = occupiedSlots[occupiedSlots.length - 1];
