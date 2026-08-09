@@ -128,13 +128,16 @@ describe("NotificationEventRelay", () => {
     expect(eventEmitter.emit).not.toHaveBeenCalled();
   });
 
-  it("publishes only JSON event data through a parameterized pg_notify query", async () => {
-    const { relay, database } = createSubject();
+  it("queues only JSON event data through the caller transaction", async () => {
+    const { relay } = createSubject();
+    const transaction = {
+      $executeRaw: vi.fn().mockResolvedValue(1)
+    };
 
-    await relay.publish(EVENT);
+    await relay.publish(transaction, EVENT);
 
-    expect(database.$executeRaw).toHaveBeenCalledOnce();
-    const [sql, channel, payload] = vi.mocked(database.$executeRaw).mock
+    expect(transaction.$executeRaw).toHaveBeenCalledOnce();
+    const [sql, channel, payload] = vi.mocked(transaction.$executeRaw).mock
       .calls[0]!;
     if (!Array.isArray(sql)) {
       throw new Error("Expected a tagged SQL template");

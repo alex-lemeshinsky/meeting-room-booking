@@ -11,7 +11,8 @@ import { Client } from "pg";
 import { DatabaseService } from "../database/database.service.js";
 import type {
   NotificationCreatedEvent,
-  NotificationEventPublisher
+  NotificationEventPublisher,
+  NotificationTransaction
 } from "./notification-scheduler.service.js";
 
 export const NOTIFICATION_EVENT_CHANNEL = "mrb_notification_created";
@@ -163,9 +164,11 @@ export class NotificationEventRelay
     this.isReconnecting = false;
   }
 
-  async publish(event: NotificationCreatedEvent): Promise<void> {
-    await this.database
-      .$executeRaw`SELECT pg_notify(${NOTIFICATION_EVENT_CHANNEL}, ${JSON.stringify(event)})`;
+  async publish(
+    transaction: NotificationTransaction,
+    event: NotificationCreatedEvent
+  ): Promise<void> {
+    await transaction.$executeRaw`SELECT pg_notify(${NOTIFICATION_EVENT_CHANNEL}, ${JSON.stringify(event)})`;
   }
 
   private readonly handleNotification = (

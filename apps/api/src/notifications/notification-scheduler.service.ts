@@ -3,14 +3,23 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Interval } from "@nestjs/schedule";
 import { DatabaseService } from "../database/database.service.js";
+import type { Prisma } from "../generated/prisma/client.js";
 
 export interface NotificationCreatedEvent {
   userId: string;
   notificationId: string;
 }
 
+export type NotificationTransaction = Pick<
+  Prisma.TransactionClient,
+  "$executeRaw"
+>;
+
 export interface NotificationEventPublisher {
-  publish(event: NotificationCreatedEvent): Promise<void>;
+  publish(
+    transaction: NotificationTransaction,
+    event: NotificationCreatedEvent
+  ): Promise<void>;
 }
 
 export const NOTIFICATION_EVENT_PUBLISHER = Symbol(
@@ -38,31 +47,30 @@ export class NotificationSchedulerService {
   async processNotifications(overrideNow?: Date): Promise<number> {
     try {
       const now = overrideNow ?? this.clock.now();
-      const { createdCount, createdEvents } = await this.database.$transaction(
-        async (tx) => {
-          const lockResult = await tx.$queryRaw<Array<{ acquired: boolean }>>`
+      const { createdCount } = await this.database.$transaction(async (tx) => {
+        const lockResult = await tx.$queryRaw<Array<{ acquired: boolean }>>`
           SELECT pg_try_advisory_xact_lock(hashtext('mrb_notification_scheduler')) AS acquired
         `;
 
-          if (!lockResult[0]?.acquired) {
-            return { createdCount: 0, createdEvents: [] };
-          }
+        if (!lockResult[0]?.acquired) {
+          return { createdCount: 0, createdEvents: [] };
+        }
 
-          let createdCount = 0;
-          const createdEvents: NotificationCreatedEvent[] = [];
+        let createdCount = 0;
+        const createdEvents: NotificationCreatedEvent[] = [];
 
-          const candidates = await tx.$queryRaw<
-            Array<{
-              current_booking_id: string;
-              user_id: string;
-              current_title: string;
-              end_at: Date;
-              next_booking_id: string;
-              next_title: string;
-              next_start_at: Date;
-              room_name: string;
-            }>
-          >`
+        const candidates = await tx.$queryRaw<
+          Array<{
+            current_booking_id: string;
+            user_id: string;
+            current_title: string;
+            end_at: Date;
+            next_booking_id: string;
+            next_title: string;
+            next_start_at: Date;
+            room_name: string;
+          }>
+        >`
           SELECT
             current_b.id AS current_booking_id,
             current_b.user_id,
@@ -86,14 +94,15 @@ export class NotificationSchedulerService {
             AND current_b.end_at - (${this.notifyBeforeMinutes} * INTERVAL '1 minute') <= ${now}::timestamptz
             AND current_b.end_at > ${now}::timestamptz
             AND n.id IS NULL
+          FOR SHARE OF current_b, next_b
         `;
 
-          for (const candidate of candidates) {
-            const message = `«${candidate.current_title}» у ${candidate.room_name} завершується за ${this.notifyBeforeMinutes} хв — наступне бронювання починається одразу`;
+        for (const candidate of candidates) {
+          const message = `«${candidate.current_title}» у ${candidate.room_name} завершується за ${this.notifyBeforeMinutes} хв — наступне бронювання починається одразу`;
 
-            const inserted = await tx.$queryRaw<
-              Array<{ id: string; user_id: string }>
-            >`
+          const inserted = await tx.$queryRaw<
+            Array<{ id: string; user_id: string }>
+          >`
             INSERT INTO notifications (user_id, current_booking_id, next_booking_id, type, message, room_name, scheduled_for)
             VALUES (
               ${candidate.user_id}::uuid,
@@ -108,23 +117,22 @@ export class NotificationSchedulerService {
             RETURNING id, user_id
           `;
 
-            const insertedRow = inserted[0];
-            if (insertedRow) {
-              createdCount++;
-              createdEvents.push({
-                userId: insertedRow.user_id,
-                notificationId: insertedRow.id
-              });
-            }
+          const insertedRow = inserted[0];
+          if (insertedRow) {
+            createdCount++;
+            createdEvents.push({
+              userId: insertedRow.user_id,
+              notificationId: insertedRow.id
+            });
           }
-
-          return { createdCount, createdEvents };
         }
-      );
 
-      for (const event of createdEvents) {
-        await this.eventPublisher.publish(event);
-      }
+        for (const event of createdEvents) {
+          await this.eventPublisher.publish(tx, event);
+        }
+
+        return { createdCount, createdEvents };
+      });
 
       if (createdCount > 0) {
         this.logger.log(`Created ${createdCount} notification(s)`);

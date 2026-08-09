@@ -108,13 +108,13 @@ describe("NotificationSchedulerService", () => {
     expect(insertCallArgs).toBeDefined();
     expect(insertCallArgs).toContain(expectedMessage);
 
-    expect(eventPublisher.publish).toHaveBeenCalledWith({
+    expect(eventPublisher.publish).toHaveBeenCalledWith(txMock, {
       userId: insertedNotification.user_id,
       notificationId: insertedNotification.id
     });
   });
 
-  it("publishes a created notification only after its transaction commits", async () => {
+  it("queues notification delivery inside the locked transaction before commit", async () => {
     const candidate = {
       current_booking_id: "10000000-0000-4000-8000-000000000001",
       user_id: "00000000-0000-4000-8000-000000000001",
@@ -165,15 +165,15 @@ describe("NotificationSchedulerService", () => {
     const processing = scheduler.processNotifications();
     await callbackComplete;
 
-    expect(publisher.publish).not.toHaveBeenCalled();
+    expect(publisher.publish).toHaveBeenCalledWith(transaction, {
+      userId: insertedNotification.user_id,
+      notificationId: insertedNotification.id
+    });
 
     releaseTransaction();
     await processing;
 
-    expect(publisher.publish).toHaveBeenCalledWith({
-      userId: insertedNotification.user_id,
-      notificationId: insertedNotification.id
-    });
+    expect(publisher.publish).toHaveBeenCalledOnce();
   });
 
   it("falls back to the documented 10-minute window when NOTIFY_BEFORE_MINUTES is unset", async () => {
