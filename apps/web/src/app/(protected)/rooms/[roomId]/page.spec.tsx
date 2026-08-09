@@ -49,7 +49,8 @@ const room = {
   id: "room-1",
   name: "Дніпро",
   floor: 4,
-  capacity: 10
+  // A "few" capacity: the earlier two-form label rendered this as "4 місць".
+  capacity: 4
 };
 
 afterEach(() => {
@@ -97,7 +98,7 @@ describe("room schedule route", () => {
       screen.getByRole("heading", { level: 1, name: "Розклад кімнати Дніпро" })
     ).toBeVisible();
     expect(screen.getByText("4 поверх")).toBeVisible();
-    expect(screen.getByText("10 місць")).toBeVisible();
+    expect(screen.getByText("4 місця")).toBeVisible();
     expect(
       screen.getByRole("link", { name: "До списку кімнат" })
     ).toHaveAttribute("href", "/rooms");

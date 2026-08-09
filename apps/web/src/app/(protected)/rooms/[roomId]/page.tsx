@@ -6,6 +6,7 @@ import { ScheduleCalendar } from "../../../../components/calendar/schedule-calen
 import { UnauthenticatedError } from "../../../../lib/api/server";
 import { getCurrentSession, getRoom } from "../../../../lib/auth/session";
 import { TIMEZONE_COOKIE } from "../../../../lib/calendar/timezone";
+import { capacityLabel } from "../../../../lib/rooms/capacity-label";
 import styles from "./schedule.module.css";
 
 type SchedulePageProps = {
@@ -36,10 +37,6 @@ export function normalizeTimezoneCookie(
   }
 
   return isValidTimezone(timezone) ? timezone : undefined;
-}
-
-function capacityLabel(capacity: number): string {
-  return capacity === 1 ? "1 місце" : `${capacity} місць`;
 }
 
 export default async function SchedulePage({

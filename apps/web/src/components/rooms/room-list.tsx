@@ -1,15 +1,11 @@
 import Link from "next/link";
 import type { RoomsResponse } from "../../lib/api/contracts";
-import { pluralizeUk } from "../../lib/ui/plural";
+import { capacityLabel } from "../../lib/rooms/capacity-label";
 import styles from "../../app/(protected)/protected.module.css";
 
 interface RoomListProps {
   isFiltered?: boolean;
   rooms: RoomsResponse["rooms"];
-}
-
-function capacityLabel(capacity: number) {
-  return `${capacity} ${pluralizeUk(capacity, "місце", "місця", "місць")}`;
 }
 
 export function RoomList({ isFiltered = false, rooms }: RoomListProps) {
