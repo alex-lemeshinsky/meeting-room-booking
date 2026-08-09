@@ -179,6 +179,48 @@ describe("ScheduleCalendar", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("invalidates the my-bookings cache when a booking is created", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-29T07:15:00.000Z"));
+    document.cookie = "mrb_csrf=csrf-value; path=/";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiSuccess(scheduleResponse()))
+      .mockResolvedValueOnce(
+        apiSuccess({
+          booking: {
+            id: "booking-created",
+            roomId: room.id,
+            title: "Командне планування",
+            startAt: "2026-07-30T06:00:00.000Z",
+            endAt: "2026-07-30T06:30:00.000Z"
+          }
+        })
+      )
+      .mockResolvedValue(apiSuccess(scheduleResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    const { queryClient } = renderSchedule("2026-07-27");
+
+    // `Мої бронювання` seeds this entry on its own route and keeps it across
+    // client-side navigation, so creating a booking here has to stale it.
+    const myBookings = ["my-bookings", "upcoming"];
+    queryClient.setQueryData(myBookings, { bookings: [] });
+    expect(queryClient.getQueryState(myBookings)?.isInvalidated).toBe(false);
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: /Забронювати четвер, 30 липня 2026 р., 09:00/
+      })
+    );
+    await user.type(screen.getByLabelText("Назва"), "Командне планування");
+    await user.click(screen.getByRole("button", { name: "Забронювати" }));
+
+    await waitFor(() =>
+      expect(queryClient.getQueryState(myBookings)?.isInvalidated).toBe(true)
+    );
+  });
+
   it("server-renders stable calendar skeleton geometry before timezone detection", () => {
     const queryClient = new QueryClient();
 

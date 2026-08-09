@@ -1,6 +1,10 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient
+} from "@tanstack/react-query";
 import { getCurrentLocalWeekStart } from "@mrb/time/calendar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -82,6 +86,7 @@ function ResolvedScheduleCalendar({
   const pathname = usePathname();
   const router = useRouter();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const now = useCalendarNow();
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlotSelection | null>(
@@ -166,13 +171,17 @@ function ResolvedScheduleCalendar({
         });
       }
       void query.refetch();
+      // `Мої бронювання` keeps its own cache entry that outlives this page, so
+      // without this the new booking stays invisible there until the entry
+      // goes stale on its own or the browser reloads.
+      void queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
       queueMicrotask(() => {
         document
           .querySelector<HTMLElement>('[data-testid="calendar-scroll-region"]')
           ?.focus();
       });
     },
-    [query, room.name, showToast, timezone]
+    [query, queryClient, room.name, showToast, timezone]
   );
 
   if (query.isPending && query.data === undefined) {
