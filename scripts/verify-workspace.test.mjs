@@ -469,8 +469,8 @@ test("documents the auth and rooms clean-machine setup", async () => {
   assert.match(readme, /alex@example\.com/);
 
   const firstRun = readme.slice(
-    readme.indexOf("## Перший запуск"),
-    readme.indexOf("## Перевірки")
+    readme.indexOf("## Налаштування середовища розробки"),
+    readme.indexOf("## Підтвердження email")
   );
   assert.match(
     firstRun,
