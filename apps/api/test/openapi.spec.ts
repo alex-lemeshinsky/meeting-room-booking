@@ -1,6 +1,4 @@
 import type { INestApplication } from "@nestjs/common";
-import { writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createOpenApiApp } from "../src/bootstrap.js";
 import { createOpenApiDocument } from "../src/openapi/openapi.js";
@@ -30,10 +28,6 @@ describe("OpenAPI document", () => {
 
   it("publishes safe auth and room contracts for generated clients", async () => {
     const document = createOpenApiDocument(app);
-    await writeFile(
-      resolve(import.meta.dirname, "../openapi.json"),
-      `${JSON.stringify(document, null, 2)}\n`
-    );
     const serialized = JSON.stringify(document);
 
     expect(document.paths["/api/v1/health/live"]).toBeDefined();
